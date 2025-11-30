@@ -1,0 +1,49 @@
+:root {
+    --bg-primary: #fff;
+    --accent-flame: #ff6b4a;
+    --accent-coral: #ffb5a0;
+    --text-primary: #333;
+    --text-secondary: #ABA7A7;
+    --text-muted: #a69388;
+    --border-light: #e8ddd4;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Noto Sans KR', -apple-system, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    overflow-x: hidden;
+}
+
+/* 사이드바 */
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 60px;
+    height: 100vh;
+    background: rgba(250, 176, 169, 0.2);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 30px;
+    z-index: 100;
+}
+
+.sidebar-logo {
+    width: 44px;
+    height: 108px;
+}
+
+/* 메인 컨테이너 */
+.main-container {
+    min-height: 100vh;
+    padding-left: 60px;
+}
+
