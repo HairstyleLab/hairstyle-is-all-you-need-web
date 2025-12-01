@@ -167,7 +167,7 @@ function resetVerification() {
     confirmCodeBtn.disabled = true;
     sendCodeBtn.disabled = false;
     sendCodeBtn.textContent = '인증코드 발송';
-    sendCodeBtn.style.backgroundColor = '#FEF9D9';
+    sendCodeBtn.classList.remove('resend-btn');
     timer.style.display = 'none';
     codeError.style.display = 'none';
     codeError.textContent = '';
@@ -288,7 +288,7 @@ sendCodeBtn.addEventListener('click', async function() {
         
         // 버튼 텍스트 변경
         sendCodeBtn.textContent = '코드 재발송';
-        sendCodeBtn.style.backgroundColor = 'rgba(250, 176, 169, 0.2)';
+        sendCodeBtn.classList.add('resend-btn');
         sendCodeBtn.disabled = false;
         
         // 타이머 시작
