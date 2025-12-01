@@ -7,7 +7,7 @@
 {% block content %}
 <!-- 사이드바 -->
 <aside class="sidebar" id="sidebar">
-    <img class='sidebar-logo' src="{% static 'images/small_logo.png'%}"/>
+    <img class='sidebar-logo' src="{% static 'images/small_logo.png'%}" onclick="location.href='/main/'"/>
 </aside>
 
 <div class="main-container">
@@ -111,6 +111,10 @@
         </form>
     </div>
 </div>
+
+<!-- 성공 모달 -->
+{% include 'uauth/signup_modal.html' %}
+
 {% endblock content %}
 
 {% block script %}
