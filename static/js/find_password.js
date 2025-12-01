@@ -3,7 +3,7 @@ let timerInterval = null;
 let timeLeft = 180; // 3분 = 180초
 let verificationCodeSent = false;
 let verificationCodeConfirmed = false;
-let correctVerificationCode = '1234'; // 실제로는 서버에서 받아온 코드
+let correctVerificationCode = ''; // 실제로는 서버에서 받아온 코드
 let verifiedEmail = ''; // 인증 완료된 이메일 저장
 
 // DOM 요소
@@ -227,7 +227,7 @@ function validateEmail() {
 }
 
 // 3. 인증코드 발송 버튼 클릭
-sendCodeBtn.addEventListener('click', function() {
+sendCodeBtn.addEventListener('click', async function() {
     if (!validateEmail()) {
         return;
     }
@@ -244,55 +244,66 @@ sendCodeBtn.addEventListener('click', function() {
     
     const fullEmail = `${username}@${domain}`;
     
-    // TODO: 실제로는 서버에 이메일 존재 여부 확인 및 인증코드 발송 요청
-    // 여기서는 시뮬레이션
-    
-    // 이메일이 존재하는지 확인 (실제로는 서버 응답)
-    // 테스트용: 임의로 성공으로 처리
-    const emailExists = true; // 실제로는 서버 응답 결과
-    
-    if (!emailExists) {
-        emailError.textContent = '가입되어 있지 않은 이메일입니다. 이메일 주소를 다시 한 번 확인해주세요.';
+    // 서버에 인증코드 발송 요청
+    try {
+        sendCodeBtn.disabled = true;
+        const response = await fetch('/uauth/send-verification-code/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email: fullEmail })
+        });
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+            emailError.textContent = data.message || '인증코드 발송에 실패했습니다.';
+            emailError.style.display = 'block';
+            sendCodeBtn.disabled = false;
+            return;
+        }
+        
+        emailError.style.display = 'none';
+        
+        // 인증코드 발급 안내 메시지
+        const successMessage = document.createElement('p');
+        successMessage.className = 'success-message';
+        successMessage.textContent = '입력하신 이메일로 인증코드를 보내드렸습니다. 3분 안에 인증코드를 정확히 입력해주세요';
+        successMessage.style.color = '#333';
+        successMessage.style.fontSize = '15px';
+        
+        // 기존 성공 메시지 제거
+        const existingSuccess = emailError.parentElement.querySelector('.success-message');
+        if (existingSuccess) {
+            existingSuccess.remove();
+        }
+        
+        emailError.parentElement.appendChild(successMessage);
+        
+        // 인증코드 입력칸 활성화
+        verificationCode.disabled = false;
+        verificationCode.placeholder = '인증코드 입력';
+        
+        // 인증코드 확인 버튼 활성화
+        confirmCodeBtn.disabled = false;
+        
+        // 버튼 텍스트 변경
+        sendCodeBtn.textContent = '코드 재발송';
+        sendCodeBtn.style.backgroundColor = 'rgba(250, 176, 169, 0.2)';
+        sendCodeBtn.disabled = false;
+        
+        // 타이머 시작
+        startTimer();
+        
+        verificationCodeSent = true;
+        
+    } catch (error) {
+        console.error('오류:', error);
+        emailError.textContent = '요청 중 오류가 발생했습니다.';
         emailError.style.display = 'block';
-        return;
+        sendCodeBtn.disabled = false;
     }
-    
-    emailError.style.display = 'none';
-    
-    // 인증코드 생성 (실제로는 서버에서 생성하여 이메일로 발송)
-    // correctVerificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-    console.log('인증코드:', correctVerificationCode); // 테스트용
-    
-    // 인증코드 발급 안내 메시지
-    const successMessage = document.createElement('p');
-    successMessage.className = 'success-message';
-    successMessage.textContent = '입력하신 이메일로 인증코드를 보내드렸습니다. 3분 안에 인증코드를 정확히 입력해주세요';
-    successMessage.style.color = '#333';
-    successMessage.style.fontSize = '15px';
-    
-    // 기존 성공 메시지 제거
-    const existingSuccess = emailError.parentElement.querySelector('.success-message');
-    if (existingSuccess) {
-        existingSuccess.remove();
-    }
-    
-    emailError.parentElement.appendChild(successMessage);
-    
-    // 인증코드 입력칸 활성화
-    verificationCode.disabled = false;
-    verificationCode.placeholder = '인증코드 입력';
-    
-    // 인증코드 확인 버튼 활성화
-    confirmCodeBtn.disabled = false;
-    
-    // 버튼 텍스트 변경
-    sendCodeBtn.textContent = '코드 재발송';
-    sendCodeBtn.style.backgroundColor = 'rgba(250, 176, 169, 0.2)';
-    
-    // 타이머 시작
-    startTimer();
-    
-    verificationCodeSent = true;
 });
 
 // 타이머 시작
@@ -331,7 +342,7 @@ function updateTimerDisplay() {
 }
 
 // 4. 인증코드 확인 버튼 클릭
-confirmCodeBtn.addEventListener('click', function() {
+confirmCodeBtn.addEventListener('click', async function() {
     const inputCode = verificationCode.value.trim();
     
     if (!inputCode) {
@@ -340,17 +351,6 @@ confirmCodeBtn.addEventListener('click', function() {
         return;
     }
     
-    // TODO: 실제로는 서버에 인증코드 확인 요청
-    if (inputCode !== correctVerificationCode) {
-        codeError.textContent = '인증코드가 틀렸습니다.';
-        codeError.style.display = 'block';
-        return;
-    }
-    
-    // 인증 성공
-    codeError.style.display = 'none';
-    
-    // 인증된 이메일 저장
     const username = emailUsername.value.trim();
     let domain = '';
     if (!emailDomainSelect.classList.contains('hidden')) {
@@ -358,39 +358,75 @@ confirmCodeBtn.addEventListener('click', function() {
     } else {
         domain = emailDomain.value.trim();
     }
-    verifiedEmail = `${username}@${domain}`;
-    console.log('인증된 이메일 저장:', verifiedEmail);
+    const fullEmail = `${username}@${domain}`;
     
-    // 성공 메시지 표시
-    const successMessage = document.createElement('p');
-    successMessage.className = 'success-message';
-    successMessage.textContent = '인증이 완료되었습니다.';
-    
-    const existingSuccess = codeError.parentElement.querySelector('.success-message');
-    if (existingSuccess) {
-        existingSuccess.remove();
+    // 서버에 인증코드 검증 요청
+    try {
+        confirmCodeBtn.disabled = true;
+        const response = await fetch('/uauth/verify-code/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+                email: fullEmail,
+                code: inputCode 
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+            codeError.textContent = data.message || '인증코드가 일치하지 않습니다.';
+            codeError.style.display = 'block';
+            confirmCodeBtn.disabled = false;
+            return;
+        }
+        
+        // 인증 성공
+        codeError.style.display = 'none';
+        
+        // 인증된 이메일 저장
+        verifiedEmail = fullEmail;
+        console.log('인증된 이메일 저장:', verifiedEmail);
+        
+        // 성공 메시지 표시
+        const successMessage = document.createElement('p');
+        successMessage.className = 'success-message';
+        successMessage.textContent = '인증이 완료되었습니다.';
+        
+        const existingSuccess = codeError.parentElement.querySelector('.success-message');
+        if (existingSuccess) {
+            existingSuccess.remove();
+        }
+        
+        codeError.parentElement.appendChild(successMessage);
+        
+        // 타이머 정지
+        if (timerInterval) {
+            clearInterval(timerInterval);
+        }
+        
+        // 인증코드 관련 요소 비활성화
+        verificationCode.disabled = true;
+        confirmCodeBtn.disabled = true;
+        sendCodeBtn.disabled = true;
+        timer.style.display = 'none';
+        
+        verificationCodeConfirmed = true;
+        
+        // 5. 비밀번호 입력칸 활성화
+        newPassword.disabled = false;
+        confirmPassword.disabled = false;
+        newPassword.placeholder = '새 비밀번호';
+        confirmPassword.placeholder = '비밀번호를 다시 입력해주세요.';
+        
+    } catch (error) {
+        console.error('오류:', error);
+        codeError.textContent = '요청 중 오류가 발생했습니다.';
+        codeError.style.display = 'block';
+        confirmCodeBtn.disabled = false;
     }
-    
-    codeError.parentElement.appendChild(successMessage);
-    
-    // 타이머 정지
-    if (timerInterval) {
-        clearInterval(timerInterval);
-    }
-    
-    // 인증코드 관련 요소 비활성화
-    verificationCode.disabled = true;
-    confirmCodeBtn.disabled = true;
-    sendCodeBtn.disabled = true;
-    timer.style.display = 'none';
-    
-    verificationCodeConfirmed = true;
-    
-    // 5. 비밀번호 입력칸 활성화
-    newPassword.disabled = false;
-    confirmPassword.disabled = false;
-    newPassword.placeholder = '새 비밀번호';
-    confirmPassword.placeholder = '비밀번호를 다시 입력해주세요.';
 });
 
 // 비밀번호 유효성 검사
@@ -481,7 +517,7 @@ function checkFormComplete() {
 }
 
 // 수정 버튼 클릭
-submitBtn.addEventListener('click', function(e) {
+submitBtn.addEventListener('click', async function(e) {
     e.preventDefault();
     
     const username = emailUsername.value.trim();
@@ -497,14 +533,36 @@ submitBtn.addEventListener('click', function(e) {
     const fullEmail = `${username}@${domain}`;
     const password = newPassword.value;
     
-    // TODO: 서버에 비밀번호 변경 요청
-    console.log('비밀번호 변경 요청:', {
-        email: fullEmail,
-        newPassword: password
-    });
-    
-    // 성공 모달 표시
-    successModal.classList.add('show');
+    // 서버에 비밀번호 변경 요청
+    try {
+        submitBtn.disabled = true;
+        const response = await fetch('/uauth/reset-password/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                email: fullEmail,
+                new_password: password
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+            alert(data.message || '비밀번호 변경에 실패했습니다.');
+            submitBtn.disabled = false;
+            return;
+        }
+        
+        // 성공 모달 표시
+        successModal.classList.add('show');
+        
+    } catch (error) {
+        console.error('오류:', error);
+        alert('요청 중 오류가 발생했습니다.');
+        submitBtn.disabled = false;
+    }
 });
 
 // 모달 확인 버튼 클릭

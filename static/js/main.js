@@ -1,7 +1,5 @@
-// 로그인 상태 (Django 연동 시 서버에서 설정)
 const isLoggedIn = false;
 
-// 입력 필드 감지 및 전송 버튼 활성화/비활성화
 const messageInput = document.getElementById('messageInput');
 const sendBtn = document.getElementById('sendBtn');
 
