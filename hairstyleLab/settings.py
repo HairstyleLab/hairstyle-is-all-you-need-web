@@ -24,13 +24,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 load_dotenv()
 
+DB_ENGINE = os.getenv("DB_ENGINE")
+DB_NAME = os.getenv("DB_NAME")
+DB_PASSWORD1 = os.getenv("DB_PASSWORD1")
+DB_PORT = os.getenv("DB_PORT")
+DB_HOST = os.getenv("DB_HOST")
+DB_USER = os.getenv("DB_USER")
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = []
-
 
 # Application definition
 
@@ -79,12 +84,18 @@ WSGI_APPLICATION = "hairstyleLab.wsgi.application"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+    'default': {
+        'ENGINE': DB_ENGINE,
+        'NAME': DB_NAME,
+        'USER': DB_USER,
+        'PASSWORD': DB_PASSWORD1,
+        'HOST': DB_HOST,
+        'PORT': DB_PORT,
+        'OPTIONS': {
+            'charset': 'utf8mb4'
+        }
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
