@@ -2,8 +2,7 @@ import random
 import string
 from django.core.mail import send_mail
 from django.conf import settings
-from django.contrib.auth.models import User
-from .models import EmailVerification
+from .models import User, EmailVerification
 
 
 def check_email_exists(email):
@@ -23,7 +22,7 @@ def generate_verification_code():
         ]
         
         all_chars = highercase + lowercase + digits
-        code_list.extend([random.choice(all_chars) for _ in range(6)])
+        code_list.extend([random.choice(all_chars) for _ in range(3)])
         
         random.shuffle(code_list)
         code = ''.join(code_list)

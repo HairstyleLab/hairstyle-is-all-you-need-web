@@ -3,10 +3,14 @@
     --bg-primary: #fff;
     --accent-flame: #ff6b4a;
     --accent-coral: #ffb5a0;
+    --accent-yellow: #FEF9D9;
     --text-primary: #333;
     --text-secondary: #ABA7A7;
     --text-muted: #a69388;
     --border-light: #e8ddd4;
+    --sidebar-bg: rgba(250, 176, 169, 0.15);
+    --sidebar-width-collapsed: 100px;
+    --sidebar-width-expanded: 280px;
 }
 
 * {
@@ -22,7 +26,7 @@ body {
     overflow-x: hidden;
 }
 
-/* 사이드바 */
+/* 로그인 전 사이드바 */
 .sidebar {
     position: fixed;
     left: 0;
@@ -40,6 +44,274 @@ body {
 .sidebar-logo {
     width: 44px;
     height: 108px;
+}
+
+/* 로그인 후 사이드바 */
+.sidebar-logged {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: var(--sidebar-width-collapsed);
+    height: 100vh;
+    background: linear-gradient(to bottom, rgba(250, 176, 169, 0.2), rgba(250, 176, 169, 0.1));
+    display: none;
+    flex-direction: column;
+    z-index: 100;
+    transition: width 0.3s ease;
+    overflow: hidden;
+}
+
+.sidebar-logged.expanded {
+    width: var(--sidebar-width-expanded);
+}
+
+/* 사이드바 헤더 */
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    padding: 20px 12px;
+    gap: 12px;
+}
+
+.logo-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.sidebar-logo-img {
+    width: 36px;
+    height: auto;
+}
+
+.sidebar-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar-logged.expanded .sidebar-title {
+    opacity: 1;
+}
+
+/* 사이드바 메뉴 */
+.sidebar-menu {
+    display: flex;
+    flex-direction: column;
+    padding: 10px 8px;
+    gap: 4px;
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: none;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    width: 100%;
+    text-align: left;
+}
+
+.menu-item:hover {
+    background: rgba(250, 176, 169, 0.3);
+}
+
+.menu-icon {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+.menu-text {
+    font-size: 14px;
+    color: var(--text-primary);
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar-logged.expanded .menu-text {
+    opacity: 1;
+}
+
+/* 채팅 기록 영역 */
+.chat-history-area {
+    flex: 1;
+    padding: 10px 8px;
+    overflow-y: auto;
+    display: none;
+}
+
+.sidebar-logged.expanded .chat-history-area {
+    display: block;
+}
+
+.chat-history-item {
+    padding: 10px 12px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background 0.2s ease;
+}
+
+.chat-history-item:hover {
+    background: rgba(250, 176, 169, 0.2);
+    color: var(--text-primary);
+}
+
+/* 사이드바 하단 */
+.sidebar-footer {
+    padding: 16px 8px;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+}
+
+.sidebar-logged.expanded .sidebar-footer {
+    display: flex;
+}
+
+.profile-area {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+}
+
+.profile-img {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.profile-name {
+    font-size: 14px;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar-logged.expanded .profile-name {
+    opacity: 1;
+}
+
+.settings-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 6px;
+    opacity: 0;
+    transition: opacity 0.3s ease, background 0.2s ease;
+}
+
+.sidebar-logged.expanded .settings-btn {
+    opacity: 1;
+}
+
+.settings-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.settings-icon {
+    width: 20px;
+    height: 20px;
+}
+
+/* 설정 모달 */
+.settings-modal {
+    position: absolute;
+    bottom: 70px;
+    left: 8px;
+    right: 8px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    padding: 8px;
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.settings-modal.show {
+    display: flex;
+}
+
+.settings-modal-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: none;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-primary);
+    transition: background 0.2s ease;
+    width: 100%;
+    text-align: left;
+}
+
+.settings-modal-item:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.settings-modal-item.logout {
+    color: #ff6b6b;
+}
+
+.settings-modal-icon {
+    width: 18px;
+    height: 18px;
+}
+
+/* 사이드바 닫기 버튼 */
+.close-sidebar-btn {
+    position: absolute;
+    top: 20px;
+    right: 12px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    opacity: 0;
+    transition: opacity 0.3s ease, background 0.2s ease;
+}
+
+.sidebar-logged.expanded .close-sidebar-btn {
+    opacity: 1;
+}
+
+.close-sidebar-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.close-icon {
+    width: 18px;
+    height: 18px;
 }
 
 /* 메인 컨테이너 */
@@ -321,4 +593,98 @@ body {
 .signup-link a:hover {
     text-decoration: underline;
     cursor:pointer;
+}
+
+/* 로그아웃 확인 모달 */
+.logout-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.logout-modal-overlay.show {
+    display: flex;
+}
+
+.logout-modal-content {
+    background: white;
+    border-radius: 16px;
+    padding: 24px 32px;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.logout-modal-content p {
+    font-size: 16px;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+}
+
+.logout-modal-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.logout-cancel-btn {
+    padding: 10px 24px;
+    background: #f5f5f5;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.logout-cancel-btn:hover {
+    background: #eee;
+}
+
+.logout-confirm-btn {
+    padding: 10px 24px;
+    background: var(--accent-coral);
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.logout-confirm-btn:hover {
+    background: var(--accent-flame);
+}
+
+/* 로그인 상태에 따른 레이아웃 변경 */
+body.logged-in .sidebar {
+    display: none;
+}
+
+body.logged-in .sidebar-logged {
+    display: flex;
+}
+
+body.logged-in .header {
+    display: none;
+}
+
+body.logged-in .main-container {
+    padding-left: 100px;
+    transition: padding-left 0.3s ease;
+}
+
+body.logged-in.sidebar-expanded .main-container {
+    padding-left: var(--sidebar-width-expanded);
+}
+
+body.logged-in.sidebar-expanded .header {
+    left: var(--sidebar-width-expanded);
 }
