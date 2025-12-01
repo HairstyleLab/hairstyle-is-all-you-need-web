@@ -128,11 +128,6 @@ function checkEmailAndEnableButton() {
 
 // 이메일 변경 여부 확인
 function checkIfEmailChanged() {
-    // 인증이 완료된 상태에서만 확인
-    if (!verificationCodeConfirmed) {
-        return;
-    }
-    
     const username = emailUsername.value.trim();
     let domain = '';
     
@@ -145,10 +140,13 @@ function checkIfEmailChanged() {
     
     const currentEmail = `${username}@${domain}`;
     
-    // 인증된 이메일과 다르면 인증 초기화
-    if (currentEmail !== verifiedEmail && verifiedEmail !== '') {
-        console.log('이메일이 변경됨. 인증 초기화');
-        resetVerification();
+    // 인증코드가 발송되었거나 인증이 완료된 경우
+    if ((verificationCodeSent || verificationCodeConfirmed) && verifiedEmail !== '') {
+        // 이메일이 변경되면 인증 초기화
+        if (currentEmail !== verifiedEmail) {
+            console.log('이메일이 변경됨. 인증 초기화');
+            resetVerification();
+        }
     }
 }
 
@@ -244,10 +242,10 @@ sendCodeBtn.addEventListener('click', async function() {
     
     const fullEmail = `${username}@${domain}`;
     
-    // 서버에 인증코드 발송 요청
+    // 서버에 인증코드 발송 요청 (비밀번호 찾기용)
     try {
         sendCodeBtn.disabled = true;
-        const response = await fetch('/uauth/send-verification-code/', {
+        const response = await fetch('/uauth/send-password-reset-code/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

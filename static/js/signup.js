@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', function() {
     nextBtn.addEventListener('click', function() {
         if (!this.disabled) {
             // 다음 단계로 이동
-            location.href = "/main/signup/form/";
+            location.href = "/uauth/signup/form/";
         }
     });
 });

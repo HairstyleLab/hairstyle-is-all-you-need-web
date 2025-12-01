@@ -4,7 +4,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const domainSelect = document.getElementById('domainSelect');
     const customDomain = document.getElementById('customDomain');
     const sendCodeBtn = document.getElementById('sendCodeBtn');
-    const verifySection = document.getElementById('verifySection');
     const verifyCode = document.getElementById('verifyCode');
     const timer = document.getElementById('timer');
     const verifyCodeBtn = document.getElementById('verifyCodeBtn');
@@ -39,7 +38,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let timeLeft = 180; // 3분
     let isEmailVerified = false;
     let isCodeSent = false;
-    const testVerifyCode = '1234'; // 테스트용 인증코드
 
     // 이메일 입력 체크
     function checkEmailInput() {
@@ -125,28 +123,60 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 인증코드 발송 버튼 클릭
-    sendCodeBtn.addEventListener('click', function() {
+    sendCodeBtn.addEventListener('click', async function() {
         if (this.disabled) return;
         
-        isCodeSent = true;
-        this.textContent = '코드 재발송';
-        this.classList.add('resend-btn');
-        
-        // 인증코드 입력창 활성화
-        verifyCode.disabled = false;
-        
-        // 타이머 시작
-        timeLeft = 180;
-        startTimer();
-        
-        // 안내 메시지
-        emailHelperText.textContent = '입력하신 이메일로 인증코드를 보내드렸습니다. 3분 안에 인증코드를 정확히 입력해주세요';
-        emailHelperText.style.color = 'var(--text-secondary)';
-        
-        // 에러/성공 메시지 초기화
-        verifyError.classList.remove('show');
-        verifySuccess.classList.remove('show');
-        verifyCodeBtn.disabled = true;
+        try {
+            // 이메일 조합
+            const domainValue = domainSelect.value === 'custom' ? customDomain.value.trim() : domainSelect.value;
+            const fullEmail = emailId.value.trim() + '@' + domainValue;
+            
+            // 서버에 인증코드 발송 요청
+            const response = await fetch('/uauth/send-verification-code/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email: fullEmail })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                const isResend = isCodeSent; // 재발송인지 확인
+                isCodeSent = true;
+                this.textContent = '코드 재발송';
+                this.classList.add('resend-btn');
+                
+                // 인증코드 입력창 활성화
+                verifyCode.disabled = false;
+                
+                // 타이머 시작
+                timeLeft = 180;
+                startTimer();
+                
+                // 안내 메시지 (처음 발송 vs 재발송)
+                if (isResend) {
+                    emailHelperText.textContent = '인증코드가 재발송되었습니다. 3분 안에 인증코드를 정확히 입력해주세요';
+                    emailHelperText.style.color = 'blue';
+                } else {
+                    emailHelperText.textContent = '입력하신 이메일로 인증코드를 보내드렸습니다. 3분 안에 인증코드를 정확히 입력해주세요';
+                }
+                emailHelperText.style.color = 'var(--text-primary)';
+                
+                // 에러/성공 메시지 초기화
+                verifyError.classList.remove('show');
+                verifySuccess.classList.remove('show');
+                verifyCodeBtn.disabled = true;
+            } else {
+                emailHelperText.textContent = data.message || '인증코드 발송에 실패했습니다.';
+                emailHelperText.style.color = '#ff6b4a';
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            emailHelperText.textContent = '인증코드 발송 중 오류가 발생했습니다.';
+            emailHelperText.style.color = '#ff6b4a';
+        }
     });
 
     // 타이머 시작
@@ -187,7 +217,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // 인증코드 확인 버튼 클릭
-    verifyCodeBtn.addEventListener('click', function() {
+    verifyCodeBtn.addEventListener('click', async function() {
         if (this.disabled) return;
         
         if (timeLeft <= 0) {
@@ -197,34 +227,60 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // 인증코드 확인 (테스트용)
-        if (verifyCode.value === testVerifyCode) {
-            // 인증 성공
-            isEmailVerified = true;
-            verifySuccess.textContent = '인증이 완료되었습니다.';
-            verifySuccess.classList.add('show');
-            verifyError.classList.remove('show');
-            verifyCodeBtn.disabled = true;
+        try {
+            // 이메일 조합
+            const domainValue = domainSelect.value === 'custom' ? customDomain.value.trim() : domainSelect.value;
+            const fullEmail = emailId.value.trim() + '@' + domainValue;
             
-            // 타이머 정지
-            if (timerInterval) {
-                clearInterval(timerInterval);
+            // 서버에 인증코드 확인 요청
+            const response = await fetch('/uauth/verify-code/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: fullEmail,
+                    code: verifyCode.value
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // 인증 성공
+                isEmailVerified = true;
+                verifySuccess.textContent = '인증이 완료되었습니다.';
+                verifySuccess.classList.add('show');
+                verifyError.classList.remove('show');
+                verifyCodeBtn.disabled = true;
+                
+                // 타이머 정지
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                }
+                
+                // 폼 필드 활성화
+                password.disabled = false;
+                passwordConfirm.disabled = false;
+                nickname.disabled = false;
+                
+                // 이메일 필드 비활성화
+                sendCodeBtn.disabled = true;
+                sendCodeBtn.textContent = "인증코드 발송";
+                sendCodeBtn.classList.remove('resend-btn');
+                verifyCode.disabled = true;
+                
+                checkSubmitBtn();
+            } else {
+                // 인증 실패
+                isEmailVerified = false;
+                verifyError.textContent = data.message || '인증코드가 일치하지 않습니다.';
+                verifyError.classList.add('show');
+                verifySuccess.classList.remove('show');
             }
-            
-            // 폼 필드 활성화
-            password.disabled = false;
-            passwordConfirm.disabled = false;
-            nickname.disabled = false;
-            
-            // 이메일 필드 비활성화
-            emailId.disabled = true;
-            domainSelect.disabled = true;
-            customDomain.disabled = true;
-            sendCodeBtn.disabled = true;
-            verifyCode.disabled = true;
-        } else {
-            // 인증 실패
-            verifyError.textContent = '인증코드가 틀렸습니다. 다시 확인해주세요.';
+        } catch (error) {
+            console.error('Error:', error);
+            verifyError.textContent = '인증 확인 중 오류가 발생했습니다.';
             verifyError.classList.add('show');
             verifySuccess.classList.remove('show');
         }
@@ -362,22 +418,6 @@ document.addEventListener('DOMContentLoaded', function() {
             overallError.classList.remove('show');
         } else {
             submitBtn.disabled = true;
-            
-            // 오류 메시지 설정
-            if (!isEmailVerified) {
-                // 이메일 인증이 안됐으면 표시 안함
-            } else if (!isPasswordValid && password.value.length > 0) {
-                overallError.textContent = '사용 불가능한 비밀번호입니다.';
-                overallError.classList.add('show');
-            } else if (!isPasswordMatch && passwordConfirm.value.length > 0) {
-                overallError.textContent = '비밀번호가 일치하지 않습니다.';
-                overallError.classList.add('show');
-            } else if (!isNicknameValid && nickname.value.length > 0) {
-                overallError.textContent = '사용 불가능한 닉네임입니다.';
-                overallError.classList.add('show');
-            } else {
-                overallError.classList.remove('show');
-            }
         }
     }
 
@@ -387,13 +427,50 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // 폼 제출
-    signupForm.addEventListener('submit', function(e) {
+    signupForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         
         if (!submitBtn.disabled) {
-            // 회원가입 완료 후 메인으로 이동
-            alert('회원가입이 완료되었습니다!');
-            location.href = '/main/';
+            try {
+                // 이메일 조합
+                const domainValue = domainSelect.value === 'custom' ? customDomain.value.trim() : domainSelect.value;
+                const fullEmail = emailId.value.trim() + '@' + domainValue;
+                
+                const formData = new FormData();
+                formData.append('email', fullEmail);
+                formData.append('password', password.value);
+                formData.append('nickname', nickname.value);
+                
+                // 프로필 이미지가 있으면 추가
+                if (profileImage && profileImage.files.length > 0) {
+                    formData.append('profile_image', profileImage.files[0]);
+                }
+                
+                const response = await fetch('/uauth/signup-api/', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // 성공 모달 표시
+                    successModal.classList.add('show');
+                } else {
+                    overallError.textContent = data.message || '회원가입에 실패했습니다.';
+                    overallError.classList.add('show');
+                }
+            } catch (error) {
+                console.error('Signup error:', error);
+                overallError.textContent = '서버 오류가 발생했습니다.';
+                overallError.classList.add('show');
+            }
         }
     });
+});
+
+// 모달 확인 버튼 클릭
+modalConfirmBtn.addEventListener('click', function() {
+    successModal.classList.remove('show');
+    window.location.href = '/main';
 });
