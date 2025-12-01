@@ -10,3 +10,6 @@ def find_password(request):
 
 def signup(request):
     return render(request, 'main/signup.html')
+
+def signup_form(request):
+    return render(request, 'main/signup_form.html')
