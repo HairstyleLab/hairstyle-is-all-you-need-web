@@ -83,17 +83,23 @@ WSGI_APPLICATION = "hairstyleLab.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': DB_ENGINE,
+#         'NAME': DB_NAME,
+#         'USER': DB_USER,
+#         'PASSWORD': DB_PASSWORD1,
+#         'HOST': DB_HOST,
+#         'PORT': DB_PORT,
+#         'OPTIONS': {
+#             'charset': 'utf8mb4'
+#         }
+#     }
+# }
 DATABASES = {
-    'default': {
-        'ENGINE': DB_ENGINE,
-        'NAME': DB_NAME,
-        'USER': DB_USER,
-        'PASSWORD': DB_PASSWORD1,
-        'HOST': DB_HOST,
-        'PORT': DB_PORT,
-        'OPTIONS': {
-            'charset': 'utf8mb4'
-        }
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
 }
 
@@ -136,6 +142,14 @@ STATIC_URL = "static/"
 STATICFILES_DIRS = [
      BASE_DIR / 'static'
 ]
+
+
+# Custom User Model
+AUTH_USER_MODEL = 'uauth.User'
+
+# Media files
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
