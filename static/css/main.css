@@ -1,0 +1,324 @@
+
+:root {
+    --bg-primary: #fff;
+    --accent-flame: #ff6b4a;
+    --accent-coral: #ffb5a0;
+    --text-primary: #333;
+    --text-secondary: #ABA7A7;
+    --text-muted: #a69388;
+    --border-light: #e8ddd4;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Noto Sans KR', -apple-system, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    overflow-x: hidden;
+}
+
+/* 사이드바 */
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 60px;
+    height: 100vh;
+    background: linear-gradient(to right, rgba(250, 176, 169, 0.2), rgba(255, 255, 255, 0));
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 30px;
+    z-index: 100;
+}
+
+.sidebar-logo {
+    width: 44px;
+    height: 108px;
+}
+
+/* 메인 컨테이너 */
+.main-container {
+    min-height: 100vh;
+    padding-left: 60px;
+}
+
+/* 헤더 */
+.header {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 60px;
+    padding: 30px 40px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    background: transparent;
+    z-index: 50;
+}
+
+.login-btn {
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    background: #FEF9D9;
+    width: 110px;
+    height: 40px;
+    border-radius: 30px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.login-btn:hover{
+    border:#FAB0A9;
+}
+
+
+.login-icon {
+    width: 16px;
+    height: 16px;
+}
+
+/* 메인 콘텐츠 */
+.content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 0 20px;
+}
+
+.greeting {
+    font-size: 40px;
+    font-weight: 400;
+    color: var(--text-primary);
+    text-align: center;
+    margin-bottom: 80px;
+    letter-spacing: -0.02em;
+}
+
+/* 입력 필드 */
+.input-area {
+    width: 100%;
+    max-width: 880px;
+}
+
+.input-container {
+    position: relative;
+    background: white;
+    border: 1px solid var(--border-light);
+    border-radius: 30px;
+    padding: 0 10px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.add-icon {
+    width: 24px;
+    height: 24px;
+    color: var(--text-secondary);
+    cursor: not-allowed;
+    flex-shrink: 0;
+}
+
+.input-field {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 20px;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--text-primary);
+    background: transparent;
+}
+
+.input-field::placeholder {
+    color: transparent;
+}
+
+.send-btn {
+    width: 36px;
+    height: 36px;
+    background: #D9D9D9;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: not-allowed;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+
+.send-btn:not(:disabled){
+    cursor:pointer;
+    background:#FEF9D9;
+}
+
+.send-icon {
+    width: 20px;
+    height: 20px;
+}
+
+/* 로그인 모달 */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding: 90px 40px 40px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 1000;
+}
+
+.modal-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 20px;
+    padding: 32px;
+    width: 400px;
+    max-width: 90vw;
+    box-shadow: 0 20px 60px rgba(42, 36, 32, 0.15);
+    transform: translateY(-10px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal-overlay.active .modal-content {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.modal-header {
+    margin-bottom: 24px;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-label {
+    display: block;
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.form-input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    font-size: 15px;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+    background: #fafaf9;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--accent-flame);
+    background: white;
+}
+
+.form-input::placeholder {
+    color: var(--text-muted);
+}
+
+.form-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+}
+
+.forgot-password {
+    color: var(--text-secondary);
+    text-align: right;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.forgot-password:hover {
+    text-decoration: underline;
+    cursor:pointer;
+}
+
+.error-message {
+    color: var(--accent-flame);
+    font-size: 13px;
+    margin-top: 8px;
+    display: none;
+}
+
+.error-message.show {
+    display: block;
+}
+
+.submit-btn {
+    width: 100%;
+    padding: 14px;
+    background: #D9D9D9;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: all 0.2s ease;
+    margin-bottom: 16px;
+}
+
+.submit-btn:not(:disabled) {
+    background: #FAB0A9;
+    cursor:pointer;
+    color:#333;
+}
+
+.submit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.signup-link {
+    text-align: right;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.signup-link a {
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.signup-link a:hover {
+    text-decoration: underline;
+    cursor:pointer;
+}
