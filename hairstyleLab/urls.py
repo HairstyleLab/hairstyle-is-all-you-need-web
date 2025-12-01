@@ -23,4 +23,5 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("",RedirectView.as_view(url="main/")),
     path("main/",include('main.urls')),
+    path("uauth/", include('uauth.urls')),
 ]
