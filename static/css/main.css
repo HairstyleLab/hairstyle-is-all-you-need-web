@@ -9,7 +9,7 @@
     --text-muted: #a69388;
     --border-light: #e8ddd4;
     --sidebar-bg: rgba(250, 176, 169, 0.15);
-    --sidebar-width-collapsed: 100px;
+    --sidebar-width-collapsed: 60px;
     --sidebar-width-expanded: 280px;
 }
 
@@ -53,7 +53,8 @@ body {
     top: 0;
     width: var(--sidebar-width-collapsed);
     height: 100vh;
-    background: linear-gradient(to bottom, rgba(250, 176, 169, 0.2), rgba(250, 176, 169, 0.1));
+    background: linear-gradient(to right, rgba(250, 176, 169, 0.2), rgba(255, 255, 255, 0));
+    box-shadow:rgba(0, 0, 0, 0.05);
     display: none;
     flex-direction: column;
     z-index: 100;
@@ -302,6 +303,7 @@ body {
     font-size: 13px;
     color: var(--text-primary);
     transition: background 0.2s ease;
+    animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     width: 100%;
     text-align: left;
 }
@@ -848,7 +850,7 @@ body.logged-in.sidebar-expanded .header {
 
 .confirm-btn {
     padding: 12px 24px;
-    background: var(--accent-coral);
+    background: var(--sidebar-bg);
     border: none;
     border-radius: 10px;
     font-size: 16px;

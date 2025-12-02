@@ -5,6 +5,7 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 from .utils import send_verification_email, verify_email_code, check_email_exists
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from .models import User
 
 def find_password(request):
@@ -37,7 +38,7 @@ def send_verification_code(request):
                 'message': '이미 사용 중인 이메일입니다.'
             }, status=400)
         
-        success, result = send_verification_email(email)
+        success, result = send_verification_email(email, request)
         
         if success:
             return JsonResponse({
@@ -83,7 +84,7 @@ def send_password_reset_code(request):
                 'message': '가입되어 있지 않은 이메일입니다.'
             }, status=400)
         
-        success, result = send_verification_email(email)
+        success, result = send_verification_email(email, request)
         
         if success:
             return JsonResponse({
@@ -123,7 +124,7 @@ def verify_code(request):
                 'message': '이메일과 인증코드를 입력해주세요.'
             }, status=400)
         
-        success, message = verify_email_code(email, code)
+        success, message = verify_email_code(email, code, request)
         
         return JsonResponse({
             'success': success,
@@ -265,12 +266,16 @@ def signup_view(request):
 def check_login_status(request):
     """로그인 상태 확인"""
     if request.user.is_authenticated:
+        profile_image_url = None
+        if request.user.profile_image:
+            profile_image_url = request.user.profile_image.url
+        
         return JsonResponse({
             'is_logged_in': True,
             'user': {
                 'email': request.user.email,
                 'nickname': request.user.nickname,
-                'profile_image': request.user.profile_image.url if request.user.profile_image else None
+                'profile_image': profile_image_url
             }
         })
     else:
@@ -322,6 +327,32 @@ def reset_password(request):
             'success': False,
             'message': f'오류가 발생했습니다: {str(e)}'
         }, status=500)
+    
+@login_required
+@csrf_exempt
+@require_http_methods(["POST"])
+def update_profile(request):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "POST 요청만 허용됩니다."})
+
+    user = request.user
+
+    # 닉네임 수정
+    nickname = request.POST.get("nickname")
+    if nickname:
+        user.nickname = nickname
+
+    # 프로필 이미지 수정
+    if "profile_image" in request.FILES:
+        user.profile_image = request.FILES["profile_image"]
+
+    user.save()
+
+    return JsonResponse({
+        "success": True,
+        "nickname": user.nickname,
+        "profile_image": user.profile_image.url if user.profile_image else None
+    })
 
 
 @csrf_exempt
@@ -384,6 +415,7 @@ def change_password(request):
             'success': False,
             'message': f'오류가 발생했습니다: {str(e)}'
         }, status=500)
+<<<<<<< HEAD
         
 @csrf_exempt
 @require_http_methods(["POST"])
@@ -420,3 +452,5 @@ def withdraw(request):
             'success': False,
             'message': f'오류가 발생했습니다: {str(e)}'
         }, status=500)
+=======
+>>>>>>> origin/develop
