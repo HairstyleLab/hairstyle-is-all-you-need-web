@@ -51,28 +51,17 @@
             <div class="profile-area">
                 <img src="{% static 'images/default_profile.png'%}" alt="프로필" class="profile-img" id="profileImg"/>
                 <span class="profile-name">사용자</span>
+                <!-- 설정 버튼 -->
+                <button class="settings-btn" id="settingsBtn">
+                    <img src="{% static 'images/settings_icon.png'%}" alt="설정" class="settings-icon"/>
+                </button>
             </div>
-            
-            <!-- 설정 버튼 -->
-            <button class="settings-btn" id="settingsBtn">
-                <img src="{% static 'images/settings_icon.png'%}" alt="설정" class="settings-icon"/>
-            </button>
+
+            <!-- 로그아웃 링크 -->
+            <button class="logout-sidebar-btn" id="logoutSidebarBtn">로그아웃</button>
 
             <!-- 설정 모달 -->
-            <div class="settings-modal" id="settingsModal">
-                <button class="settings-modal-item" id="editProfileBtn">
-                    <img src="{% static 'images/edit_icon.png'%}" alt="프로필 편집" class="settings-modal-icon"/>
-                    <span>프로필 편집</span>
-                </button>
-                <button class="settings-modal-item" id="changePasswordBtn">
-                    <img src="{% static 'images/password_icon.png'%}" alt="비밀번호 수정" class="settings-modal-icon"/>
-                    <span>비밀번호 수정</span>
-                </button>
-                <button class="settings-modal-item logout" id="logoutBtn">
-                    <img src="{% static 'images/logout_icon.png'%}" alt="회원탈퇴" class="settings-modal-icon"/>
-                    <span>회원탈퇴</span>
-                </button>
-            </div>
+            {% include 'main/settings_modal.html' %}
         </div>
 
         <!-- 사이드바 닫기 버튼 -->
@@ -96,7 +85,7 @@
 
         <!-- 메인 콘텐츠 -->
         <main class="content">
-            <h1 class="greeting">안녕하세요</h1>
+            <h1 class="greeting" id="greeting">안녕하세요</h1>
 
             <div class="input-area">
                 <div class="input-container">
@@ -111,40 +100,14 @@
     </div>
 
     <!-- 로그인 모달 -->
-    <div class="modal-overlay" id="loginModal" onclick="closeModalOnOverlay(event)">
-        <div class="modal-content" onclick="event.stopPropagation()">
-            <form id="loginForm" onsubmit="handleLogin(event)">
-                <div class="form-group">
-                    <label class="form-label">이메일</label>
-                    <input type="email" class="form-input" id="email" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">비밀번호</label>
-                    <input type="password" class="form-input" id="password" required>
-                </div>
-                <div class="form-footer">
-                    <a type='button' class="forgot-password" onclick="location.href=`{% url 'uauth:find_password' %}`">비밀번호 찾기</a>
-                </div>
-                <div class="error-message" id="errorMessage"></div>
-                <button type="submit" class="submit-btn" id="submitBtn">로그인</button>
-                <div class="signup-link">
-                    회원이 아니신가요? 
-                    <a type='button' id='signupBtn' onclick="location.href=`{% url 'uauth:signup' %}`">회원가입 하기</a>
-                </div>
-            </form>
-        </div>
-    </div>
+    {% include 'main/login_modal.html' %}
 
     <!-- 로그아웃 확인 모달 -->
-    <div class="logout-modal-overlay" id="logoutModal">
-        <div class="logout-modal-content">
-            <p>정말 로그아웃 하시겠습니까?</p>
-            <div class="logout-modal-buttons">
-                <button class="logout-cancel-btn" id="logoutCancelBtn">취소</button>
-                <button class="logout-confirm-btn" id="logoutConfirmBtn">로그아웃</button>
-            </div>
-        </div>
-    </div>
+    {% include 'main/logout_modal.html' %}
+    
+    <!-- 확인 모달 -->
+    {% include 'main/confirm_modal.html' %}
+
 {% endblock content %}
 {% block script %}
 <script src="{% static 'js/main.js' %}"></script>

@@ -177,8 +177,9 @@ body {
     padding: 16px 8px;
     border-top: 1px solid rgba(0, 0, 0, 0.05);
     display: none;
+    flex-direction: column;
     align-items: center;
-    justify-content: space-between;
+    gap: 12px;
     position: relative;
 }
 
@@ -192,18 +193,20 @@ body {
     gap: 10px;
     flex: 1;
     min-width: 0;
+    width: 100%;
+    justify-content: flex-start;
 }
 
 .profile-img {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     object-fit: cover;
     flex-shrink: 0;
 }
 
 .profile-name {
-    font-size: 14px;
+    font-size: 16px;
     color: var(--text-primary);
     white-space: nowrap;
     overflow: hidden;
@@ -216,14 +219,43 @@ body {
     opacity: 1;
 }
 
+/* 로그아웃 링크 */
+.logout-sidebar-btn {
+    margin-top: 8px;
+    padding: 0;
+    background: none;
+    border: none;
+    font-size: 13px;
+    color: #999;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    opacity: 0;
+    font-family: 'Noto Sans KR', sans-serif;
+    text-align: left;
+    width: 100%;
+}
+
+.sidebar-logged.expanded .logout-sidebar-btn {
+    opacity: 1;
+}
+
+.logout-sidebar-btn:hover {
+    color: var(--text-primary);
+    text-decoration: underline;
+}
+
+/* 로그아웃 버튼 */
+
+
 .settings-btn {
     background: none;
     border: none;
     cursor: pointer;
     padding: 8px;
-    border-radius: 6px;
+    border-radius: 10px;
     opacity: 0;
     transition: opacity 0.3s ease, background 0.2s ease;
+    margin-left: auto;
 }
 
 .sidebar-logged.expanded .settings-btn {
@@ -235,15 +267,14 @@ body {
 }
 
 .settings-icon {
-    width: 20px;
-    height: 20px;
+    width: 25px;
+    height: 25px;
 }
 
 /* 설정 모달 */
 .settings-modal {
     position: absolute;
     bottom: 70px;
-    left: 8px;
     right: 8px;
     background: white;
     border-radius: 12px;
@@ -251,6 +282,7 @@ body {
     padding: 8px;
     display: none;
     flex-direction: column;
+    width:150px;
     gap: 4px;
 }
 
@@ -614,23 +646,32 @@ body {
 }
 
 .logout-modal-content {
+    width: 360px;
+    height: 230px;
     background: white;
-    border-radius: 16px;
-    padding: 24px 32px;
-    text-align: center;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    border-radius: 20px;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 .logout-modal-content p {
-    font-size: 16px;
+    font-size: 20px;
     color: var(--text-primary);
     margin-bottom: 20px;
+    font-weight: bold;
 }
 
 .logout-modal-buttons {
     display: flex;
+    flex-direction: column;
     gap: 12px;
     justify-content: center;
+    width: 100%;
 }
 
 .logout-cancel-btn {
@@ -687,4 +728,71 @@ body.logged-in.sidebar-expanded .main-container {
 
 body.logged-in.sidebar-expanded .header {
     left: var(--sidebar-width-expanded);
+}
+
+/* 확인 모달 */
+.confirm-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.confirm-modal-overlay.show {
+    display: flex;
+}
+
+.confirm-modal-content {
+    width: 360px;
+    height: 230px;
+    background: white;
+    border-radius: 20px;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.confirm-modal-content p {
+    font-size: 16px;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.confirm-modal-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    justify-content: center;
+    width: 100%;
+}
+
+.confirm-btn {
+    padding: 12px 24px;
+    background: var(--accent-coral);
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    font-weight: 500;
+    height: 49px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.confirm-btn:hover {
+    background: var(--accent-flame);
 }

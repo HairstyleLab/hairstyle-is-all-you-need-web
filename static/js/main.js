@@ -12,9 +12,12 @@ const closeSidebarBtn = document.getElementById('closeSidebarBtn');
 const settingsBtn = document.getElementById('settingsBtn');
 const settingsModal = document.getElementById('settingsModal');
 const logoutBtn = document.getElementById('logoutBtn');
+const logoutSidebarBtn = document.getElementById('logoutSidebarBtn');
 const logoutModal = document.getElementById('logoutModal');
 const logoutCancelBtn = document.getElementById('logoutCancelBtn');
 const logoutConfirmBtn = document.getElementById('logoutConfirmBtn');
+const confirmModal = document.getElementById('confirmModal');
+const confirmBtn = document.getElementById('confirmBtn');
 
 // 페이지 로드 시 로그인 상태 확인
 document.addEventListener('DOMContentLoaded', async function() {
@@ -49,12 +52,16 @@ function updateUserProfile() {
     if (currentUser) {
         const profileName = document.querySelector('.profile-name');
         const profileImg = document.getElementById('profileImg');
+        const greeting = document.getElementById('greeting');
         
         if (profileName) {
             profileName.textContent = currentUser.nickname || '사용자';
         }
         if (profileImg && currentUser.profile_image) {
             profileImg.src = currentUser.profile_image;
+        }
+        if (greeting) {
+            greeting.textContent = `안녕하세요, ${currentUser.nickname || '사용자'}님😊`;
         }
     }
 }
@@ -97,6 +104,13 @@ function initSidebarEvents() {
     if (logoutBtn) {
         logoutBtn.addEventListener('click', function() {
             settingsModal.classList.remove('show');
+            logoutModal.classList.add('show');
+        });
+    }
+
+    // 사이드바 로그아웃 버튼 클릭 시 로그아웃 모달 표시
+    if (logoutSidebarBtn) {
+        logoutSidebarBtn.addEventListener('click', function() {
             logoutModal.classList.add('show');
         });
     }
@@ -172,6 +186,9 @@ async function handleLogout() {
             logoutModal.classList.remove('show');
             updateUIForLoginState();
             collapseSidebar();
+            // 확인 모달 표시
+            showConfirmModal('로그아웃 되었습니다.');
+            greeting.textContent = `안녕하세요`;
         }
     } catch (error) {
         // 서버 연결 실패 시에도 로컬에서 로그아웃 처리
@@ -180,6 +197,8 @@ async function handleLogout() {
         logoutModal.classList.remove('show');
         updateUIForLoginState();
         collapseSidebar();
+        // 확인 모달 표시
+        showConfirmModal('로그아웃 되었습니다.');
     }
 }
 
@@ -350,4 +369,24 @@ async function handleLogin(event) {
         submitBtn.disabled = false;
         submitBtn.textContent = '로그인';
     }
+}
+
+// 확인 모달 표시 함수
+function showConfirmModal(message) {
+    const confirmMessage = document.getElementById('confirmMessage');
+    if (confirmMessage) {
+        confirmMessage.textContent = message;
+    }
+    if (confirmModal) {
+        confirmModal.classList.add('show');
+    }
+}
+
+// 확인 버튼 클릭 이벤트
+if (confirmBtn) {
+    confirmBtn.addEventListener('click', function() {
+        if (confirmModal) {
+            confirmModal.classList.remove('show');
+        }
+    });
 }
