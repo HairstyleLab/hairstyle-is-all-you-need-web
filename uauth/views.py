@@ -265,12 +265,16 @@ def signup_view(request):
 def check_login_status(request):
     """로그인 상태 확인"""
     if request.user.is_authenticated:
+        profile_image_url = None
+        if request.user.profile_image:
+            profile_image_url = request.user.profile_image.url
+        
         return JsonResponse({
             'is_logged_in': True,
             'user': {
                 'email': request.user.email,
                 'nickname': request.user.nickname,
-                'profile_image': request.user.profile_image.url if request.user.profile_image else None
+                'profile_image': profile_image_url
             }
         })
     else:
