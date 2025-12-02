@@ -797,6 +797,17 @@ body.logged-in.sidebar-expanded .main-container {
     padding-left: var(--sidebar-width-expanded);
 }
 
+/* 패널만 열림 (sidebar 접힘) */
+body.logged-in.pictorial-open .main-container {
+    padding-left: calc(60px + 800px);
+    transition: padding-left .3s ease;
+}
+
+/* 패널 열림 + sidebar 펼쳐짐 */
+body.logged-in.sidebar-expanded.pictorial-open .main-container {
+    padding-left: calc(var(--sidebar-width-expanded) + 800px);
+}
+
 body.logged-in.sidebar-expanded .header {
     left: var(--sidebar-width-expanded);
 }

@@ -176,6 +176,9 @@ function initSidebarEvents() {
     // 로고 클릭 시 사이드바 확장
     if (toggleSidebarBtn) {
         toggleSidebarBtn.addEventListener('click', function() {
+            if (document.body.classList.contains("pictorial-open")) {
+                return;
+            }
             toggleSidebar();
         });
     }
@@ -261,6 +264,7 @@ function initSidebarEvents() {
     if (galleryBtn) {
         galleryBtn.addEventListener('click', () => location.href = '/main/gallery/');
     }
+
 }
 
 // 사이드바 확장/축소 토글

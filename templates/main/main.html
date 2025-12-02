@@ -3,7 +3,6 @@
 
 {% block content %}
 
-
     <!-- 사이드바 -->
     <aside class="sidebar" id="sidebar">
         <img class='sidebar-logo' src="{% static 'images/small_logo.png'%}"/>
@@ -104,6 +103,9 @@
         </main>
     </div>
 
+    <!-- 헤어도감 -->
+    {% include 'main/pictorial_book.html' %}
+
     <!-- 로그인 모달 -->
     {% include 'main/login_modal.html' %}
 
@@ -122,4 +124,5 @@
 {% endblock content %}
 {% block script %}
 <script src="{% static 'js/main.js' %}"></script>
+<script src="{% static 'js/pictorial_book.js' %}"></script>
 {% endblock script %}

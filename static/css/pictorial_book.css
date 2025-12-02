@@ -1,0 +1,136 @@
+/* 사이드바 오른쪽에 고정되는 wrapper */
+.pictorial-wrapper {
+    position: fixed;
+    top: 0;
+    left: var(--sidebar-width-collapsed);
+    width: 600px;
+    height: 100vh;
+    overflow: visible;
+    z-index: 1;
+}
+
+/* 사이드바 확장 시 위치 이동 */
+body.sidebar-expanded .pictorial-wrapper {
+    left: var(--sidebar-width-expanded);
+}
+
+/* 패널 기본 상태: 왼쪽으로 숨김 */
+.pictorial-book {
+    position: absolute;
+    top: 0;
+    left: 0;
+
+    width: 800px;
+    height: 100vh;
+
+    background-color: #ffe6f2;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+
+    transform: translateX(-100%); /* <- 정확히 panel width만큼 숨김 */
+    opacity: 0;
+    pointer-events: none;
+
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* 열릴 때 */
+.pictorial-book.open {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.pictorial-content {
+    padding: 20px;
+    margin-top: 100px; 
+    height: calc(100vh - 60px);
+    overflow-y: auto;
+}
+
+/* 툴바 */
+.pictorial-toolbar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.pt-select {
+    padding: 8px 14px;
+    border: none;
+    background: #ffb8c6;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.pt-gender {
+    padding: 8px 14px;
+    background: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.pt-search {
+    position: relative;
+    width: 400px;
+    left: 50px;
+    display: flex;
+    padding: 0 12px;
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 0 12px;
+    border: 1px solid #ddd;
+}
+
+.pt-search input {
+    width: 100%;
+    padding: 6px;
+    border: none;
+    background: none;
+    outline: none;
+    font-size: 14px;
+}
+
+/* 태그 */
+.pictorial-filter {
+    padding: 6px 4px;
+    border-bottom: 1px solid #f2b4be;
+    margin-bottom: 20px;
+}
+
+/* 카드 그리드 */
+.pictorial-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+}
+
+/* 카드 */
+.pt-card {
+    background: #fff;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.08);
+    transition: transform .2s ease;
+    cursor: pointer;
+    text-align: center;
+}
+
+.pt-card:hover {
+    transform: translateY(-5px);
+}
+
+.pt-card img {
+    width: 100%;
+    display: block;
+}
+
+.pt-card-name {
+    padding: 12px 0;
+    font-size: 15px;
+    font-weight: 600;
+}
