@@ -89,11 +89,19 @@
 
             <div class="input-area">
                 <div class="input-container">
-                    <img src="{% static 'images/add_icon.png' %}" class="add-icon" id="add-icon" alt="추가">
-                    <input type="text" class="input-field" id="messageInput">
-                    <button class="send-btn" id="sendBtn" disabled>
-                        <img src="{% static 'images/send_icon.png' %}" class="send-icon" alt="전송">
-                    </button>
+                    <!-- Add Icon 모달 -->
+                    {% include 'main/add_icon_modal.html' %}
+                    <div class="image-preview-container" id="imagePreviewContainer" style="display: none;">
+                        <img id="previewImage" class="preview-image" alt="선택된 이미지">
+                        <button type="button" class="remove-image-btn" id="removeImageBtn">×</button>
+                    </div>
+                    <div class="input-other-content">
+                        <img src="{% static 'images/add_icon.png' %}" class="add-icon" id="add-icon" alt="추가">
+                        <textarea class="input-field" id="messageInput"></textarea>
+                        <button class="send-btn" id="sendBtn" disabled>
+                            <img src="{% static 'images/send_icon.png' %}" class="send-icon" alt="전송">
+                        </button>
+                    </div>
                 </div>
             </div>
         </main>
