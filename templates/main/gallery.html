@@ -95,7 +95,7 @@
                 <div class="gallery-item">
                     <div class="image-wrapper">
                         <img
-                        src="{% static 'images/'|add:image %}"
+                        src="{{ image.image_path.url }}"
                         alt="갤러리 이미지 {{ forloop.counter }}"
                         class="gallery-image"
                         data-filename="{{ image }}"
