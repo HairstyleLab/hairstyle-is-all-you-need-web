@@ -5,6 +5,7 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 from .utils import send_verification_email, verify_email_code, check_email_exists
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from .models import User
 
 def find_password(request):
@@ -326,6 +327,32 @@ def reset_password(request):
             'success': False,
             'message': f'오류가 발생했습니다: {str(e)}'
         }, status=500)
+    
+@login_required
+@csrf_exempt
+@require_http_methods(["POST"])
+def update_profile(request):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "POST 요청만 허용됩니다."})
+
+    user = request.user
+
+    # 닉네임 수정
+    nickname = request.POST.get("nickname")
+    if nickname:
+        user.nickname = nickname
+
+    # 프로필 이미지 수정
+    if "profile_image" in request.FILES:
+        user.profile_image = request.FILES["profile_image"]
+
+    user.save()
+
+    return JsonResponse({
+        "success": True,
+        "nickname": user.nickname,
+        "profile_image": user.profile_image.url if user.profile_image else None
+    })
 
 
 @csrf_exempt

@@ -18,12 +18,71 @@ const logoutCancelBtn = document.getElementById('logoutCancelBtn');
 const logoutConfirmBtn = document.getElementById('logoutConfirmBtn');
 const confirmModal = document.getElementById('confirmModal');
 const confirmBtn = document.getElementById('confirmBtn');
+const editProfileBtn = document.getElementById('editProfileBtn');
+const profileEditModal = document.getElementById('profileEditModal');
+const formData = new FormData();
 
 // 페이지 로드 시 로그인 상태 확인
 document.addEventListener('DOMContentLoaded', async function() {
     await checkLoginStatus();
     initSidebarEvents();
     initTextareaAutoResize();
+
+    const editIcon = document.getElementById("editProfileImageBtn");
+    const fileInput = document.getElementById("profileImgInput");
+    const previewImg = document.getElementById("modalProfileImg");
+
+    if (editIcon && fileInput && previewImg) {
+        editIcon.addEventListener("click", function () {
+            fileInput.click();
+        });
+
+        // 이미지 파일 선택 → 즉시 모달 이미지 미리보기 변경
+        fileInput.addEventListener("change", function (event) {
+            const file = event.target.files[0];
+            if (file) {
+                const previewUrl = URL.createObjectURL(file);
+                previewImg.src = previewUrl;
+            }
+        });
+    }
+
+    const saveBtn = document.getElementById("profileSaveBtn");
+    const nicknameInput = document.getElementById("nicknameInput");
+
+    if (saveBtn && nicknameInput) {
+        saveBtn.addEventListener("click", async function () {
+            const formData = new FormData();
+            formData.append("nickname", nicknameInput.value);
+
+            if (fileInput && fileInput.files.length > 0) {
+                formData.append("profile_image", fileInput.files[0]);
+            }
+
+            const res = await fetch("/uauth/profile/edit/", {
+                method: "POST",
+                body: formData,
+                headers: {
+                    "X-CSRFToken": getCookie("csrftoken")
+                }
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                // 서버 업데이트 후, 전역 currentUser 최신화
+                currentUser.nickname = data.nickname;
+                currentUser.profile_image = data.profile_image;
+
+                // UI 전역 반영
+                updateUserProfile();
+
+                // 모달 닫기
+                document.getElementById("profileEditModal").classList.remove("show");
+            }
+        });
+    }
+
 });
 
 // Textarea 자동 높이 조정
@@ -74,25 +133,33 @@ async function checkLoginStatus() {
 
 // 사용자 프로필 업데이트
 function updateUserProfile() {
-    if (currentUser) {
-        const profileName = document.querySelector('.profile-name');
-        const profileImg = document.getElementById('profileImg');
-        const greeting = document.getElementById('greeting');
-        
-        if (profileName) {
-            profileName.textContent = currentUser.nickname || '사용자';
-        }
-        if (profileImg && currentUser.profile_image) {
-            profileImg.src = currentUser.profile_image;
-        }
-        if (greeting) {
-            greeting.textContent = `안녕하세요, ${currentUser.nickname || '사용자'}님😊`;
-        }
-        
-        // 프로필 이미지 버튼 상태 업데이트
+    if (!currentUser) return;
+
+    const profileName = document.querySelector('.profile-name');
+    const sidebarImg = document.getElementById('profileImg');
+    const modalImg = document.getElementById('modalProfileImg');
+    const greeting = document.getElementById('greeting');
+
+    // 닉네임 업데이트
+    if (profileName) {
+        profileName.textContent = currentUser.nickname || '사용자';
+    }
+
+    if (sidebarImg && currentUser.profile_image) {
+        sidebarImg.src = currentUser.profile_image + "?t=" + new Date().getTime();
+    }
+
+    if (modalImg && currentUser.profile_image) {
+        modalImg.src = currentUser.profile_image + "?t=" + new Date().getTime();
+    }
+
+    // 상단 인사말 업데이트
+    if (greeting) {
+        greeting.textContent = `안녕하세요, ${currentUser.nickname || '사용자'}님😊`;
         updateProfileImageButtonState();
     }
 }
+
 
 // 로그인 상태에 따른 UI 업데이트
 function updateUIForLoginState() {
@@ -171,6 +238,23 @@ function initSidebarEvents() {
             location.href = '/main/';
         });
     }
+
+    if (editProfileBtn && profileEditModal) {
+        editProfileBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            settingsModal.classList.remove('show');
+            profileEditModal.classList.add('show');
+        });
+    }
+
+    // 프로필 편집 모달 닫기
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('close-modal')) {
+            const targetId = e.target.dataset.target;
+            const modal = document.getElementById(targetId);
+            if (modal) modal.classList.remove('show');
+        }
+    });
     
     // 갤러리 버튼
     const galleryBtn = document.getElementById('galleryBtn');
@@ -407,6 +491,46 @@ if (confirmBtn) {
     });
 }
 
+// 프로필 수정 저장 버튼
+const profileSaveBtn = document.getElementById("profileSaveBtn");
+const nicknameInput = document.getElementById("nicknameInput");
+const profileImgInput = document.getElementById("profileImgInput");
+
+// "수정" 버튼 클릭 시 API 호출
+if (profileSaveBtn) {
+    profileSaveBtn.addEventListener("click", () => {
+        const formData = new FormData();
+        formData.append("nickname", nicknameInput.value.trim());
+        if (profileImgInput.files[0]) {
+            formData.append("profile_image", profileImgInput.files[0]);
+        }
+
+        fetch("/uauth/profile/edit/", {
+            method: "POST",
+            body: formData,
+            headers: {
+                "X-CSRFToken": getCookie("csrftoken"),
+            },
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+
+                // DB에서 받은 최신 정보로 currentUser 갱신
+                currentUser.nickname = data.nickname;
+                if (data.profile_image) {
+                    currentUser.profile_image = data.profile_image;
+                }
+
+                // UI 즉시 갱신 (캐시 방지 포함)
+                updateUserProfile();
+
+                profileEditModal.classList.remove("show");
+                showConfirmModal("프로필이 수정되었습니다!");
+            }
+        });
+    });
+}
 // Add Icon Modal 관련 이벤트
 const addIcon = document.getElementById('add-icon');
 const addIconModal = document.getElementById('addIconModal');

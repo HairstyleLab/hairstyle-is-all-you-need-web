@@ -1,0 +1,42 @@
+<div id="profileEditModal" class="modal-container hidden">
+    <div class="modal-box">
+
+        <h2 class="modal-title">프로필 편집</h2>
+
+        <!-- 프로필 이미지 -->
+        <div class="profile-image-wrapper">
+            <img 
+                id="modalProfileImg"
+                src="{{ user.profile_image.url|default:'/static/images/default_profile.png' }}" 
+                class="profile-image"
+                alt="프로필 이미지"
+            />
+            <div class="edit-icon" id="editProfileImageBtn">✎</div>
+
+            <!-- 실제 파일 업로드 input (숨김) -->
+            <input type="file" id="profileImgInput" accept="image/*" hidden />
+        </div>
+
+        <!-- 이메일 -->
+        <div class="form-group">
+            <label class="label">이메일</label>
+            <div class="form-value">
+                <div class="email-text">{{ user.email }}</div>
+                <p class="email-desc">이메일은 수정할 수 없습니다.</p>
+            </div>
+        </div>
+
+        <!-- 닉네임 -->
+        <div class="form-group">
+            <label class="label">닉네임</label>
+            <input type="text" id="nicknameInput" class="input-box" value="{{ user.nickname }}" />
+        </div>
+
+        <!-- 버튼 -->
+        <div class="button-group">
+            <button class="btn-cancel close-modal" data-target="profileEditModal">닫기</button>
+            <button class="btn-submit" id="profileSaveBtn">수정</button>
+        </div>
+
+    </div>
+</div>

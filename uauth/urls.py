@@ -16,4 +16,5 @@ urlpatterns = [
     path('signup/form/', views.signup_form, name='signup_form'),
     path('signup-api/', views.signup_view, name='signup_api'),
     path('check/', views.check_login_status, name='check_login'),
+    path("profile/edit/", views.update_profile, name="update_profile"),
 ]
