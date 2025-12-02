@@ -390,3 +390,154 @@ if (confirmBtn) {
         }
     });
 }
+
+// ========== 비밀번호 수정 모달 ==========
+const changePasswordBtn = document.getElementById('changePasswordBtn');
+const passwordModal = document.getElementById('passwordModal');
+const passwordForm = document.getElementById('passwordForm');
+const passwordCancelBtn = document.getElementById('passwordCancelBtn');
+const passwordSubmitBtn = document.getElementById('passwordSubmitBtn');
+
+const currentPasswordInput = document.getElementById('currentPassword');
+const newPasswordInput = document.getElementById('newPassword');
+const confirmPasswordInput = document.getElementById('confirmPassword');
+
+const currentPasswordError = document.getElementById('currentPasswordError');
+const newPasswordError = document.getElementById('newPasswordError');
+const confirmPasswordError = document.getElementById('confirmPasswordError');
+
+// 비밀번호 수정 버튼 클릭 시 모달 표시
+if (changePasswordBtn) {
+    changePasswordBtn.addEventListener('click', function() {
+        settingsModal.classList.remove('show');
+        passwordModal.classList.add('show');
+        resetPasswordForm();
+    });
+}
+
+// 취소 버튼 클릭 시 모달 닫기
+if (passwordCancelBtn) {
+    passwordCancelBtn.addEventListener('click', function() {
+        passwordModal.classList.remove('show');
+        resetPasswordForm();
+    });
+}
+
+// 모달 외부 클릭 시 닫기
+if (passwordModal) {
+    passwordModal.addEventListener('click', function(e) {
+        if (e.target === passwordModal) {
+            passwordModal.classList.remove('show');
+            resetPasswordForm();
+        }
+    });
+}
+
+// 비밀번호 유효성 검사 (영어 대소문자/숫자/특수문자 중 3가지 이상, 8~15자)
+function validatePassword(password) {
+    if (password.length < 8 || password.length > 15) return false;
+    
+    let count = 0;
+    if (/[a-z]/.test(password)) count++;
+    if (/[A-Z]/.test(password)) count++;
+    if (/[0-9]/.test(password)) count++;
+    if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) count++;
+    
+    return count >= 3;
+}
+
+// 입력 필드 변경 시 유효성 검사
+function checkPasswordInputs() {
+    let isValid = true;
+    
+    // 새 비밀번호 유효성 검사
+    if (newPasswordInput && newPasswordInput.value.length > 0) {
+        if (!validatePassword(newPasswordInput.value)) {
+            newPasswordError.classList.add('show');
+            isValid = false;
+        } else {
+            newPasswordError.classList.remove('show');
+        }
+    } else {
+        newPasswordError.classList.remove('show');
+    }
+    
+    // 비밀번호 확인 일치 검사
+    if (confirmPasswordInput && confirmPasswordInput.value.length > 0) {
+        if (newPasswordInput.value !== confirmPasswordInput.value) {
+            confirmPasswordError.classList.add('show');
+            isValid = false;
+        } else {
+            confirmPasswordError.classList.remove('show');
+        }
+    } else {
+        confirmPasswordError.classList.remove('show');
+    }
+    
+    // 모든 필드가 입력되고 유효한 경우에만 버튼 활성화
+    if (currentPasswordInput && currentPasswordInput.value.length > 0 &&
+        newPasswordInput && newPasswordInput.value.length > 0 &&
+        confirmPasswordInput && confirmPasswordInput.value.length > 0 &&
+        isValid && validatePassword(newPasswordInput.value) &&
+        newPasswordInput.value === confirmPasswordInput.value) {
+        passwordSubmitBtn.disabled = false;
+    } else {
+        passwordSubmitBtn.disabled = true;
+    }
+}
+
+// 입력 이벤트 리스너
+if (currentPasswordInput) currentPasswordInput.addEventListener('input', checkPasswordInputs);
+if (newPasswordInput) newPasswordInput.addEventListener('input', checkPasswordInputs);
+if (confirmPasswordInput) confirmPasswordInput.addEventListener('input', checkPasswordInputs);
+
+// 폼 제출 처리
+if (passwordForm) {
+    passwordForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        if (passwordSubmitBtn.disabled) return;
+        
+        try {
+            const response = await fetch('/uauth/change-password/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    current_password: currentPasswordInput.value,
+                    new_password: newPasswordInput.value
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                passwordModal.classList.remove('show');
+                resetPasswordForm();
+                showConfirmModal('비밀번호가 성공적으로 변경되었습니다.');
+            } else {
+                if (data.error_type === 'current_password') {
+                    currentPasswordError.classList.add('show');
+                } else {
+                    showConfirmModal(data.message || '비밀번호 변경에 실패했습니다.');
+                }
+            }
+        } catch (error) {
+            console.error('Password change error:', error);
+            showConfirmModal('서버 오류가 발생했습니다.');
+        }
+    });
+}
+
+// 폼 리셋
+function resetPasswordForm() {
+    if (currentPasswordInput) currentPasswordInput.value = '';
+    if (newPasswordInput) newPasswordInput.value = '';
+    if (confirmPasswordInput) confirmPasswordInput.value = '';
+    if (currentPasswordError) currentPasswordError.classList.remove('show');
+    if (newPasswordError) newPasswordError.classList.remove('show');
+    if (confirmPasswordError) confirmPasswordError.classList.remove('show');
+    if (passwordSubmitBtn) passwordSubmitBtn.disabled = true;
+}
