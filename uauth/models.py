@@ -3,21 +3,6 @@ from django.utils import timezone
 from datetime import timedelta
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 
-class EmailVerification(models.Model):
-    email = models.EmailField(unique=True)
-    code = models.CharField(max_length=6)
-    created_at = models.DateTimeField(auto_now_add=True)
-    is_verified = models.BooleanField(default=False)
-    
-    class Meta:
-        ordering = ['-created_at']
-    
-    def is_expired(self):
-        return timezone.now() > self.created_at + timedelta(minutes=3)
-    
-    def __str__(self):
-        return f"{self.email} - {self.code}"
-
 class UserManager(BaseUserManager):
     def create_user(self, email, nickname, password=None, **extra_fields):
         if not email:

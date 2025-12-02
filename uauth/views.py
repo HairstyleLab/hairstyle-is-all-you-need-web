@@ -5,6 +5,7 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 from .utils import send_verification_email, verify_email_code, check_email_exists
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from .models import User
 
 def find_password(request):
@@ -37,7 +38,7 @@ def send_verification_code(request):
                 'message': '이미 사용 중인 이메일입니다.'
             }, status=400)
         
-        success, result = send_verification_email(email)
+        success, result = send_verification_email(email, request)
         
         if success:
             return JsonResponse({
@@ -83,7 +84,7 @@ def send_password_reset_code(request):
                 'message': '가입되어 있지 않은 이메일입니다.'
             }, status=400)
         
-        success, result = send_verification_email(email)
+        success, result = send_verification_email(email, request)
         
         if success:
             return JsonResponse({
@@ -123,7 +124,7 @@ def verify_code(request):
                 'message': '이메일과 인증코드를 입력해주세요.'
             }, status=400)
         
-        success, message = verify_email_code(email, code)
+        success, message = verify_email_code(email, code, request)
         
         return JsonResponse({
             'success': success,
@@ -265,12 +266,16 @@ def signup_view(request):
 def check_login_status(request):
     """로그인 상태 확인"""
     if request.user.is_authenticated:
+        profile_image_url = None
+        if request.user.profile_image:
+            profile_image_url = request.user.profile_image.url
+        
         return JsonResponse({
             'is_logged_in': True,
             'user': {
                 'email': request.user.email,
                 'nickname': request.user.nickname,
-                'profile_image': request.user.profile_image.url if request.user.profile_image else None
+                'profile_image': profile_image_url
             }
         })
     else:
@@ -317,6 +322,130 @@ def reset_password(request):
             'success': False,
             'message': '잘못된 요청입니다.'
         }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'오류가 발생했습니다: {str(e)}'
+        }, status=500)
+    
+@login_required
+@csrf_exempt
+@require_http_methods(["POST"])
+def update_profile(request):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "POST 요청만 허용됩니다."})
+
+    user = request.user
+
+    # 닉네임 수정
+    nickname = request.POST.get("nickname")
+    if nickname:
+        user.nickname = nickname
+
+    # 프로필 이미지 수정
+    if "profile_image" in request.FILES:
+        user.profile_image = request.FILES["profile_image"]
+
+    user.save()
+
+    return JsonResponse({
+        "success": True,
+        "nickname": user.nickname,
+        "profile_image": user.profile_image.url if user.profile_image else None
+    })
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def change_password(request):
+    """비밀번호 변경 (로그인된 사용자)"""
+    try:
+        if not request.user.is_authenticated:
+            return JsonResponse({
+                'success': False,
+                'message': '로그인이 필요합니다.'
+            }, status=401)
+        
+        data = json.loads(request.body)
+        current_password = data.get('current_password')
+        new_password = data.get('new_password')
+        
+        if not current_password or not new_password:
+            return JsonResponse({
+                'success': False,
+                'message': '현재 비밀번호와 새 비밀번호를 입력해주세요.'
+            }, status=400)
+        
+        user = request.user
+        
+        # 현재 비밀번호 확인
+        if not user.check_password(current_password):
+            return JsonResponse({
+                'success': False,
+                'message': '현재 비밀번호가 올바르지 않습니다.',
+                'error_type': 'current_password'
+            }, status=400)
+            
+        if user.check_password(new_password):
+            return JsonResponse({
+                'success': False,
+                'message': '새 비밀번호는 현재 비밀번호와 다르게 설정해야 합니다.',
+                'error_type': 'new_password'
+            }, status=400)
+        
+        # 새 비밀번호 설정
+        user.set_password(new_password)
+        user.save()
+        
+        # 비밀번호 변경 후 다시 로그인 처리
+        login(request, user)
+        
+        return JsonResponse({
+            'success': True,
+            'message': '비밀번호가 성공적으로 변경되었습니다.'
+        })
+    
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'message': '잘못된 요청입니다.'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'오류가 발생했습니다: {str(e)}'
+        }, status=500)
+        
+@csrf_exempt
+@require_http_methods(["POST"])
+def withdraw(request):
+    """회원 탈퇴 처리"""
+    try:
+        if not request.user.is_authenticated:
+            return JsonResponse({
+                'success': False,
+                'message': '로그인이 필요합니다.'
+            }, status=401)
+            
+        data = json.loads(request.body)
+        password = data.get('password')
+                
+        user = request.user
+        
+        if not user.check_password(password):
+            return JsonResponse({
+                'success': False,
+                'message': '비밀번호가 올바르지 않습니다.'
+            }, status=400)
+            
+        user.delete()
+        logout(request)
+        
+        return JsonResponse({
+            'success': True,
+            'message': '회원 탈퇴가 완료되었습니다.'
+        })
+    
     except Exception as e:
         return JsonResponse({
             'success': False,

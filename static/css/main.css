@@ -9,7 +9,7 @@
     --text-muted: #a69388;
     --border-light: #e8ddd4;
     --sidebar-bg: rgba(250, 176, 169, 0.15);
-    --sidebar-width-collapsed: 100px;
+    --sidebar-width-collapsed: 60px;
     --sidebar-width-expanded: 280px;
 }
 
@@ -53,7 +53,8 @@ body {
     top: 0;
     width: var(--sidebar-width-collapsed);
     height: 100vh;
-    background: linear-gradient(to bottom, rgba(250, 176, 169, 0.2), rgba(250, 176, 169, 0.1));
+    background: linear-gradient(to right, rgba(250, 176, 169, 0.2), rgba(255, 255, 255, 0));
+    box-shadow:rgba(0, 0, 0, 0.05);
     display: none;
     flex-direction: column;
     z-index: 100;
@@ -177,8 +178,9 @@ body {
     padding: 16px 8px;
     border-top: 1px solid rgba(0, 0, 0, 0.05);
     display: none;
+    flex-direction: column;
     align-items: center;
-    justify-content: space-between;
+    gap: 12px;
     position: relative;
 }
 
@@ -192,18 +194,20 @@ body {
     gap: 10px;
     flex: 1;
     min-width: 0;
+    width: 100%;
+    justify-content: flex-start;
 }
 
 .profile-img {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     object-fit: cover;
     flex-shrink: 0;
 }
 
 .profile-name {
-    font-size: 14px;
+    font-size: 16px;
     color: var(--text-primary);
     white-space: nowrap;
     overflow: hidden;
@@ -216,14 +220,43 @@ body {
     opacity: 1;
 }
 
+/* 로그아웃 링크 */
+.logout-sidebar-btn {
+    margin-top: 8px;
+    padding: 0;
+    background: none;
+    border: none;
+    font-size: 13px;
+    color: #999;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    opacity: 0;
+    font-family: 'Noto Sans KR', sans-serif;
+    text-align: left;
+    width: 100%;
+}
+
+.sidebar-logged.expanded .logout-sidebar-btn {
+    opacity: 1;
+}
+
+.logout-sidebar-btn:hover {
+    color: var(--text-primary);
+    text-decoration: underline;
+}
+
+/* 로그아웃 버튼 */
+
+
 .settings-btn {
     background: none;
     border: none;
     cursor: pointer;
     padding: 8px;
-    border-radius: 6px;
+    border-radius: 10px;
     opacity: 0;
     transition: opacity 0.3s ease, background 0.2s ease;
+    margin-left: auto;
 }
 
 .sidebar-logged.expanded .settings-btn {
@@ -235,15 +268,14 @@ body {
 }
 
 .settings-icon {
-    width: 20px;
-    height: 20px;
+    width: 25px;
+    height: 25px;
 }
 
 /* 설정 모달 */
 .settings-modal {
     position: absolute;
-    bottom: 70px;
-    left: 8px;
+    bottom: 100px;
     right: 8px;
     background: white;
     border-radius: 12px;
@@ -251,6 +283,7 @@ body {
     padding: 8px;
     display: none;
     flex-direction: column;
+    width:150px;
     gap: 4px;
 }
 
@@ -270,6 +303,7 @@ body {
     font-size: 13px;
     color: var(--text-primary);
     transition: background 0.2s ease;
+    animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     width: 100%;
     text-align: left;
 }
@@ -384,18 +418,25 @@ body {
 .input-area {
     width: 100%;
     max-width: 880px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 .input-container {
     position: relative;
     background: white;
     border: 1px solid var(--border-light);
-    border-radius: 30px;
-    padding: 0 10px;
-    height: 50px;
+    border-radius: 16px;
+    padding: 10px;
     display: flex;
-    align-items: center;
-    gap: 12px;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 50px;
+}
+
+.input-wrapper {
+    display: none;
 }
 
 .add-icon {
@@ -404,25 +445,86 @@ body {
     color: var(--text-secondary);
     cursor: not-allowed;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+body.logged-in .add-icon {
+    cursor: pointer;
+    color: var(--accent-flame);
+}
+
+.input-other-content {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 3px;
 }
 
 .input-field {
     flex: 1;
     border: none;
     outline: none;
-    font-size: 20px;
+    font-size: 16px;
     font-family: 'Noto Sans KR', sans-serif;
     color: var(--text-primary);
     background: transparent;
+    resize: none;
+    min-height: 24px;
+    height: 24px;
+    padding: 0 5px;
+    line-height: 1.5;
+    overflow: hidden;
+    min-width: 200px;
 }
 
-.input-field::placeholder {
-    color: transparent;
+/* 이미지 미리보기 */
+.image-preview-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 250px;
+    height: 250px;
+    border-radius: 8px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.preview-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.remove-image-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 20px;
+    height: 20px;
+    color: white;
+    border: none;
+    cursor: pointer;
+    background-color: transparent;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: transform 0.2s ease;
+}
+
+.remove-image-btn:hover {
+    transform: scale(1.5);
 }
 
 .send-btn {
-    width: 36px;
-    height: 36px;
+    width: 30px;
+    height: 30px;
     background: #D9D9D9;
     border: none;
     border-radius: 50%;
@@ -432,6 +534,7 @@ body {
     cursor: not-allowed;
     transition: all 0.2s ease;
     flex-shrink: 0;
+    padding: 0;
 }
 
 
@@ -614,23 +717,32 @@ body {
 }
 
 .logout-modal-content {
+    width: 360px;
+    height: 230px;
     background: white;
-    border-radius: 16px;
-    padding: 24px 32px;
-    text-align: center;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    border-radius: 20px;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 .logout-modal-content p {
-    font-size: 16px;
+    font-size: 20px;
     color: var(--text-primary);
     margin-bottom: 20px;
+    font-weight: bold;
 }
 
 .logout-modal-buttons {
     display: flex;
+    flex-direction: column;
     gap: 12px;
     justify-content: center;
+    width: 100%;
 }
 
 .logout-cancel-btn {
@@ -687,4 +799,473 @@ body.logged-in.sidebar-expanded .main-container {
 
 body.logged-in.sidebar-expanded .header {
     left: var(--sidebar-width-expanded);
+}
+
+/* 확인 모달 */
+.confirm-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+}
+
+.confirm-modal-overlay.show {
+    display: flex;
+}
+
+.confirm-modal-content {
+    width: 360px;
+    height: 230px;
+    background: white;
+    border-radius: 20px;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.confirm-modal-content p {
+    font-size: 16px;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.confirm-modal-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    justify-content: center;
+    width: 100%;
+}
+
+.confirm-btn {
+    padding: 12px 24px;
+    background: var(--sidebar-bg);
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    font-weight: 500;
+    height: 49px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.confirm-btn:hover {
+    background: var(--accent-flame);
+}
+
+/* Add Icon Modal */
+.add-icon-modal {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    margin-bottom: 8px;
+    border-radius: 10px;
+    width: 150px;
+    height: auto;
+    display: none;
+    flex-direction: column;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    z-index: 2000;
+}
+
+.add-icon-modal.show {
+    display: flex;
+}
+
+.add-icon-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+.add-icon-modal-content {
+    position: relative;
+    background: white;
+    border: none;
+    padding: 16px;
+    width: 150px;
+    max-width: 90vw;
+    border-radius: 10px;
+    z-index: 2001;
+    animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(10px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.add-icon-modal-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.add-icon-modal-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--text-primary);
+    font-weight: 500;
+    transition: all 0.2s ease;
+    width: 100%;
+}
+
+.add-icon-modal-item:hover:not(:disabled) {
+    border-color: var(--accent-flame);
+    background: rgba(255, 107, 74, 0.05);
+    border-radius: 6px;
+    transform: translateY(-2px);
+}
+
+/* 비밀번호 수정 모달 */
+.password-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.password-modal-overlay.show {
+    display: flex;
+}
+
+.password-modal-content {
+    width: 500px;
+    background: white;
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.password-modal-title {
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: center;
+    margin-bottom: 16px;
+}
+
+.password-modal-desc {
+    font-size: 14px;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-bottom: 32px;
+    line-height: 1.6;
+}
+
+.password-form-group {
+    margin-bottom: 20px;
+}
+
+.password-form-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.password-form-input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    font-size: 15px;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.password-form-input:focus {
+    outline: none;
+    border-color: var(--accent-coral);
+}
+
+.password-helper {
+    display: block;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 6px;
+}
+
+.password-error {
+    display: none;
+    font-size: 12px;
+    color: #ff4444;
+    margin-top: 6px;
+}
+
+.password-error.show {
+    display: block;
+}
+
+.password-modal-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 32px;
+}
+
+.password-cancel-btn {
+    flex: 1;
+    padding: 14px;
+    background: white;
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    font-size: 16px;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.password-cancel-btn:hover {
+    background: #f5f5f5;
+}
+
+.password-submit-btn {
+    flex: 1;
+    padding: 14px;
+    background: #D9D9D9;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--text-secondary);
+    cursor: not-allowed;
+    transition: all 0.2s ease;
+}
+
+.password-submit-btn:not(:disabled) {
+    background: var(--accent-yellow);
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.password-submit-btn:not(:disabled):hover {
+    background: #f5e6a3;
+}
+
+/* ========== 회원탈퇴 모달 ========== */
+.withdraw-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.withdraw-modal-overlay.show {
+    display: flex;
+}
+
+.withdraw-modal-content {
+    width: 500px;
+    background: white;
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    text-align: center;
+}
+
+.withdraw-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #ff4444;
+    margin-bottom: 20px;
+}
+
+.withdraw-warning {
+    font-size: 15px;
+    color: var(--text-primary);
+    line-height: 1.8;
+    margin-bottom: 30px;
+}
+
+.withdraw-input-group {
+    margin-bottom: 12px;
+}
+
+.withdraw-input {
+    width: 100%;
+    padding: 16px;
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    font-size: 15px;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.withdraw-input:focus {
+    outline: none;
+    border-color: #ff4444;
+}
+
+.withdraw-error {
+    font-size: 13px;
+    color: #ff4444;
+    margin-bottom: 24px;
+    display: none;
+}
+
+.withdraw-error.show {
+    display: block;
+}
+
+.withdraw-buttons {
+    display: flex;
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.withdraw-btn {
+    flex: 1;
+    padding: 16px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-family: 'Noto Sans KR', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.withdraw-btn.cancel-btn {
+    background: white;
+    border: 1px solid var(--border-light);
+    color: var(--text-primary);
+}
+
+.withdraw-btn.cancel-btn:hover {
+    background: #f5f5f5;
+}
+
+.withdraw-btn.confirm-btn {
+    background: #D9D9D9;
+    border: none;
+    color: var(--text-primary);
+}
+
+.withdraw-btn.confirm-btn:not(:disabled) {
+    background: #D9D9D9;
+    cursor: pointer;
+}
+
+.withdraw-btn.confirm-btn:not(:disabled):hover {
+    background: #c9c9c9;
+}
+
+/* ========== 회원탈퇴 완료 모달 ========== */
+.withdraw-complete-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2100;
+}
+
+.withdraw-complete-modal-overlay.show {
+    display: flex;
+}
+
+.withdraw-complete-modal-content {
+    width: 500px;
+    background: white;
+    border-radius: 20px;
+    padding: 50px 40px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    text-align: center;
+}
+
+.withdraw-complete-title {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+}
+
+.withdraw-complete-desc {
+    font-size: 15px;
+    color: var(--text-secondary);
+    margin-bottom: 40px;
+}
+
+.withdraw-complete-buttons {
+    display: flex;
+    justify-content: center;
+}
+
+.withdraw-complete-btn {
+    width: 100%;
+    padding: 16px;
+    background: white;
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    font-size: 16px;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.withdraw-complete-btn:hover {
+    background: #f5f5f5;
+}
+
+.password-success {
+    display: none;
+    font-size: 12px;
+    color: #22c55e;  /* 초록색 */
+    margin-top: 6px;
+}
+
+.password-success.show {
+    display: block;
 }

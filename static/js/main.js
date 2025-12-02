@@ -12,15 +12,102 @@ const closeSidebarBtn = document.getElementById('closeSidebarBtn');
 const settingsBtn = document.getElementById('settingsBtn');
 const settingsModal = document.getElementById('settingsModal');
 const logoutBtn = document.getElementById('logoutBtn');
+const logoutSidebarBtn = document.getElementById('logoutSidebarBtn');
 const logoutModal = document.getElementById('logoutModal');
 const logoutCancelBtn = document.getElementById('logoutCancelBtn');
 const logoutConfirmBtn = document.getElementById('logoutConfirmBtn');
+const confirmModal = document.getElementById('confirmModal');
+const confirmBtn = document.getElementById('confirmBtn');
+const editProfileBtn = document.getElementById('editProfileBtn');
+const profileEditModal = document.getElementById('profileEditModal');
+const formData = new FormData();
 
 // 페이지 로드 시 로그인 상태 확인
 document.addEventListener('DOMContentLoaded', async function() {
     await checkLoginStatus();
     initSidebarEvents();
+    initTextareaAutoResize();
+
+    const editIcon = document.getElementById("editProfileImageBtn");
+    const fileInput = document.getElementById("profileImgInput");
+    const previewImg = document.getElementById("modalProfileImg");
+
+    if (editIcon && fileInput && previewImg) {
+        editIcon.addEventListener("click", function () {
+            fileInput.click();
+        });
+
+        // 이미지 파일 선택 → 즉시 모달 이미지 미리보기 변경
+        fileInput.addEventListener("change", function (event) {
+            const file = event.target.files[0];
+            if (file) {
+                const previewUrl = URL.createObjectURL(file);
+                previewImg.src = previewUrl;
+            }
+        });
+    }
+
+    const saveBtn = document.getElementById("profileSaveBtn");
+    const nicknameInput = document.getElementById("nicknameInput");
+
+    if (saveBtn && nicknameInput) {
+        saveBtn.addEventListener("click", async function () {
+            const formData = new FormData();
+            formData.append("nickname", nicknameInput.value);
+
+            if (fileInput && fileInput.files.length > 0) {
+                formData.append("profile_image", fileInput.files[0]);
+            }
+
+            const res = await fetch("/uauth/profile/edit/", {
+                method: "POST",
+                body: formData,
+                headers: {
+                    "X-CSRFToken": getCookie("csrftoken")
+                }
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                // 서버 업데이트 후, 전역 currentUser 최신화
+                currentUser.nickname = data.nickname;
+                currentUser.profile_image = data.profile_image;
+
+                // UI 전역 반영
+                updateUserProfile();
+
+                // 모달 닫기
+                document.getElementById("profileEditModal").classList.remove("show");
+            }
+        });
+    }
+
 });
+
+// Textarea 자동 높이 조정
+function initTextareaAutoResize() {
+    const textarea = document.getElementById('messageInput');
+    if (textarea) {
+        // 입력 이벤트에서 높이 조정
+        textarea.addEventListener('input', function() {
+            autoResizeTextarea(this);
+        });
+    }
+}
+
+// Textarea 높이 자동 조정 함수
+function autoResizeTextarea(textarea) {
+    const minHeight = 24; // CSS의 height와 일치
+    
+    // 높이를 최소값으로 리셋
+    textarea.style.height = minHeight + 'px';
+    
+    // scrollHeight가 minHeight보다 크면 조정
+    if (textarea.scrollHeight > minHeight) {
+        textarea.style.height = textarea.scrollHeight + 'px';
+    }
+}
 
 // 서버에서 로그인 상태 확인
 async function checkLoginStatus() {
@@ -46,18 +133,33 @@ async function checkLoginStatus() {
 
 // 사용자 프로필 업데이트
 function updateUserProfile() {
-    if (currentUser) {
-        const profileName = document.querySelector('.profile-name');
-        const profileImg = document.getElementById('profileImg');
-        
-        if (profileName) {
-            profileName.textContent = currentUser.nickname || '사용자';
-        }
-        if (profileImg && currentUser.profile_image) {
-            profileImg.src = currentUser.profile_image;
-        }
+    if (!currentUser) return;
+
+    const profileName = document.querySelector('.profile-name');
+    const sidebarImg = document.getElementById('profileImg');
+    const modalImg = document.getElementById('modalProfileImg');
+    const greeting = document.getElementById('greeting');
+
+    // 닉네임 업데이트
+    if (profileName) {
+        profileName.textContent = currentUser.nickname || '사용자';
+    }
+
+    if (sidebarImg && currentUser.profile_image) {
+        sidebarImg.src = currentUser.profile_image + "?t=" + new Date().getTime();
+    }
+
+    if (modalImg && currentUser.profile_image) {
+        modalImg.src = currentUser.profile_image + "?t=" + new Date().getTime();
+    }
+
+    // 상단 인사말 업데이트
+    if (greeting) {
+        greeting.textContent = `안녕하세요, ${currentUser.nickname || '사용자'}님😊`;
+        updateProfileImageButtonState();
     }
 }
+
 
 // 로그인 상태에 따른 UI 업데이트
 function updateUIForLoginState() {
@@ -101,6 +203,13 @@ function initSidebarEvents() {
         });
     }
 
+    // 사이드바 로그아웃 버튼 클릭 시 로그아웃 모달 표시
+    if (logoutSidebarBtn) {
+        logoutSidebarBtn.addEventListener('click', function() {
+            logoutModal.classList.add('show');
+        });
+    }
+
     // 로그아웃 취소 버튼
     if (logoutCancelBtn) {
         logoutCancelBtn.addEventListener('click', function() {
@@ -128,6 +237,29 @@ function initSidebarEvents() {
         newChatBtn.addEventListener('click', function() {
             location.href = '/main/';
         });
+    }
+
+    if (editProfileBtn && profileEditModal) {
+        editProfileBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            settingsModal.classList.remove('show');
+            profileEditModal.classList.add('show');
+        });
+    }
+
+    // 프로필 편집 모달 닫기
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('close-modal')) {
+            const targetId = e.target.dataset.target;
+            const modal = document.getElementById(targetId);
+            if (modal) modal.classList.remove('show');
+        }
+    });
+    
+    // 갤러리 버튼
+    const galleryBtn = document.getElementById('galleryBtn');
+    if (galleryBtn) {
+        galleryBtn.addEventListener('click', () => location.href = '/main/gallery/');
     }
 }
 
@@ -172,6 +304,9 @@ async function handleLogout() {
             logoutModal.classList.remove('show');
             updateUIForLoginState();
             collapseSidebar();
+            // 확인 모달 표시
+            showConfirmModal('로그아웃 되었습니다.');
+            greeting.textContent = `안녕하세요`;
         }
     } catch (error) {
         // 서버 연결 실패 시에도 로컬에서 로그아웃 처리
@@ -180,6 +315,8 @@ async function handleLogout() {
         logoutModal.classList.remove('show');
         updateUIForLoginState();
         collapseSidebar();
+        // 확인 모달 표시
+        showConfirmModal('로그아웃 되었습니다.');
     }
 }
 
@@ -189,13 +326,7 @@ const sendBtn = document.getElementById('sendBtn');
 
 if (messageInput && sendBtn) {
     messageInput.addEventListener('input', function() {
-        if (this.value.trim().length > 0) {
-            sendBtn.disabled = false;
-            sendBtn.classList.add('active');
-        } else {
-            sendBtn.disabled = true;
-            sendBtn.classList.remove('active');
-        }
+        updateSendBtnState();
     });
 
     // 전송 버튼 클릭 이벤트
@@ -333,21 +464,479 @@ async function handleLogin(event) {
     } catch (error) {
         console.error('Login error:', error);
         // 테스트용: 서버 연결 실패 시 테스트 계정으로 로그인 허용
-        if (email === 'test@test.com' && password === 'test1234') {
-            isLoggedIn = true;
-            currentUser = { email: email, nickname: '테스트유저', profile_image: null };
-            toggleModal();
-            updateUserProfile();
-            updateUIForLoginState();
-            submitBtn.disabled = false;
-            submitBtn.textContent = '로그인';
-            document.getElementById('email').value = '';
-            document.getElementById('password').value = '';
-            return;
-        }
         errorMessage.textContent = '로그인 처리 중 오류가 발생했습니다.';
         errorMessage.classList.add('show');
         submitBtn.disabled = false;
         submitBtn.textContent = '로그인';
     }
+}
+
+// 확인 모달 표시 함수
+function showConfirmModal(message) {
+    const confirmMessage = document.getElementById('confirmMessage');
+    if (confirmMessage) {
+        confirmMessage.textContent = message;
+    }
+    if (confirmModal) {
+        confirmModal.classList.add('show');
+    }
+}
+
+// 확인 버튼 클릭 이벤트
+if (confirmBtn) {
+    confirmBtn.addEventListener('click', function() {
+        if (confirmModal) {
+            confirmModal.classList.remove('show');
+        }
+    });
+}
+
+// 프로필 수정 저장 버튼
+const profileSaveBtn = document.getElementById("profileSaveBtn");
+const nicknameInput = document.getElementById("nicknameInput");
+const profileImgInput = document.getElementById("profileImgInput");
+
+// "수정" 버튼 클릭 시 API 호출
+if (profileSaveBtn) {
+    profileSaveBtn.addEventListener("click", () => {
+        const formData = new FormData();
+        formData.append("nickname", nicknameInput.value.trim());
+        if (profileImgInput.files[0]) {
+            formData.append("profile_image", profileImgInput.files[0]);
+        }
+
+        fetch("/uauth/profile/edit/", {
+            method: "POST",
+            body: formData,
+            headers: {
+                "X-CSRFToken": getCookie("csrftoken"),
+            },
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+
+                // DB에서 받은 최신 정보로 currentUser 갱신
+                currentUser.nickname = data.nickname;
+                if (data.profile_image) {
+                    currentUser.profile_image = data.profile_image;
+                }
+
+                // UI 즉시 갱신 (캐시 방지 포함)
+                updateUserProfile();
+
+                profileEditModal.classList.remove("show");
+                showConfirmModal("프로필이 수정되었습니다!");
+            }
+        });
+    });
+}
+// Add Icon Modal 관련 이벤트
+const addIcon = document.getElementById('add-icon');
+const addIconModal = document.getElementById('addIconModal');
+const addIconModalOverlay = document.getElementById('addIconModalOverlay');
+const addIconModalClose = document.getElementById('addIconModalClose');
+const deviceExploreBtn = document.getElementById('deviceExploreBtn');
+const profileImageBtn = document.getElementById('profileImageBtn');
+const imageFileInput = document.getElementById('imageFileInput');
+const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+const previewImage = document.getElementById('previewImage');
+const removeImageBtn = document.getElementById('removeImageBtn');
+let selectedImageFile = null;
+
+// 전송 버튼 상태 업데이트 함수
+function updateSendBtnState() {
+    if (messageInput.value.trim().length > 0 || (imagePreviewContainer && imagePreviewContainer.style.display === 'flex')) {
+        sendBtn.disabled = false;
+        sendBtn.classList.add('active');
+    } else {
+        sendBtn.disabled = true;
+        sendBtn.classList.remove('active');
+    }
+}
+
+// Add-icon 클릭 시 모달 토글
+if (addIcon) {
+    addIcon.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (isLoggedIn) {
+            addIconModal.classList.toggle('show');
+        } else {
+            // 로그인 안 된 상태에서 로그인 모달 표시
+            const loginModal = document.getElementById('loginModal');
+            if (loginModal) {
+                loginModal.classList.add('active');
+            }
+        }
+    });
+}
+
+// 모달 닫기 버튼
+if (addIconModalClose) {
+    addIconModalClose.addEventListener('click', function() {
+        addIconModal.classList.remove('show');
+    });
+}
+
+// 모달 오버레이 클릭 시 닫기
+if (addIconModalOverlay) {
+    addIconModalOverlay.addEventListener('click', function() {
+        addIconModal.classList.remove('show');
+    });
+}
+
+// 디바이스에서 탐색 버튼
+if (deviceExploreBtn) {
+    deviceExploreBtn.addEventListener('click', function() {
+        imageFileInput.click();
+    });
+}
+
+// 프로필 이미지 버튼 상태 업데이트 함수
+function updateProfileImageButtonState() {
+    if (profileImageBtn) {
+        const hasCustomProfile = currentUser && currentUser.profile_image && !currentUser.profile_image.includes('default_profile');
+        
+        if (hasCustomProfile) {
+            profileImageBtn.disabled = false;
+            profileImageBtn.style.cursor = 'pointer';
+            profileImageBtn.style.opacity = '1';
+        } else {
+            profileImageBtn.disabled = true;
+            profileImageBtn.style.cursor = 'not-allowed';
+            profileImageBtn.style.opacity = '0.5';
+        }
+    }
+}
+
+// 프로필 이미지 사용 버튼
+if (profileImageBtn) {
+    profileImageBtn.addEventListener('click', function(e) {
+        if (this.disabled) {
+            e.preventDefault();
+            return;
+        }
+        
+        console.log('프로필 이미지 버튼 클릭, currentUser:', currentUser);
+        if (currentUser && currentUser.profile_image && !currentUser.profile_image.includes('default_profile')) {
+            console.log('프로필 이미지 표시:', currentUser.profile_image);
+            previewImage.src = currentUser.profile_image;
+            imagePreviewContainer.style.display = 'flex';
+            selectedImageFile = null; // 파일 선택 초기화
+            addIconModal.classList.remove('show');
+            updateSendBtnState();
+        }
+    });
+    
+    // 초기 상태 설정
+    updateProfileImageButtonState();
+}
+
+// 파일 선택 후 처리
+if (imageFileInput) {
+    imageFileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            // 선택된 파일을 변수에 저장
+            selectedImageFile = file;
+            
+            // 이미지 미리보기 표시
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                previewImage.src = event.target.result;
+                imagePreviewContainer.style.display = 'flex';
+                updateSendBtnState();
+            };
+            reader.readAsDataURL(file);
+            
+            addIconModal.classList.remove('show');
+        }
+    });
+}
+
+// 이미지 제거 버튼
+if (removeImageBtn) {
+    removeImageBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        selectedImageFile = null;
+        imagePreviewContainer.style.display = 'none';
+        previewImage.src = '';
+        imageFileInput.value = '';
+        updateSendBtnState();
+    });
+}
+
+// 모달 바깥 클릭 시 닫기
+document.addEventListener('click', function(e) {
+    if (addIconModal && addIconModal.classList.contains('show')) {
+        // 모달, add-icon 요소를 클릭하지 않았을 때만 닫기
+        if (!addIconModal.contains(e.target) && !addIcon.contains(e.target)) {
+            addIconModal.classList.remove('show');
+        }
+    }
+});
+// ========== 비밀번호 수정 모달 ==========
+const changePasswordBtn = document.getElementById('changePasswordBtn');
+const passwordModal = document.getElementById('passwordModal');
+const passwordForm = document.getElementById('passwordForm');
+const passwordCancelBtn = document.getElementById('passwordCancelBtn');
+const passwordSubmitBtn = document.getElementById('passwordSubmitBtn');
+
+const currentPasswordInput = document.getElementById('currentPassword');
+const newPasswordInput = document.getElementById('newPassword');
+const confirmPasswordInput = document.getElementById('confirmPassword');
+
+const currentPasswordError = document.getElementById('currentPasswordError');
+const newPasswordError = document.getElementById('newPasswordError');
+const confirmPasswordError = document.getElementById('confirmPasswordError');
+
+const newPasswordSuccess = document.getElementById('newPasswordSuccess');
+const confirmPasswordSuccess = document.getElementById('confirmPasswordSuccess');
+
+// 비밀번호 수정 버튼 클릭 시 모달 표시
+if (changePasswordBtn) {
+    changePasswordBtn.addEventListener('click', function() {
+        settingsModal.classList.remove('show');
+        passwordModal.classList.add('show');
+        resetPasswordForm();
+    });
+}
+
+// 취소 버튼 클릭 시 모달 닫기
+if (passwordCancelBtn) {
+    passwordCancelBtn.addEventListener('click', function() {
+        passwordModal.classList.remove('show');
+        resetPasswordForm();
+    });
+}
+
+// 모달 외부 클릭 시 닫기
+if (passwordModal) {
+    passwordModal.addEventListener('click', function(e) {
+        if (e.target === passwordModal) {
+            passwordModal.classList.remove('show');
+            resetPasswordForm();
+        }
+    });
+}
+
+// 비밀번호 유효성 검사 (영어 대소문자/숫자/특수문자 중 3가지 이상, 8~15자)
+function validatePassword(password) {
+    if (password.length < 8 || password.length > 15) return false;
+    
+    let count = 0;
+    if (/[a-z]/.test(password)) count++;
+    if (/[A-Z]/.test(password)) count++;
+    if (/[0-9]/.test(password)) count++;
+    if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) count++;
+    
+    return count >= 3;
+}
+
+// 입력 필드 변경 시 유효성 검사
+function checkPasswordInputs() {
+    let isValid = true;
+    
+    // 새 비밀번호 유효성 검사
+    if (newPasswordInput && newPasswordInput.value.length > 0) {
+        if (!validatePassword(newPasswordInput.value)) {
+            newPasswordError.classList.add('show');
+            newPasswordSuccess.classList.remove('show');
+            isValid = false;
+        } else {
+            newPasswordError.classList.remove('show');
+            newPasswordSuccess.classList.add('show');
+        }
+    } else {
+        newPasswordError.classList.remove('show');
+        newPasswordSuccess.classList.remove('show');
+    }
+    
+    // 비밀번호 확인 일치 검사
+    if (confirmPasswordInput && confirmPasswordInput.value.length > 0) {
+        if (newPasswordInput.value !== confirmPasswordInput.value) {
+            confirmPasswordError.classList.add('show');
+            confirmPasswordSuccess.classList.remove('show');
+            isValid = false;
+        } else {
+            confirmPasswordError.classList.remove('show');
+            confirmPasswordSuccess.classList.add('show');
+        }
+    } else {
+        confirmPasswordError.classList.remove('show');
+        confirmPasswordSuccess.classList.remove('show');
+    }
+    
+    // 모든 필드가 입력되고 유효한 경우에만 버튼 활성화
+    if (currentPasswordInput && currentPasswordInput.value.length > 0 &&
+        newPasswordInput && newPasswordInput.value.length > 0 &&
+        confirmPasswordInput && confirmPasswordInput.value.length > 0 &&
+        isValid && validatePassword(newPasswordInput.value) &&
+        newPasswordInput.value === confirmPasswordInput.value) {
+        passwordSubmitBtn.disabled = false;
+    } else {
+        passwordSubmitBtn.disabled = true;
+    }
+}
+
+// 입력 이벤트 리스너
+if (currentPasswordInput) currentPasswordInput.addEventListener('input', checkPasswordInputs);
+if (newPasswordInput) newPasswordInput.addEventListener('input', checkPasswordInputs);
+if (confirmPasswordInput) confirmPasswordInput.addEventListener('input', checkPasswordInputs);
+
+// 폼 제출 처리
+if (passwordForm) {
+    passwordForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        if (passwordSubmitBtn.disabled) return;
+        
+        try {
+            const response = await fetch('/uauth/change-password/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    current_password: currentPasswordInput.value,
+                    new_password: newPasswordInput.value
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                passwordModal.classList.remove('show');
+                resetPasswordForm();
+                showConfirmModal('비밀번호가 성공적으로 변경되었습니다.');
+            } else {
+                if (data.error_type === 'current_password') {
+                    showConfirmModal('현재 비밀번호가 올바르지 않습니다.');
+                } 
+                else if (data.error_type === 'new_password') {
+                    showConfirmModal('새 비밀번호는 현재 비밀번호와 다르게 설정해야 합니다.');
+                }
+                else {
+                    showConfirmModal(data.message || '비밀번호 변경에 실패했습니다.');
+                }
+            }
+        } catch (error) {
+            console.error('Password change error:', error);
+            showConfirmModal('서버 오류가 발생했습니다.');
+        }
+    });
+}
+
+// 폼 리셋
+function resetPasswordForm() {
+    if (currentPasswordInput) currentPasswordInput.value = '';
+    if (newPasswordInput) newPasswordInput.value = '';
+    if (confirmPasswordInput) confirmPasswordInput.value = '';
+    if (currentPasswordError) currentPasswordError.classList.remove('show');
+    if (newPasswordError) newPasswordError.classList.remove('show');
+    if (confirmPasswordError) confirmPasswordError.classList.remove('show');
+    if (passwordSubmitBtn) passwordSubmitBtn.disabled = true;
+    if (newPasswordSuccess) newPasswordSuccess.classList.remove('show');
+    if (confirmPasswordSuccess) confirmPasswordSuccess.classList.remove('show');
+}
+
+// ========== 회원탈퇴 모달 ==========
+
+// 1. 요소 가져오기
+const withdrawBtn = document.getElementById('withdrawBtn');
+const withdrawModal = document.getElementById('withdrawModal');
+const withdrawCancelBtn = document.getElementById('withdrawCancelBtn');
+const withdrawConfirmBtn = document.getElementById('withdrawConfirmBtn');
+const withdrawPassword = document.getElementById('withdrawPassword');
+const withdrawError = document.getElementById('withdrawError');
+const withdrawCompleteModal = document.getElementById('withdrawCompleteModal');
+
+// 2. 회원탈퇴 버튼 클릭 → 모달 열기
+if (withdrawBtn) {
+    withdrawBtn.addEventListener('click', function() {
+        // 설정 모달 닫고
+        settingsModal.classList.remove('show');
+        // 회원탈퇴 모달 열기
+        withdrawModal.classList.add('show');
+    });
+}
+
+// 3. 취소 버튼 클릭 → 모달 닫기
+if (withdrawCancelBtn) {
+    withdrawCancelBtn.addEventListener('click', function() {
+        // 모달 닫기
+        withdrawModal.classList.remove('show');
+        // 폼 초기화
+        resetWithdrawForm();
+    });
+}
+
+// 4. 모달 외부 클릭 → 모달 닫기
+if (withdrawModal) {
+    withdrawModal.addEventListener('click', function(e) {
+        if (e.target === withdrawModal) {
+            // 모달 닫기
+            withdrawModal.classList.remove('show');
+            // 폼 초기화
+            resetWithdrawForm();
+        }
+    });
+}
+
+// 5. 비밀번호 입력 → 탈퇴 버튼 활성화
+if (withdrawPassword) {
+    withdrawPassword.addEventListener('input', function() {
+        // 입력값 있으면 버튼 활성화
+        if (this.value.trim().length > 0) {
+            withdrawConfirmBtn.disabled = false;
+        } 
+        // 없으면 비활성화
+        else {
+            withdrawConfirmBtn.disabled = true;
+        }
+    });
+}
+
+// 6. 탈퇴 버튼 클릭 → 서버에 요청
+if (withdrawConfirmBtn) {
+    withdrawConfirmBtn.addEventListener('click', async function() {
+        // 서버에 비밀번호 검증 + 탈퇴 요청
+        const password = withdrawPassword.value.trim();
+        try {
+            const response = await fetch('/uauth/withdraw/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ password })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                withdrawModal.classList.remove('show');
+                resetWithdrawForm();
+                withdrawCompleteModal.classList.add('show');
+                window.location.href = '/';
+            } else {
+                withdrawError.textContent = data.message || '회원탈퇴에 실패했습니다.';
+                withdrawError.classList.add('show');
+            }
+        } catch (error) {
+            console.error('Withdraw error:', error);
+            showConfirmModal('서버 오류가 발생했습니다.');
+        }
+    });
+}
+// 7. 폼 초기화 함수
+function resetWithdrawForm() {
+    // 비밀번호 입력 초기화
+    // 에러 메시지 숨기기
+    // 버튼 비활성화
+    if (withdrawPassword) withdrawPassword.value = '';
+    if (withdrawError) withdrawError.classList.remove('show');
+    if (withdrawConfirmBtn) withdrawConfirmBtn.disabled = true;
+    
 }

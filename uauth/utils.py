@@ -2,7 +2,8 @@ import random
 import string
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import User, EmailVerification
+from .models import User
+from datetime import datetime, timedelta
 
 
 def check_email_exists(email):
@@ -34,11 +35,21 @@ def generate_verification_code():
             return code
 
 
-def send_verification_email(email):
+def send_verification_email(email, request=None):
+    """
+    이메일로 인증코드 전송 (세션 기반)
+    """
     try:
-        EmailVerification.objects.filter(email=email).delete()
         code = generate_verification_code()
-        EmailVerification.objects.create(email=email, code=code)
+        
+        # 세션에 인증코드 저장 (3분 유효)
+        if request:
+            request.session[f'verification_code_{email}'] = {
+                'code': code,
+                'created_at': datetime.now().isoformat(),
+                'expires_at': (datetime.now() + timedelta(minutes=3)).isoformat()
+            }
+            request.session.modified = True
         
         # 이메일 제목과 본문
         subject = '[HairstyleLab] 이메일 인증코드'
@@ -70,21 +81,40 @@ HairstyleLab 가입을 위한 이메일 인증코드를 보내드립니다!
         return False, str(e)
 
 
-def verify_email_code(email, code):
+def verify_email_code(email, code, request=None):
+    """
+    이메일 인증코드 검증 (세션 기반)
+    """
     try:
-        verification = EmailVerification.objects.get(email=email, code=code)
+        if not request:
+            return False, "요청 정보가 없습니다."
+        
+        session_key = f'verification_code_{email}'
+        
+        if session_key not in request.session:
+            return False, "인증코드가 존재하지 않습니다."
+        
+        verification_data = request.session[session_key]
+        stored_code = verification_data.get('code')
+        expires_at_str = verification_data.get('expires_at')
         
         # 유효시간 확인
-        if verification.is_expired():
-            return False, "인증코드가 만료되었습니다."
+        if expires_at_str:
+            expires_at = datetime.fromisoformat(expires_at_str)
+            if datetime.now() > expires_at:
+                del request.session[session_key]
+                request.session.modified = True
+                return False, "인증코드가 만료되었습니다."
         
-        # 인증 완료 처리
-        verification.is_verified = True
-        verification.save()
+        # 코드 검증
+        if stored_code != code:
+            return False, "인증코드가 일치하지 않습니다."
+        
+        # 인증 완료 - 세션에서 제거
+        del request.session[session_key]
+        request.session.modified = True
         
         return True, "이메일 인증이 완료되었습니다."
     
-    except EmailVerification.DoesNotExist:
-        return False, "인증코드가 일치하지 않습니다."
     except Exception as e:
         return False, str(e)

@@ -61,7 +61,7 @@ body {
     flex-direction: column;
     align-items: center;
     padding: 40px 20px 60px;
-    max-width: 800px;
+    max-width: 700px;
     margin: 0 auto;
 }
 
@@ -121,6 +121,7 @@ body {
 
 .form-input:disabled {
     background: #f5f5f5;
+    color: #999;
     cursor: not-allowed;
 }
 
@@ -143,8 +144,8 @@ body {
 }
 
 .at-symbol {
-    color: var(--text-secondary);
-    font-size: 16px;
+    color: var(--text-primary);
+    font-size: 20px;
 }
 
 .domain-select-wrapper {
@@ -343,6 +344,9 @@ body {
     color: var(--text-secondary);
     cursor: pointer;
     transition: all 0.2s ease;
+    display:flex;
+    align-content:center;
+    justify-content:center;
 }
 
 .cancel-btn:hover {
