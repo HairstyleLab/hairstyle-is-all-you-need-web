@@ -49,28 +49,17 @@
         <div class="profile-area">
             <img src="{% static 'images/default_profile.png'%}" alt="프로필" class="profile-img" id="profileImg"/>
             <span class="profile-name">사용자</span>
+            <!-- 설정 버튼 -->
+            <button class="settings-btn" id="settingsBtn">
+                <img src="{% static 'images/settings_icon.png'%}" alt="설정" class="settings-icon"/>
+            </button>
         </div>
-        
-        <!-- 설정 버튼 -->
-        <button class="settings-btn" id="settingsBtn">
-            <img src="{% static 'images/settings_icon.png'%}" alt="설정" class="settings-icon"/>
-        </button>
+
+        <!-- 로그아웃 링크 -->
+        <button class="logout-sidebar-btn" id="logoutSidebarBtn">로그아웃</button>
 
         <!-- 설정 모달 -->
-        <div class="settings-modal" id="settingsModal">
-            <button class="settings-modal-item" id="editProfileBtn">
-                <img src="{% static 'images/edit_icon.png'%}" alt="프로필 편집" class="settings-modal-icon"/>
-                <span>프로필 편집</span>
-            </button>
-            <button class="settings-modal-item" id="changePasswordBtn">
-                <img src="{% static 'images/password_icon.png'%}" alt="비밀번호 수정" class="settings-modal-icon"/>
-                <span>비밀번호 수정</span>
-            </button>
-            <button class="settings-modal-item logout" id="logoutBtn">
-                <img src="{% static 'images/logout_icon.png'%}" alt="회원탈퇴" class="settings-modal-icon"/>
-                <span>회원탈퇴</span>
-            </button>
-        </div>
+        {% include 'main/settings_modal.html' %}
     </div>
 
     <!-- 사이드바 닫기 버튼 -->
@@ -124,6 +113,21 @@
 </div>
 
 {% include 'main/gallery_delete_modal.html' %}
+
+<!-- 로그아웃 확인 모달 -->
+{% include 'main/logout_modal.html' %}
+
+<!-- 확인 모달 -->
+{% include 'main/confirm_modal.html' %}
+
+<!-- 비밀번호 수정 모달 -->
+{% include 'main/password_modal.html' %}
+
+<!-- 회원탈퇴 모달 -->
+{% include 'main/withdraw_modal.html' %}
+
+<!-- 프로필 편집 모달 -->
+{% include 'main/profile_edit.html' %}
 
 {% endblock content %}
 

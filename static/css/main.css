@@ -812,7 +812,7 @@ body.logged-in.sidebar-expanded .header {
     display: none;
     align-items: center;
     justify-content: center;
-    z-index: 2000;
+    z-index: 3000;
 }
 
 .confirm-modal-overlay.show {
@@ -947,6 +947,7 @@ body.logged-in.sidebar-expanded .header {
     border-radius: 6px;
     transform: translateY(-2px);
 }
+
 /* 비밀번호 수정 모달 */
 .password-modal-overlay {
     position: fixed;
@@ -1080,4 +1081,191 @@ body.logged-in.sidebar-expanded .header {
 
 .password-submit-btn:not(:disabled):hover {
     background: #f5e6a3;
+}
+
+/* ========== 회원탈퇴 모달 ========== */
+.withdraw-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.withdraw-modal-overlay.show {
+    display: flex;
+}
+
+.withdraw-modal-content {
+    width: 500px;
+    background: white;
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    text-align: center;
+}
+
+.withdraw-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #ff4444;
+    margin-bottom: 20px;
+}
+
+.withdraw-warning {
+    font-size: 15px;
+    color: var(--text-primary);
+    line-height: 1.8;
+    margin-bottom: 30px;
+}
+
+.withdraw-input-group {
+    margin-bottom: 12px;
+}
+
+.withdraw-input {
+    width: 100%;
+    padding: 16px;
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    font-size: 15px;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.withdraw-input:focus {
+    outline: none;
+    border-color: #ff4444;
+}
+
+.withdraw-error {
+    font-size: 13px;
+    color: #ff4444;
+    margin-bottom: 24px;
+    display: none;
+}
+
+.withdraw-error.show {
+    display: block;
+}
+
+.withdraw-buttons {
+    display: flex;
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.withdraw-btn {
+    flex: 1;
+    padding: 16px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-family: 'Noto Sans KR', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.withdraw-btn.cancel-btn {
+    background: white;
+    border: 1px solid var(--border-light);
+    color: var(--text-primary);
+}
+
+.withdraw-btn.cancel-btn:hover {
+    background: #f5f5f5;
+}
+
+.withdraw-btn.confirm-btn {
+    background: #D9D9D9;
+    border: none;
+    color: var(--text-primary);
+}
+
+.withdraw-btn.confirm-btn:not(:disabled) {
+    background: #D9D9D9;
+    cursor: pointer;
+}
+
+.withdraw-btn.confirm-btn:not(:disabled):hover {
+    background: #c9c9c9;
+}
+
+/* ========== 회원탈퇴 완료 모달 ========== */
+.withdraw-complete-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2100;
+}
+
+.withdraw-complete-modal-overlay.show {
+    display: flex;
+}
+
+.withdraw-complete-modal-content {
+    width: 500px;
+    background: white;
+    border-radius: 20px;
+    padding: 50px 40px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    text-align: center;
+}
+
+.withdraw-complete-title {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+}
+
+.withdraw-complete-desc {
+    font-size: 15px;
+    color: var(--text-secondary);
+    margin-bottom: 40px;
+}
+
+.withdraw-complete-buttons {
+    display: flex;
+    justify-content: center;
+}
+
+.withdraw-complete-btn {
+    width: 100%;
+    padding: 16px;
+    background: white;
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    font-size: 16px;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.withdraw-complete-btn:hover {
+    background: #f5f5f5;
+}
+
+.password-success {
+    display: none;
+    font-size: 12px;
+    color: #22c55e;  /* 초록색 */
+    margin-top: 6px;
+}
+
+.password-success.show {
+    display: block;
 }

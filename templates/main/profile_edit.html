@@ -3,11 +3,11 @@
 
         <h2 class="modal-title">프로필 편집</h2>
 
-        <!-- 프로필 이미지 -->
+        <!-- 프로필 이미지 (관리자 계정 위해 src 변경) -->
         <div class="profile-image-wrapper">
             <img 
                 id="modalProfileImg"
-                src="{{ user.profile_image.url|default:'/static/images/default_profile.png' }}" 
+                src="{% if user.profile_image %}{{ user.profile_image.url }}{% else %}/static/images/default_profile.png{% endif %}" 
                 class="profile-image"
                 alt="프로필 이미지"
             />

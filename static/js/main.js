@@ -690,6 +690,9 @@ const currentPasswordError = document.getElementById('currentPasswordError');
 const newPasswordError = document.getElementById('newPasswordError');
 const confirmPasswordError = document.getElementById('confirmPasswordError');
 
+const newPasswordSuccess = document.getElementById('newPasswordSuccess');
+const confirmPasswordSuccess = document.getElementById('confirmPasswordSuccess');
+
 // 비밀번호 수정 버튼 클릭 시 모달 표시
 if (changePasswordBtn) {
     changePasswordBtn.addEventListener('click', function() {
@@ -738,24 +741,30 @@ function checkPasswordInputs() {
     if (newPasswordInput && newPasswordInput.value.length > 0) {
         if (!validatePassword(newPasswordInput.value)) {
             newPasswordError.classList.add('show');
+            newPasswordSuccess.classList.remove('show');
             isValid = false;
         } else {
             newPasswordError.classList.remove('show');
+            newPasswordSuccess.classList.add('show');
         }
     } else {
         newPasswordError.classList.remove('show');
+        newPasswordSuccess.classList.remove('show');
     }
     
     // 비밀번호 확인 일치 검사
     if (confirmPasswordInput && confirmPasswordInput.value.length > 0) {
         if (newPasswordInput.value !== confirmPasswordInput.value) {
             confirmPasswordError.classList.add('show');
+            confirmPasswordSuccess.classList.remove('show');
             isValid = false;
         } else {
             confirmPasswordError.classList.remove('show');
+            confirmPasswordSuccess.classList.add('show');
         }
     } else {
         confirmPasswordError.classList.remove('show');
+        confirmPasswordSuccess.classList.remove('show');
     }
     
     // 모든 필드가 입력되고 유효한 경우에만 버튼 활성화
@@ -803,8 +812,12 @@ if (passwordForm) {
                 showConfirmModal('비밀번호가 성공적으로 변경되었습니다.');
             } else {
                 if (data.error_type === 'current_password') {
-                    currentPasswordError.classList.add('show');
-                } else {
+                    showConfirmModal('현재 비밀번호가 올바르지 않습니다.');
+                } 
+                else if (data.error_type === 'new_password') {
+                    showConfirmModal('새 비밀번호는 현재 비밀번호와 다르게 설정해야 합니다.');
+                }
+                else {
                     showConfirmModal(data.message || '비밀번호 변경에 실패했습니다.');
                 }
             }
@@ -824,4 +837,106 @@ function resetPasswordForm() {
     if (newPasswordError) newPasswordError.classList.remove('show');
     if (confirmPasswordError) confirmPasswordError.classList.remove('show');
     if (passwordSubmitBtn) passwordSubmitBtn.disabled = true;
+    if (newPasswordSuccess) newPasswordSuccess.classList.remove('show');
+    if (confirmPasswordSuccess) confirmPasswordSuccess.classList.remove('show');
+}
+
+// ========== 회원탈퇴 모달 ==========
+
+// 1. 요소 가져오기
+const withdrawBtn = document.getElementById('withdrawBtn');
+const withdrawModal = document.getElementById('withdrawModal');
+const withdrawCancelBtn = document.getElementById('withdrawCancelBtn');
+const withdrawConfirmBtn = document.getElementById('withdrawConfirmBtn');
+const withdrawPassword = document.getElementById('withdrawPassword');
+const withdrawError = document.getElementById('withdrawError');
+const withdrawCompleteModal = document.getElementById('withdrawCompleteModal');
+
+// 2. 회원탈퇴 버튼 클릭 → 모달 열기
+if (withdrawBtn) {
+    withdrawBtn.addEventListener('click', function() {
+        // 설정 모달 닫고
+        settingsModal.classList.remove('show');
+        // 회원탈퇴 모달 열기
+        withdrawModal.classList.add('show');
+    });
+}
+
+// 3. 취소 버튼 클릭 → 모달 닫기
+if (withdrawCancelBtn) {
+    withdrawCancelBtn.addEventListener('click', function() {
+        // 모달 닫기
+        withdrawModal.classList.remove('show');
+        // 폼 초기화
+        resetWithdrawForm();
+    });
+}
+
+// 4. 모달 외부 클릭 → 모달 닫기
+if (withdrawModal) {
+    withdrawModal.addEventListener('click', function(e) {
+        if (e.target === withdrawModal) {
+            // 모달 닫기
+            withdrawModal.classList.remove('show');
+            // 폼 초기화
+            resetWithdrawForm();
+        }
+    });
+}
+
+// 5. 비밀번호 입력 → 탈퇴 버튼 활성화
+if (withdrawPassword) {
+    withdrawPassword.addEventListener('input', function() {
+        // 입력값 있으면 버튼 활성화
+        if (this.value.trim().length > 0) {
+            withdrawConfirmBtn.disabled = false;
+        } 
+        // 없으면 비활성화
+        else {
+            withdrawConfirmBtn.disabled = true;
+        }
+    });
+}
+
+// 6. 탈퇴 버튼 클릭 → 서버에 요청
+if (withdrawConfirmBtn) {
+    withdrawConfirmBtn.addEventListener('click', async function() {
+        // 서버에 비밀번호 검증 + 탈퇴 요청
+        const password = withdrawPassword.value.trim();
+        try {
+            const response = await fetch('/uauth/withdraw/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ password })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                withdrawModal.classList.remove('show');
+                resetWithdrawForm();
+                withdrawCompleteModal.classList.add('show');
+                window.location.href = '/';
+            } else {
+                withdrawError.textContent = data.message || '회원탈퇴에 실패했습니다.';
+                withdrawError.classList.add('show');
+            }
+        } catch (error) {
+            console.error('Withdraw error:', error);
+            showConfirmModal('서버 오류가 발생했습니다.');
+        }
+    });
+}
+// 7. 폼 초기화 함수
+function resetWithdrawForm() {
+    // 비밀번호 입력 초기화
+    // 에러 메시지 숨기기
+    // 버튼 비활성화
+    if (withdrawPassword) withdrawPassword.value = '';
+    if (withdrawError) withdrawError.classList.remove('show');
+    if (withdrawConfirmBtn) withdrawConfirmBtn.disabled = true;
+    
 }
