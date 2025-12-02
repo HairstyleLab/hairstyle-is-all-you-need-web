@@ -59,13 +59,11 @@ body {
     flex-direction: column;
     align-items: center;
     padding: 60px 20px;
-    max-width: 700px;
+    max-width: 600px;
     margin: 0 auto;
 }
 
 /* 로고 섹션 */
-
-
 .main-logo {
     width: 225px;
     height: auto;

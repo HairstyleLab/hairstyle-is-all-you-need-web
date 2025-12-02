@@ -160,7 +160,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     emailHelperText.textContent = '인증코드가 재발송되었습니다. 3분 안에 인증코드를 정확히 입력해주세요';
                     emailHelperText.style.color = 'blue';
                 } else {
-                    emailHelperText.textContent = '입력하신 이메일로 인증코드를 보내드렸습니다. 3분 안에 인증코드를 정확히 입력해주세요';
+                    emailHelperText.textContent = '인증코드가 발송되었습니다. 3분 안에 인증코드를 정확히 입력해주세요';
                 }
                 emailHelperText.style.color = 'var(--text-primary)';
                 
