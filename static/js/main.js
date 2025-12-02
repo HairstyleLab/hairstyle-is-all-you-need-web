@@ -23,7 +23,32 @@ const confirmBtn = document.getElementById('confirmBtn');
 document.addEventListener('DOMContentLoaded', async function() {
     await checkLoginStatus();
     initSidebarEvents();
+    initTextareaAutoResize();
 });
+
+// Textarea 자동 높이 조정
+function initTextareaAutoResize() {
+    const textarea = document.getElementById('messageInput');
+    if (textarea) {
+        // 입력 이벤트에서 높이 조정
+        textarea.addEventListener('input', function() {
+            autoResizeTextarea(this);
+        });
+    }
+}
+
+// Textarea 높이 자동 조정 함수
+function autoResizeTextarea(textarea) {
+    const minHeight = 24; // CSS의 height와 일치
+    
+    // 높이를 최소값으로 리셋
+    textarea.style.height = minHeight + 'px';
+    
+    // scrollHeight가 minHeight보다 크면 조정
+    if (textarea.scrollHeight > minHeight) {
+        textarea.style.height = textarea.scrollHeight + 'px';
+    }
+}
 
 // 서버에서 로그인 상태 확인
 async function checkLoginStatus() {
@@ -63,6 +88,9 @@ function updateUserProfile() {
         if (greeting) {
             greeting.textContent = `안녕하세요, ${currentUser.nickname || '사용자'}님😊`;
         }
+        
+        // 프로필 이미지 버튼 상태 업데이트
+        updateProfileImageButtonState();
     }
 }
 
@@ -208,13 +236,7 @@ const sendBtn = document.getElementById('sendBtn');
 
 if (messageInput && sendBtn) {
     messageInput.addEventListener('input', function() {
-        if (this.value.trim().length > 0) {
-            sendBtn.disabled = false;
-            sendBtn.classList.add('active');
-        } else {
-            sendBtn.disabled = true;
-            sendBtn.classList.remove('active');
-        }
+        updateSendBtnState();
     });
 
     // 전송 버튼 클릭 이벤트
@@ -352,18 +374,6 @@ async function handleLogin(event) {
     } catch (error) {
         console.error('Login error:', error);
         // 테스트용: 서버 연결 실패 시 테스트 계정으로 로그인 허용
-        if (email === 'test@test.com' && password === 'test1234') {
-            isLoggedIn = true;
-            currentUser = { email: email, nickname: '테스트유저', profile_image: null };
-            toggleModal();
-            updateUserProfile();
-            updateUIForLoginState();
-            submitBtn.disabled = false;
-            submitBtn.textContent = '로그인';
-            document.getElementById('email').value = '';
-            document.getElementById('password').value = '';
-            return;
-        }
         errorMessage.textContent = '로그인 처리 중 오류가 발생했습니다.';
         errorMessage.classList.add('show');
         submitBtn.disabled = false;
@@ -390,3 +400,148 @@ if (confirmBtn) {
         }
     });
 }
+
+// Add Icon Modal 관련 이벤트
+const addIcon = document.getElementById('add-icon');
+const addIconModal = document.getElementById('addIconModal');
+const addIconModalOverlay = document.getElementById('addIconModalOverlay');
+const addIconModalClose = document.getElementById('addIconModalClose');
+const deviceExploreBtn = document.getElementById('deviceExploreBtn');
+const profileImageBtn = document.getElementById('profileImageBtn');
+const imageFileInput = document.getElementById('imageFileInput');
+const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+const previewImage = document.getElementById('previewImage');
+const removeImageBtn = document.getElementById('removeImageBtn');
+let selectedImageFile = null;
+
+// 전송 버튼 상태 업데이트 함수
+function updateSendBtnState() {
+    if (messageInput.value.trim().length > 0 || (imagePreviewContainer && imagePreviewContainer.style.display === 'flex')) {
+        sendBtn.disabled = false;
+        sendBtn.classList.add('active');
+    } else {
+        sendBtn.disabled = true;
+        sendBtn.classList.remove('active');
+    }
+}
+
+// Add-icon 클릭 시 모달 열기
+if (addIcon) {
+    addIcon.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (isLoggedIn) {
+            addIconModal.classList.add('show');
+        } else {
+            // 로그인 안 된 상태에서 로그인 모달 표시
+            const loginModal = document.getElementById('loginModal');
+            if (loginModal) {
+                loginModal.classList.add('active');
+            }
+        }
+    });
+}
+
+// 모달 닫기 버튼
+if (addIconModalClose) {
+    addIconModalClose.addEventListener('click', function() {
+        addIconModal.classList.remove('show');
+    });
+}
+
+// 모달 오버레이 클릭 시 닫기
+if (addIconModalOverlay) {
+    addIconModalOverlay.addEventListener('click', function() {
+        addIconModal.classList.remove('show');
+    });
+}
+
+// 디바이스에서 탐색 버튼
+if (deviceExploreBtn) {
+    deviceExploreBtn.addEventListener('click', function() {
+        imageFileInput.click();
+    });
+}
+
+// 프로필 이미지 버튼 상태 업데이트 함수
+function updateProfileImageButtonState() {
+    if (profileImageBtn) {
+        const hasCustomProfile = currentUser && currentUser.profile_image && !currentUser.profile_image.includes('default_profile');
+        
+        if (hasCustomProfile) {
+            profileImageBtn.disabled = false;
+            profileImageBtn.style.cursor = 'pointer';
+            profileImageBtn.style.opacity = '1';
+        } else {
+            profileImageBtn.disabled = true;
+            profileImageBtn.style.cursor = 'not-allowed';
+            profileImageBtn.style.opacity = '0.5';
+        }
+    }
+}
+
+// 프로필 이미지 사용 버튼
+if (profileImageBtn) {
+    profileImageBtn.addEventListener('click', function(e) {
+        if (this.disabled) {
+            e.preventDefault();
+            return;
+        }
+        
+        console.log('프로필 이미지 버튼 클릭, currentUser:', currentUser);
+        if (currentUser && currentUser.profile_image && !currentUser.profile_image.includes('default_profile')) {
+            console.log('프로필 이미지 표시:', currentUser.profile_image);
+            previewImage.src = currentUser.profile_image;
+            imagePreviewContainer.style.display = 'flex';
+            selectedImageFile = null; // 파일 선택 초기화
+            addIconModal.classList.remove('show');
+            updateSendBtnState();
+        }
+    });
+    
+    // 초기 상태 설정
+    updateProfileImageButtonState();
+}
+
+// 파일 선택 후 처리
+if (imageFileInput) {
+    imageFileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            // 선택된 파일을 변수에 저장
+            selectedImageFile = file;
+            
+            // 이미지 미리보기 표시
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                previewImage.src = event.target.result;
+                imagePreviewContainer.style.display = 'flex';
+                updateSendBtnState();
+            };
+            reader.readAsDataURL(file);
+            
+            addIconModal.classList.remove('show');
+        }
+    });
+}
+
+// 이미지 제거 버튼
+if (removeImageBtn) {
+    removeImageBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        selectedImageFile = null;
+        imagePreviewContainer.style.display = 'none';
+        previewImage.src = '';
+        imageFileInput.value = '';
+        updateSendBtnState();
+    });
+}
+
+// 모달 바깥 클릭 시 닫기
+document.addEventListener('click', function(e) {
+    if (addIconModal && addIconModal.classList.contains('show')) {
+        // 모달, add-icon 요소를 클릭하지 않았을 때만 닫기
+        if (!addIconModal.contains(e.target) && !addIcon.contains(e.target)) {
+            addIconModal.classList.remove('show');
+        }
+    }
+});
