@@ -322,3 +322,58 @@ def reset_password(request):
             'success': False,
             'message': f'오류가 발생했습니다: {str(e)}'
         }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def change_password(request):
+    """비밀번호 변경 (로그인된 사용자)"""
+    try:
+        if not request.user.is_authenticated:
+            return JsonResponse({
+                'success': False,
+                'message': '로그인이 필요합니다.'
+            }, status=401)
+        
+        data = json.loads(request.body)
+        current_password = data.get('current_password')
+        new_password = data.get('new_password')
+        
+        if not current_password or not new_password:
+            return JsonResponse({
+                'success': False,
+                'message': '현재 비밀번호와 새 비밀번호를 입력해주세요.'
+            }, status=400)
+        
+        user = request.user
+        
+        # 현재 비밀번호 확인
+        if not user.check_password(current_password):
+            return JsonResponse({
+                'success': False,
+                'message': '현재 비밀번호가 올바르지 않습니다.',
+                'error_type': 'current_password'
+            }, status=400)
+        
+        # 새 비밀번호 설정
+        user.set_password(new_password)
+        user.save()
+        
+        # 비밀번호 변경 후 다시 로그인 처리
+        login(request, user)
+        
+        return JsonResponse({
+            'success': True,
+            'message': '비밀번호가 성공적으로 변경되었습니다.'
+        })
+    
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'message': '잘못된 요청입니다.'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'오류가 발생했습니다: {str(e)}'
+        }, status=500)
