@@ -415,7 +415,6 @@ def change_password(request):
             'success': False,
             'message': f'오류가 발생했습니다: {str(e)}'
         }, status=500)
-<<<<<<< HEAD
         
 @csrf_exempt
 @require_http_methods(["POST"])
@@ -452,5 +451,3 @@ def withdraw(request):
             'success': False,
             'message': f'오류가 발생했습니다: {str(e)}'
         }, status=500)
-=======
->>>>>>> origin/develop
