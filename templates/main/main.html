@@ -3,7 +3,6 @@
 
 {% block content %}
 
-
     <!-- 사이드바 -->
     <aside class="sidebar" id="sidebar">
         <img class='sidebar-logo' src="{% static 'images/small_logo.png'%}"/>
@@ -71,6 +70,18 @@
         </button>
     </aside>
 
+    <div id="pictorial-wrapper" class="pictorial-wrapper">
+        <div id="pictorial-book" class="pictorial-book">
+            <div class="pictorial-header">
+                <span>헤어도감</span>
+                <button id="closePictorialBtn" class="closePictorialBtn"></button>
+            </div>
+            <div class="pictorial-content">
+                <p>헤어도감 콘텐츠 영역</p>
+            </div>
+        </div>
+    </div>
+
     <div class="main-container" id="mainContainer">
         <!-- 헤더 -->
         <header class="header" id="header">
@@ -119,4 +130,5 @@
 {% endblock content %}
 {% block script %}
 <script src="{% static 'js/main.js' %}"></script>
+<script src="{% static 'js/pictorial_book.js' %}"></script>
 {% endblock script %}

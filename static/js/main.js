@@ -261,6 +261,7 @@ function initSidebarEvents() {
     if (galleryBtn) {
         galleryBtn.addEventListener('click', () => location.href = '/main/gallery/');
     }
+
 }
 
 // 사이드바 확장/축소 토글
