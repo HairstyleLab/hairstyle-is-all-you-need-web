@@ -1,0 +1,257 @@
+/* 전체 페이지 레이아웃 (사이드바는 base.html에서 이미 존재한다고 가정) */
+.gallery-page {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* 메인 영역(사이드바 옆) */
+.gallery-main {
+  flex: 1;
+  padding: 24px 32px;
+  box-sizing: border-box;
+}
+
+/* 헤더 영역 */
+.gallery-header {
+  margin-bottom: 16px;
+}
+
+.gallery-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.gallery-subtitle {
+  margin-top: 4px;
+  font-size: 14px;
+  color: #666666;
+}
+
+/* 이미지 없음 메시지 */
+.gallery-empty {
+  margin-top: 24px;
+  color: #888888;
+  font-size: 14px;
+}
+
+/* 갤러리 그리드: 기본 2열에서 점점 늘려서 데스크탑 기준 최대 5열 */
+.gallery-section {
+  margin-top: 16px;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+/* 화면이 넓어질수록 열 개수 증가 */
+@media (min-width: 768px) {
+  .gallery-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .gallery-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .gallery-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+/* 개별 이미지 카드 */
+.gallery-item {
+  position: relative;
+}
+
+.image-wrapper {
+  overflow: visible;
+  position: relative;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  background-color: #f7f7f7;
+}
+
+/* 기존 gallery-image 스타일이 있다면 그대로 두고, 없으면 아래처럼 사용 */
+.gallery-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  transition: transform 0.2s ease;
+}
+
+.image-wrapper:hover .gallery-image {
+  transform: scale(1.03);
+}
+
+/* ... 버튼(세 개의 점) */
+.image-menu-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 34px;
+  height: 26px;
+  padding: 0 6px;
+  border-radius: 999px;
+  border: none;
+  background-color: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  opacity: 0;
+  pointer-events: none;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transition: opacity 0.15s ease;
+}
+
+/* 점 세 개 */
+.image-menu-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background-color: #555555;
+}
+
+/* 이미지에 마우스올리면 버튼 등장 */
+.image-wrapper:hover .image-menu-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ============================
+   작은 옵션 모달 (이미지 저장 / 삭제)
+   ============================ */
+
+.image-menu {
+  position: absolute;
+  
+  /* 핵심: 위로 올리는 설정 */
+  top: auto;          /* top 설정을 초기화 */
+  bottom: 100%;       /* 메뉴의 바닥을 부모 요소의 천장에 딱 붙임 */
+  right: 8px;         /* 우측 여백 */
+  margin-bottom: 8px; /* 버튼과 메뉴 사이의 간격 */
+  
+  /* 스타일 */
+  min-width: 120px;
+  padding: 10px 14px;
+  background-color: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.16);
+  box-sizing: border-box;
+  
+  /* 동작 */
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  
+  /* 제일 앞으로 가져오기 */
+  z-index: 9999; 
+}
+.image-menu.is-open {
+  display: flex;
+}
+
+.image-menu-item {
+  display: flex;
+  width: 100%;
+  padding: 4px 0;
+  border: none;
+  background: none;
+  text-align: left;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.image-menu-item + .image-menu-item {
+  margin-top: 2px;
+}
+
+.image-menu-item.save {
+  color: #222222;
+}
+
+.image-menu-item.delete {
+  color: #e53935; /* 빨간색 텍스트 */
+}
+
+/* 밖을 클릭해도 스크롤은 막지 않기 때문에
+   별도의 오버레이는 쓰지 않고, document 클릭 이벤트로만 닫음 */
+
+/* ============================
+   이미지 삭제 확인 모달 (전체 화면)
+   ============================ */
+
+body.no-scroll {
+  overflow: hidden;
+}
+
+.delete-modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.35);
+  z-index: 1000;
+}
+
+.delete-modal-overlay.is-open {
+  display: flex;
+}
+
+.delete-modal {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 22px 20px 18px;
+  min-width: 260px;
+  max-width: 340px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  box-sizing: border-box;
+}
+
+.delete-modal-text {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  color: #333333;
+  text-align: center;
+}
+
+.delete-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.delete-modal-btn {
+  min-width: 72px;
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 6px;
+  border: 1px solid #dddddd;
+  cursor: pointer;
+  background-color: #f5f5f5;
+}
+
+.delete-modal-btn.cancel:hover {
+  background-color: #eaeaea;
+}
+
+.delete-modal-btn.confirm {
+  border-color: #ff6b4a;
+  background-color: #ff6b4a;
+  color: #ffffff;
+}
+
+.delete-modal-btn.confirm:hover {
+  background-color: #f25b39;
+}

@@ -75,11 +75,7 @@
         <!-- 헤더 -->
         <header class="header" id="header">
             <button class="login-btn" onclick="toggleModal()">
-                <svg class="login-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M15 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M10 17L15 12L10 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M15 12H3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
+                <img src="{% static 'images/login_icon.png'%}" alt="로그인" class="close-icon"/>
                 로그인
             </button>
         </header>
@@ -90,11 +86,19 @@
 
             <div class="input-area">
                 <div class="input-container">
-                    <img src="{% static 'images/add_icon.png' %}" class="add-icon" id="add-icon" alt="추가">
-                    <input type="text" class="input-field" id="messageInput">
-                    <button class="send-btn" id="sendBtn" disabled>
-                        <img src="{% static 'images/send_icon.png' %}" class="send-icon" alt="전송">
-                    </button>
+                    <!-- Add Icon 모달 -->
+                    {% include 'main/add_icon_modal.html' %}
+                    <div class="image-preview-container" id="imagePreviewContainer" style="display: none;">
+                        <img id="previewImage" class="preview-image" alt="선택된 이미지">
+                        <button type="button" class="remove-image-btn" id="removeImageBtn">×</button>
+                    </div>
+                    <div class="input-other-content">
+                        <img src="{% static 'images/add_icon.png' %}" class="add-icon" id="add-icon" alt="추가">
+                        <textarea class="input-field" id="messageInput"></textarea>
+                        <button class="send-btn" id="sendBtn" disabled>
+                            <img src="{% static 'images/send_icon.png' %}" class="send-icon" alt="전송">
+                        </button>
+                    </div>
                 </div>
             </div>
         </main>
@@ -108,6 +112,9 @@
     
     <!-- 확인 모달 -->
     {% include 'main/confirm_modal.html' %}
+
+    <!-- 비밀번호 수정 모달 -->
+    {% include 'main/password_modal.html' %}
 
 {% endblock content %}
 {% block script %}
