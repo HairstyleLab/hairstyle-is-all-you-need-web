@@ -354,6 +354,13 @@ def change_password(request):
                 'message': '현재 비밀번호가 올바르지 않습니다.',
                 'error_type': 'current_password'
             }, status=400)
+            
+        if user.check_password(new_password):
+            return JsonResponse({
+                'success': False,
+                'message': '새 비밀번호는 현재 비밀번호와 다르게 설정해야 합니다.',
+                'error_type': 'new_password'
+            }, status=400)
         
         # 새 비밀번호 설정
         user.set_password(new_password)
@@ -372,6 +379,42 @@ def change_password(request):
             'success': False,
             'message': '잘못된 요청입니다.'
         }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'오류가 발생했습니다: {str(e)}'
+        }, status=500)
+        
+@csrf_exempt
+@require_http_methods(["POST"])
+def withdraw(request):
+    """회원 탈퇴 처리"""
+    try:
+        if not request.user.is_authenticated:
+            return JsonResponse({
+                'success': False,
+                'message': '로그인이 필요합니다.'
+            }, status=401)
+            
+        data = json.loads(request.body)
+        password = data.get('password')
+                
+        user = request.user
+        
+        if not user.check_password(password):
+            return JsonResponse({
+                'success': False,
+                'message': '비밀번호가 올바르지 않습니다.'
+            }, status=400)
+            
+        user.delete()
+        logout(request)
+        
+        return JsonResponse({
+            'success': True,
+            'message': '회원 탈퇴가 완료되었습니다.'
+        })
+    
     except Exception as e:
         return JsonResponse({
             'success': False,
