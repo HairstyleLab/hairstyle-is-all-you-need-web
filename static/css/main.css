@@ -274,7 +274,7 @@ body {
 /* 설정 모달 */
 .settings-modal {
     position: absolute;
-    bottom: 70px;
+    bottom: 90px;
     right: 8px;
     background: white;
     border-radius: 12px;
@@ -416,18 +416,25 @@ body {
 .input-area {
     width: 100%;
     max-width: 880px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 .input-container {
     position: relative;
     background: white;
     border: 1px solid var(--border-light);
-    border-radius: 30px;
-    padding: 0 10px;
-    height: 50px;
+    border-radius: 16px;
+    padding: 10px;
     display: flex;
-    align-items: center;
-    gap: 12px;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 50px;
+}
+
+.input-wrapper {
+    display: none;
 }
 
 .add-icon {
@@ -436,25 +443,86 @@ body {
     color: var(--text-secondary);
     cursor: not-allowed;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+body.logged-in .add-icon {
+    cursor: pointer;
+    color: var(--accent-flame);
+}
+
+.input-other-content {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 3px;
 }
 
 .input-field {
     flex: 1;
     border: none;
     outline: none;
-    font-size: 20px;
+    font-size: 16px;
     font-family: 'Noto Sans KR', sans-serif;
     color: var(--text-primary);
     background: transparent;
+    resize: none;
+    min-height: 24px;
+    height: 24px;
+    padding: 0 5px;
+    line-height: 1.5;
+    overflow: hidden;
+    min-width: 200px;
 }
 
-.input-field::placeholder {
-    color: transparent;
+/* 이미지 미리보기 */
+.image-preview-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 250px;
+    height: 250px;
+    border-radius: 8px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.preview-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.remove-image-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 20px;
+    height: 20px;
+    color: white;
+    border: none;
+    cursor: pointer;
+    background-color: transparent;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: transform 0.2s ease;
+}
+
+.remove-image-btn:hover {
+    transform: scale(1.5);
 }
 
 .send-btn {
-    width: 36px;
-    height: 36px;
+    width: 30px;
+    height: 30px;
     background: #D9D9D9;
     border: none;
     border-radius: 50%;
@@ -464,6 +532,7 @@ body {
     cursor: not-allowed;
     transition: all 0.2s ease;
     flex-shrink: 0;
+    padding: 0;
 }
 
 
@@ -795,4 +864,84 @@ body.logged-in.sidebar-expanded .header {
 
 .confirm-btn:hover {
     background: var(--accent-flame);
+}
+
+/* Add Icon Modal */
+.add-icon-modal {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    margin-bottom: 8px;
+    border-radius: 10px;
+    width: 150px;
+    height: auto;
+    display: none;
+    flex-direction: column;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    z-index: 2000;
+}
+
+.add-icon-modal.show {
+    display: flex;
+}
+
+.add-icon-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+.add-icon-modal-content {
+    position: relative;
+    background: white;
+    border: none;
+    padding: 16px;
+    width: 150px;
+    max-width: 90vw;
+    border-radius: 10px;
+    z-index: 2001;
+    animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(10px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.add-icon-modal-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.add-icon-modal-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--text-primary);
+    font-weight: 500;
+    transition: all 0.2s ease;
+    width: 100%;
+}
+
+.add-icon-modal-item:hover:not(:disabled) {
+    border-color: var(--accent-flame);
+    background: rgba(255, 107, 74, 0.05);
+    border-radius: 6px;
+    transform: translateY(-2px);
 }
