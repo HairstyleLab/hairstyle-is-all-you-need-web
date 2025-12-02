@@ -3,6 +3,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 import json
+import re
 from .utils import send_verification_email, verify_email_code, check_email_exists
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -340,6 +341,16 @@ def update_profile(request):
     # 닉네임 수정
     nickname = request.POST.get("nickname")
     if nickname:
+        # 닉네임 유효성 검사 (한글만 2~10글자 또는 영어만 2~10글자)
+        korean_only = re.match(r'^[가-힣]{2,10}$', nickname)
+        english_only = re.match(r'^[a-zA-Z]{2,10}$', nickname)
+
+        if not (korean_only or english_only):
+            return JsonResponse({
+                "success": False,
+                "message": "해당 닉네임은 형식에 맞지 않습니다."
+            })
+
         user.nickname = nickname
 
     # 프로필 이미지 수정

@@ -332,26 +332,20 @@ if (messageInput && sendBtn) {
     // 전송 버튼 클릭 이벤트
     sendBtn.addEventListener('click', function() {
         if (this.disabled) return;
-        
+
         if (!isLoggedIn) {
             // 로그인되지 않았으면 로그인 모달 표시
             toggleModal();
         } else {
             // 로그인되어 있으면 메시지 전송
-            const message = messageInput.value.trim();
-            if (message) {
-                console.log('메시지 전송:', message);
-                // 여기에 메시지 전송 로직 추가
-                messageInput.value = '';
-                sendBtn.disabled = true;
-                sendBtn.classList.remove('active');
-            }
+            sendMessage();
         }
     });
 
-    // Enter 키로 전송
+    // Enter 키로 전송 (Shift+Enter는 줄바꿈)
     messageInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter' && !sendBtn.disabled) {
+        if (e.key === 'Enter' && !e.shiftKey && !sendBtn.disabled) {
+            e.preventDefault();
             sendBtn.click();
         }
     });
@@ -495,12 +489,40 @@ if (confirmBtn) {
 const profileSaveBtn = document.getElementById("profileSaveBtn");
 const nicknameInput = document.getElementById("nicknameInput");
 const profileImgInput = document.getElementById("profileImgInput");
+const nicknameError = document.getElementById("nicknameError");
+
+// 닉네임 유효성 검사 함수 (한글 또는 영어만, 2~10글자)
+function validateNickname(nickname) {
+    const koreanOnly = /^[가-힣]{2,10}$/;
+    const englishOnly = /^[a-zA-Z]{2,10}$/;
+    return koreanOnly.test(nickname) || englishOnly.test(nickname);
+}
 
 // "수정" 버튼 클릭 시 API 호출
 if (profileSaveBtn) {
     profileSaveBtn.addEventListener("click", () => {
+        const nickname = nicknameInput.value.trim();
+        const originalNickname = currentUser ? currentUser.nickname : nicknameInput.defaultValue;
+
+        // 닉네임이 원래와 같은지 확인
+        if (nickname === originalNickname) {
+            nicknameError.textContent = "같은 닉네임으로는 수정할 수 없습니다.";
+            nicknameError.classList.add("show");
+            return;
+        }
+
+        // 닉네임 유효성 검사
+        if (!validateNickname(nickname)) {
+            nicknameError.textContent = "해당 닉네임은 형식에 맞지 않습니다.";
+            nicknameError.classList.add("show");
+            return;
+        }
+
+        // 유효성 검사 통과하면 에러 메시지 숨김
+        nicknameError.classList.remove("show");
+
         const formData = new FormData();
-        formData.append("nickname", nicknameInput.value.trim());
+        formData.append("nickname", nickname);
         if (profileImgInput.files[0]) {
             formData.append("profile_image", profileImgInput.files[0]);
         }
@@ -527,8 +549,21 @@ if (profileSaveBtn) {
 
                 profileEditModal.classList.remove("show");
                 showConfirmModal("프로필이 수정되었습니다!");
+            } else {
+                // 서버에서 유효성 검사 실패한 경우
+                nicknameError.textContent = data.message || "해당 닉네임은 형식에 맞지 않습니다.";
+                nicknameError.classList.add("show");
             }
         });
+    });
+}
+
+// 닉네임 입력 시 에러 메시지 숨김
+if (nicknameInput) {
+    nicknameInput.addEventListener("input", () => {
+        if (nicknameError.classList.contains("show")) {
+            nicknameError.classList.remove("show");
+        }
     });
 }
 // Add Icon Modal 관련 이벤트
@@ -938,5 +973,120 @@ function resetWithdrawForm() {
     if (withdrawPassword) withdrawPassword.value = '';
     if (withdrawError) withdrawError.classList.remove('show');
     if (withdrawConfirmBtn) withdrawConfirmBtn.disabled = true;
-    
+
+}
+
+// ========== 채팅 메시지 기능 ==========
+
+// 메시지 전송 함수
+function sendMessage() {
+    const message = messageInput.value.trim();
+    const chatMessages = document.getElementById('chatMessages');
+    const greeting = document.getElementById('greeting');
+    const content = document.querySelector('.content');
+
+    // 사용자 메시지와 이미지가 있는지 확인
+    const hasMessage = message.length > 0;
+    const hasImage = imagePreviewContainer && imagePreviewContainer.style.display === 'flex';
+
+    if (hasMessage || hasImage) {
+        // 첫 메시지 전송 시 레이아웃 전환
+        if (!chatMessages.classList.contains('active')) {
+            // 인사말 페이드아웃
+            if (greeting) {
+                greeting.classList.add('hidden');
+            }
+
+            // 채팅 영역 활성화 및 레이아웃 전환
+            setTimeout(() => {
+                if (greeting) {
+                    greeting.style.display = 'none';
+                }
+                chatMessages.classList.add('active');
+                content.classList.add('chat-started');
+            }, 300);
+        }
+
+        // 사용자 메시지 표시
+        addUserMessage(message, hasImage ? previewImage.src : null);
+
+        // 입력 필드 초기화
+        messageInput.value = '';
+        if (hasImage) {
+            selectedImageFile = null;
+            imagePreviewContainer.style.display = 'none';
+            previewImage.src = '';
+            imageFileInput.value = '';
+        }
+
+        // 전송 버튼 비활성화
+        sendBtn.disabled = true;
+        sendBtn.classList.remove('active');
+
+        // textarea 높이 리셋
+        autoResizeTextarea(messageInput);
+
+        // 3초 후 챗봇 응답
+        setTimeout(() => {
+            addBotMessage('안녕하세요 무엇을 도와드릴까요?');
+        }, 3000);
+    }
+}
+
+// 사용자 메시지 추가
+function addUserMessage(text, imageSrc) {
+    const chatMessages = document.getElementById('chatMessages');
+
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'chat-message user-message';
+
+    // 메시지 내용 영역
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+
+    // 업로드한 이미지가 있으면 표시
+    if (imageSrc) {
+        const uploadedImage = document.createElement('img');
+        uploadedImage.className = 'message-uploaded-image';
+        uploadedImage.src = imageSrc;
+        uploadedImage.alt = '업로드된 이미지';
+        contentDiv.appendChild(uploadedImage);
+    }
+
+    // 텍스트 메시지가 있으면 표시
+    if (text) {
+        const textBubble = document.createElement('div');
+        textBubble.className = 'message-bubble user-bubble';
+        textBubble.textContent = text;
+        contentDiv.appendChild(textBubble);
+    }
+
+    messageDiv.appendChild(contentDiv);
+    chatMessages.appendChild(messageDiv);
+
+    // 스크롤을 최신 메시지로 이동
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// 챗봇 메시지 추가
+function addBotMessage(text) {
+    const chatMessages = document.getElementById('chatMessages');
+
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'chat-message bot-message';
+
+    // 메시지 내용
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+
+    const textBubble = document.createElement('div');
+    textBubble.className = 'message-bubble bot-bubble';
+    textBubble.textContent = text;
+
+    contentDiv.appendChild(textBubble);
+    messageDiv.appendChild(contentDiv);
+    chatMessages.appendChild(messageDiv);
+
+    // 스크롤을 최신 메시지로 이동
+    chatMessages.scrollTop = chatMessages.scrollHeight;
 }
