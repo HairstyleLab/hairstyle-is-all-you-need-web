@@ -431,12 +431,12 @@ function updateSendBtnState() {
     }
 }
 
-// Add-icon 클릭 시 모달 열기
+// Add-icon 클릭 시 모달 토글
 if (addIcon) {
     addIcon.addEventListener('click', function(e) {
         e.stopPropagation();
         if (isLoggedIn) {
-            addIconModal.classList.add('show');
+            addIconModal.classList.toggle('show');
         } else {
             // 로그인 안 된 상태에서 로그인 모달 표시
             const loginModal = document.getElementById('loginModal');
