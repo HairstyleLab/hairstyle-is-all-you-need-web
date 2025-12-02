@@ -58,7 +58,7 @@
             </div>
 
             <!-- 로그아웃 링크 -->
-            <button class="logout-sidebar-btn" id="logoutSidebarBtn">로그아웃</button>
+            <button class="logout-sidebar-btn" id="logoutSidebarBtn">회원탈퇴</button>
 
             <!-- 설정 모달 -->
             {% include 'main/settings_modal.html' %}
@@ -107,6 +107,9 @@
     
     <!-- 확인 모달 -->
     {% include 'main/confirm_modal.html' %}
+
+    <!-- 비밀번호 수정 모달 -->
+    {% include 'main/password_modal.html' %}
 
 {% endblock content %}
 {% block script %}
