@@ -37,7 +37,7 @@ def send_verification_code(request):
                 'message': '이미 사용 중인 이메일입니다.'
             }, status=400)
         
-        success, result = send_verification_email(email)
+        success, result = send_verification_email(email, request)
         
         if success:
             return JsonResponse({
@@ -83,7 +83,7 @@ def send_password_reset_code(request):
                 'message': '가입되어 있지 않은 이메일입니다.'
             }, status=400)
         
-        success, result = send_verification_email(email)
+        success, result = send_verification_email(email, request)
         
         if success:
             return JsonResponse({
@@ -123,7 +123,7 @@ def verify_code(request):
                 'message': '이메일과 인증코드를 입력해주세요.'
             }, status=400)
         
-        success, message = verify_email_code(email, code)
+        success, message = verify_email_code(email, code, request)
         
         return JsonResponse({
             'success': success,
