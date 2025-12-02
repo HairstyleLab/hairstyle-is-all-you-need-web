@@ -5,6 +5,6 @@ app_name = 'main'
 
 urlpatterns = [
     path('',views.main_view, name='main'),
-    path('gallery/',views.gallery, name='main'),
+    path('gallery/',views.gallery, name='gallery'),
 ]
 
