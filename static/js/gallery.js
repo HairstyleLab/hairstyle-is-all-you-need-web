@@ -116,17 +116,66 @@ document.addEventListener("DOMContentLoaded", function () {
 
   if (deleteConfirmBtn) {
     deleteConfirmBtn.addEventListener("click", function () {
-      // 실제 삭제 API 연결은 여기서 하면 됨.
+      // 실제 삭제 API 연결
       if (targetItemForDelete) {
-        const del_img = targetItemForDelete.querySelector('.gallery-image')
-        
-        console.log(targetItemForDelete)
-        console.log(del_img.dataset.filename)
-        
-        closeDeleteModal();
+        const del_img = targetItemForDelete.querySelector('.gallery-image');
+        const imageId = del_img.dataset.imageId;
 
-        // 확인 후 다시 갤러리로 돌아가는 동작
-        //   window.location.href = window.location.pathname;
+        if (!imageId) {
+          alert('이미지 ID를 찾을 수 없습니다.');
+          closeDeleteModal();
+          return;
+        }
+
+        // CSRF 토큰 가져오기
+        function getCookie(name) {
+          let cookieValue = null;
+          if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+              const cookie = cookies[i].trim();
+              if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+              }
+            }
+          }
+          return cookieValue;
+        }
+
+        // 서버에 삭제 요청
+        const formData = new FormData();
+        formData.append('image_id', imageId);
+
+        fetch('/gallery/delete', {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+          }
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            // DOM에서 이미지 제거
+            targetItemForDelete.remove();
+            closeDeleteModal();
+
+            // 이미지가 하나도 없으면 페이지 새로고침
+            const remainingImages = document.querySelectorAll('.gallery-item');
+            if (remainingImages.length === 0) {
+              window.location.reload();
+            }
+          } else {
+            alert(data.message || '이미지 삭제에 실패했습니다.');
+            closeDeleteModal();
+          }
+        })
+        .catch(err => {
+          console.error('삭제 오류:', err);
+          alert('이미지 삭제 중 문제가 발생했습니다.');
+          closeDeleteModal();
+        });
       }
     });
   }

@@ -29,7 +29,10 @@
         <!-- 닉네임 -->
         <div class="form-group">
             <label class="label">닉네임</label>
-            <input type="text" id="nicknameInput" class="input-box" value="{{ user.nickname }}" />
+            <div class="form-value">
+                <input type="text" id="nicknameInput" class="input-box" value="{{ user.nickname }}" />
+                <span class="error-text" id="nicknameError">해당 닉네임은 형식에 맞지 않습니다.</span>
+            </div>
         </div>
 
         <!-- 버튼 -->
