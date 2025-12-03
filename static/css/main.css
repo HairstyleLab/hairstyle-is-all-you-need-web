@@ -1458,3 +1458,206 @@ body.logged-in.sidebar-expanded .header {
 .chat-messages::-webkit-scrollbar-thumb:hover {
     background: #ccc;
 }
+
+/* ========== 채팅 기록 관리 스타일 ========== */
+
+/* 채팅 기록 아이템 */
+.chat-history-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    gap: 8px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.chat-history-item:hover {
+    background: rgba(255, 107, 74, 0.1);
+}
+
+.chat-history-item:hover .chat-menu-btn {
+    opacity: 1;
+    visibility: visible;
+}
+
+.chat-history-item.active {
+    background: rgba(255, 107, 74, 0.15);
+}
+
+/* 채팅 제목 */
+.chat-title {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+/* 채팅 메뉴 버튼 (점 3개) */
+.chat-menu-btn {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s, visibility 0.2s;
+}
+
+.chat-menu-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+}
+
+.chat-menu-dot {
+    width: 4px;
+    height: 4px;
+    background: var(--text-secondary);
+    border-radius: 50%;
+}
+
+/* 채팅 메뉴 드롭다운 */
+.chat-menu-dropdown {
+    position: absolute;
+    right: 8px;
+    bottom: 100%;
+    margin-bottom: 4px;
+    background: white;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    min-width: 150px;
+    z-index: 1000;
+    display: none;
+    overflow: hidden;
+}
+
+.chat-menu-dropdown.show {
+    display: block;
+}
+
+.chat-menu-item {
+    display: block;
+    width: 100%;
+    padding: 10px 16px;
+    background: none;
+    border: none;
+    text-align: left;
+    font-size: 14px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.chat-menu-item:hover {
+    background: rgba(255, 107, 74, 0.1);
+}
+
+.chat-menu-item.delete {
+    color: #dc3545;
+}
+
+.chat-menu-item.delete:hover {
+    background: rgba(220, 53, 69, 0.1);
+}
+
+/* 채팅 이름 수정 input */
+.chat-title-input {
+    flex: 1;
+    padding: 4px 8px;
+    border: 1px solid var(--accent-flame);
+    border-radius: 4px;
+    font-size: 14px;
+    outline: none;
+}
+
+/* 채팅 저장 버튼 */
+.chat-save-btn {
+    background: var(--accent-flame);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.chat-save-btn:hover {
+    background: #ff5533;
+}
+
+/* 채팅 삭제 확인 모달 */
+#chatDeleteModal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+}
+
+#chatDeleteModal.show {
+    display: flex;
+}
+
+.small-modal-content {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    min-width: 300px;
+    max-width: 500px;
+    width: auto;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.modal-message {
+    font-size: 16px;
+    color: var(--text-primary);
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.modal-btn {
+    padding: 10px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.cancel-btn {
+    background: #f0f0f0;
+    color: var(--text-primary);
+}
+
+.cancel-btn:hover {
+    background: #e0e0e0;
+}
+
+.confirm-btn {
+    background: #dc3545;
+    color: white;
+}
+
+.confirm-btn:hover {
+    background: #c82333;
+}

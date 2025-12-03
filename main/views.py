@@ -35,10 +35,6 @@ def gallery_upload(request):
     user_id = request.user.id
     image_file = request.FILES.get('image')
     role = request.POST.get('role')
-    print('role:', role)
-    # data = json.loads(request.body)
-    # src = data.get('src')
-    # print(src)
 
     # # 인덱싱용. 나중에 uuid로 교체
     # galleries = Gallery.objects.filter(user_id=user_id)
@@ -62,7 +58,7 @@ def gallery_upload(request):
 
             gallery.image_path.save(image_file.name, image_file)
 
-            return JsonResponse({'success': True, 'message': "이미지 업로드 성공"})
+            return JsonResponse({'success': True, 'message': "이미지 업로드 성공", 'image_id': gallery.image_id})
 
         except Exception as e:
             return JsonResponse({'success': False, 'message': f"{e} 오류 발생"})
@@ -74,8 +70,6 @@ def gallery_delete(request):
     # user_id = request.user.id
     data = json.loads(request.body)
     image_id = data.get('image_id')
-    print(data)
-    print(image_id)
 
     try:
         del_gallery = Gallery.objects.get(image_id=image_id)
@@ -231,6 +225,44 @@ def message_save(request):
                 'success': True,
                 'message_id': message.message_id
             })
+        except Chat.DoesNotExist:
+            return JsonResponse({'success': False, 'message': '채팅을 찾을 수 없습니다.'})
+
+    return JsonResponse({'success': False, 'message': 'Invalid request method'})
+
+@login_required
+def chat_update(request, chat_id):
+    """채팅 제목 수정"""
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        chat_title = data.get('chat_title', '')
+
+        if not chat_title or len(chat_title) > 15:
+            return JsonResponse({'success': False, 'message': '채팅 이름은 1~15글자여야 합니다.'})
+
+        try:
+            chat = Chat.objects.get(chat_id=chat_id, user_id=request.user.id)
+            chat.chat_title = chat_title
+            chat.save()
+
+            return JsonResponse({
+                'success': True,
+                'chat_title': chat.chat_title
+            })
+        except Chat.DoesNotExist:
+            return JsonResponse({'success': False, 'message': '채팅을 찾을 수 없습니다.'})
+
+    return JsonResponse({'success': False, 'message': 'Invalid request method'})
+
+@login_required
+def chat_delete(request, chat_id):
+    """채팅 삭제"""
+    if request.method == 'POST':
+        try:
+            chat = Chat.objects.get(chat_id=chat_id, user_id=request.user.id)
+            chat.delete()
+
+            return JsonResponse({'success': True})
         except Chat.DoesNotExist:
             return JsonResponse({'success': False, 'message': '채팅을 찾을 수 없습니다.'})
 
