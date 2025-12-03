@@ -10,28 +10,53 @@ document.addEventListener('DOMContentLoaded', function() {
     const verifyError = document.getElementById('verifyError');
     const verifySuccess = document.getElementById('verifySuccess');
     const emailHelperText = document.getElementById('emailHelperText');
-    
+
     const password = document.getElementById('password');
     const passwordError = document.getElementById('passwordError');
     const passwordSuccess = document.getElementById('passwordSuccess');
     const passwordConfirm = document.getElementById('passwordConfirm');
     const passwordConfirmError = document.getElementById('passwordConfirmError');
     const passwordConfirmSuccess = document.getElementById('passwordConfirmSuccess');
-    
+
     const nickname = document.getElementById('nickname');
     const nicknameError = document.getElementById('nicknameError');
     const nicknameSuccess = document.getElementById('nicknameSuccess');
-    
+
     const profilePreview = document.getElementById('profilePreview');
     const profileImage = document.getElementById('profileImage');
     const previewImg = document.getElementById('previewImg');
     const plusIcon = document.querySelector('.plus-icon');
     const profileError = document.getElementById('profileError');
-    
+    const removeProfileBtn = document.getElementById('removeProfileBtn');
+
     const cancelBtn = document.getElementById('cancelBtn');
     const submitBtn = document.getElementById('submitBtn');
     const overallError = document.getElementById('overallError');
     const signupForm = document.getElementById('signupForm');
+
+    // 확인 모달 요소들
+    const confirmModal = document.getElementById('confirmModal');
+    const confirmMessage = document.getElementById('confirmMessage');
+    const confirmBtn = document.getElementById('confirmBtn');
+
+    // 확인 모달 표시 함수
+    function showConfirmModal(message) {
+        if (confirmMessage) {
+            confirmMessage.textContent = message;
+        }
+        if (confirmModal) {
+            confirmModal.classList.add('show');
+        }
+    }
+
+    // 확인 버튼 클릭 이벤트
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', function() {
+            if (confirmModal) {
+                confirmModal.classList.remove('show');
+            }
+        });
+    }
 
     // 상태 변수들
     let timerInterval = null;
@@ -90,6 +115,8 @@ document.addEventListener('DOMContentLoaded', function() {
         isEmailVerified = false;
         isTimeExpired = false; // 시간 만료 상태 초기화
         sendCodeBtn.textContent = '인증코드 발송';
+        sendCodeBtn.style.backgroundColor = '#FEF9D9';
+        sendCodeBtn.style.cursor = 'pointer';
         sendCodeBtn.classList.remove('resend-btn');
         verifyCode.value = '';
         verifyCode.disabled = true;
@@ -213,6 +240,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 verifyError.textContent = '인증시간이 만료되었습니다. 코드를 다시 발급받아 주세요.';
                 verifyError.classList.add('show');
                 verifySuccess.classList.remove('show');
+                verifyCode.disabled = true;
+                verifyCode.value = '';
+                verifyCode.style.cursor = 'not-allowed';
+                verifyCode.style.backgroundColor = '#D9D9D9';
             }
         }, 1000);
     }
@@ -276,6 +307,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 verifySuccess.classList.add('show');
                 verifyError.classList.remove('show');
                 verifyCodeBtn.disabled = true;
+                sendCodeBtn.disabled = true;
+                sendCodeBtn.style.cursor = 'not-allowed';
+                sendCodeBtn.style.backgroundColor = '#ccc';
+                emailHelperText.textContent = '';
                 
                 // 타이머 정지
                 if (timerInterval) {
@@ -399,8 +434,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // 프로필 이미지 선택
     profileImage.addEventListener('change', function() {
         const file = this.files[0];
-        
+
         if (file) {
+            // 파일 확장자 검사
+            const fileName = file.name.toLowerCase();
+            const allowedExtensions = ['.png', '.jpg', '.jpeg', '.gif'];
+            const isValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
+
+            if (!isValidExtension) {
+                // 유효하지 않은 파일 형식
+                showConfirmModal('png, jpg, jpeg, gif 형식의 이미지만 설정할 수 있습니다.');
+                this.value = ''; // 파일 입력 초기화
+                return;
+            }
+
             // 파일 크기 체크 (5MB)
             if (file.size > 5 * 1024 * 1024) {
                 profileError.textContent = '사용 불가능한 이미지입니다.';
@@ -408,27 +455,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.value = '';
                 return;
             }
-            
-            // 이미지 타입 체크
-            if (!file.type.startsWith('image/')) {
-                profileError.textContent = '사용 불가능한 이미지입니다.';
-                profileError.classList.add('show');
-                this.value = '';
-                return;
-            }
-            
+
             profileError.classList.remove('show');
-            
+
             // 미리보기
             const reader = new FileReader();
             reader.onload = function(e) {
                 previewImg.src = e.target.result;
                 previewImg.style.display = 'block';
                 plusIcon.style.display = 'none';
+                removeProfileBtn.style.display = 'flex';
             };
             reader.readAsDataURL(file);
         }
     });
+
+    // 프로필 이미지 삭제 버튼
+    if (removeProfileBtn) {
+        removeProfileBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            profileImage.value = '';
+            previewImg.src = '';
+            previewImg.style.display = 'none';
+            plusIcon.style.display = 'block';
+            removeProfileBtn.style.display = 'none';
+            profileError.classList.remove('show');
+        });
+    }
 
     // 회원가입 버튼 활성화 체크
     function checkSubmitBtn() {
