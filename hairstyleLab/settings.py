@@ -150,13 +150,21 @@ AUTH_USER_MODEL = 'uauth.User'
 
 # Media files
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = os.path.join(os.path.abspath("C:\\Users\\Playdata\\Desktop\\S3"), 'media')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    }
+}
 
 # 이메일 인증 관련 설정
 EMAIL_BACKEND=os.getenv('EMAIL_BACKEND')
