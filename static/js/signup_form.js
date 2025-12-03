@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let timeLeft = 180; // 3분
     let isEmailVerified = false;
     let isCodeSent = false;
+    let isTimeExpired = false; // 시간 만료 여부
 
     // 이메일 입력 체크
     function checkEmailInput() {
@@ -87,6 +88,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function resetVerification() {
         isCodeSent = false;
         isEmailVerified = false;
+        isTimeExpired = false; // 시간 만료 상태 초기화
         sendCodeBtn.textContent = '인증코드 발송';
         sendCodeBtn.classList.remove('resend-btn');
         verifyCode.value = '';
@@ -97,7 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
         emailHelperText.textContent = '';
         emailHelperText.style.color = '';
         timer.textContent = '';
-        
+
         if (timerInterval) {
             clearInterval(timerInterval);
             timerInterval = null;
@@ -127,7 +129,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (this.disabled) return;
         
         try {
-            // 이메일 조합
+            // 발송버튼 일시적으로 막기
+            sendCodeBtn.disabled = true;
+            sendCodeBtn.style.cursor = 'not-allowed';
+            sendCodeBtn.style.backgroundColor = '#ccc';
+
             const domainValue = domainSelect.value === 'custom' ? customDomain.value.trim() : domainSelect.value;
             const fullEmail = emailId.value.trim() + '@' + domainValue;
             
@@ -145,12 +151,21 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.success) {
                 const isResend = isCodeSent; // 재발송인지 확인
                 isCodeSent = true;
+                isTimeExpired = false; // 새 코드 발송 시 시간 만료 상태 초기화
                 this.textContent = '코드 재발송';
                 this.classList.add('resend-btn');
-                
+
+                // 3초 후 버튼 다시 활성화
+
+                sendCodeBtn.disabled = false;
+                sendCodeBtn.style.cursor = 'pointer';
+                sendCodeBtn.style.backgroundColor = 'rgba(250, 176, 169, 0.3)';
+
+
                 // 인증코드 입력창 활성화
                 verifyCode.disabled = false;
-                
+
+
                 // 타이머 시작
                 timeLeft = 180;
                 startTimer();
@@ -190,9 +205,11 @@ document.addEventListener('DOMContentLoaded', function() {
         timerInterval = setInterval(function() {
             timeLeft--;
             updateTimerDisplay();
-            
+
             if (timeLeft <= 0) {
                 clearInterval(timerInterval);
+                isTimeExpired = true; // 시간 만료 표시
+                verifyCodeBtn.disabled = true; // 인증 버튼 비활성화
                 verifyError.textContent = '인증시간이 만료되었습니다. 코드를 다시 발급받아 주세요.';
                 verifyError.classList.add('show');
                 verifySuccess.classList.remove('show');
@@ -209,6 +226,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 인증코드 입력
     verifyCode.addEventListener('input', function() {
+        // 시간이 만료되었으면 버튼 활성화하지 않음
+        if (isTimeExpired) {
+            verifyCodeBtn.disabled = true;
+            return;
+        }
+
         if (this.value.trim().length > 0) {
             verifyCodeBtn.disabled = false;
         } else {
