@@ -1,6 +1,7 @@
 // 로그인 상태
 let isLoggedIn = false;
 let currentUser = null;
+let isWaitingForResponse = false; // 챗봇 응답 대기 중 상태
 
 const sidebar = document.getElementById('sidebar');
 const sidebarLogged = document.getElementById('sidebarLogged');
@@ -611,6 +612,13 @@ let selectedImageFile = null;
 
 // 전송 버튼 상태 업데이트 함수
 function updateSendBtnState() {
+    // 응답 대기 중이면 항상 비활성화
+    if (isWaitingForResponse) {
+        sendBtn.disabled = true;
+        sendBtn.classList.remove('active');
+        return;
+    }
+
     if (messageInput.value.trim().length > 0 || (imagePreviewContainer && imagePreviewContainer.style.display === 'flex')) {
         sendBtn.disabled = false;
         sendBtn.classList.add('active');
@@ -624,6 +632,12 @@ function updateSendBtnState() {
 if (addIcon) {
     addIcon.addEventListener('click', function(e) {
         e.stopPropagation();
+
+        // 응답 대기 중이면 아무 동작도 하지 않음
+        if (isWaitingForResponse) {
+            return;
+        }
+
         if (isLoggedIn) {
             addIconModal.classList.toggle('show');
         } else {
@@ -702,9 +716,21 @@ if (imageFileInput) {
     imageFileInput.addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (file) {
+            // 파일 확장자 검사
+            const fileName = file.name.toLowerCase();
+            const allowedExtensions = ['.jpg', '.jpeg', '.png'];
+            const isValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
+
+            if (!isValidExtension) {
+                // 유효하지 않은 파일 형식
+                showConfirmModal('jpg, jpeg, png 형식의 이미지만 첨부할 수 있습니다.');
+                imageFileInput.value = ''; // 파일 입력 초기화
+                return;
+            }
+
             // 선택된 파일을 변수에 저장
             selectedImageFile = file;
-            
+
             // 이미지 미리보기 표시
             const reader = new FileReader();
             reader.onload = function(event) {
@@ -713,7 +739,7 @@ if (imageFileInput) {
                 updateSendBtnState();
             };
             reader.readAsDataURL(file);
-            
+
             addIconModal.classList.remove('show');
         }
     });
@@ -1057,6 +1083,9 @@ function sendMessage() {
             imageFileInput.value = '';
         }
 
+        // 응답 대기 상태로 설정
+        isWaitingForResponse = true;
+
         // 전송 버튼 비활성화
         sendBtn.disabled = true;
         sendBtn.classList.remove('active');
@@ -1064,10 +1093,22 @@ function sendMessage() {
         // textarea 높이 리셋
         autoResizeTextarea(messageInput);
 
+        // "답변을 생성중입니다..." 1.5초 후에 메시지 표시
+        setTimeout(() => {
+            addLoadingMessage();
+        }, 1500);
+
         // 3초 후 챗봇 응답
         setTimeout(() => {
+            removeLoadingMessage();
             addBotMessage('안녕하세요 무엇을 도와드릴까요?');
-        }, 3000);
+
+            // 응답 대기 상태 해제
+            isWaitingForResponse = false;
+
+            // 전송 버튼 상태 업데이트
+            updateSendBtnState();
+        }, 10000);
     }
 }
 
@@ -1104,6 +1145,37 @@ function addUserMessage(text, imageSrc) {
 
     // 스크롤을 최신 메시지로 이동
     chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// 로딩 메시지 추가
+function addLoadingMessage() {
+    const chatMessages = document.getElementById('chatMessages');
+
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'chat-message bot-message loading-message';
+    messageDiv.id = 'loadingMessage';
+
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+
+    const textBubble = document.createElement('div');
+    textBubble.className = 'message-bubble bot-bubble';
+    textBubble.textContent = '답변을 생성중입니다...';
+
+    contentDiv.appendChild(textBubble);
+    messageDiv.appendChild(contentDiv);
+    chatMessages.appendChild(messageDiv);
+
+    // 스크롤을 최신 메시지로 이동
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// 로딩 메시지 제거
+function removeLoadingMessage() {
+    const loadingMessage = document.getElementById('loadingMessage');
+    if (loadingMessage) {
+        loadingMessage.remove();
+    }
 }
 
 // 챗봇 메시지 추가

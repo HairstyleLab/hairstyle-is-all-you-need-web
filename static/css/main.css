@@ -865,7 +865,9 @@ body.logged-in.sidebar-expanded .header {
 }
 
 .confirm-modal-content {
-    width: 360px;
+    min-width: 360px;
+    max-width: 600px;
+    width: auto;
     height: 230px;
     background: white;
     border-radius: 20px;
@@ -1344,6 +1346,7 @@ body.logged-in.sidebar-expanded .header {
     display: flex;
     gap: 12px;
     align-items: flex-start;
+    font-size: 17px;
     animation: messageSlideIn 0.3s ease-out;
 }
 
@@ -1386,7 +1389,7 @@ body.logged-in.sidebar-expanded .header {
 .message-bubble {
     padding: 12px 16px;
     border-radius: 12px;
-    font-size: 15px;
+    font-size: 17px;
     line-height: 1.5;
     word-wrap: break-word;
 }
