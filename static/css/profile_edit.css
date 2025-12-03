@@ -24,7 +24,7 @@
 /* 모달 박스 */
 .profile-edit-modal-box {
     width: 360px;
-    height: 440px;
+    height: 460px;
     background: #ffffff;
     border-radius: 20px;
     padding: 25px 30px;
@@ -33,6 +33,7 @@
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
+    position: relative;
 }
 
 .profile-edit-modal-title {
@@ -141,11 +142,13 @@
 
 /* 버튼 영역 */
 .profile-edit-button-group {
+    position: absolute;
+    bottom: 18px;
+    left: 30px;
+    right: 30px;
     display: flex;
     justify-content: center;
     gap: 10px;
-    margin-top: auto;
-    padding-top: 15px;
 }
 
 .profile-edit-btn-cancel {

@@ -138,10 +138,16 @@ function updateUIForLoginState() {
 
 // 사이드바 이벤트 초기화
 function initSidebarEvents() {
-    // 로고 클릭 시 사이드바 확장
+    // 로고 클릭 시 사이드바 확장 또는 메인 페이지로 이동
     if (toggleSidebarBtn) {
         toggleSidebarBtn.addEventListener('click', function() {
-            toggleSidebar();
+            // 사이드바가 열려있으면 메인 페이지로 이동
+            if (sidebarLogged.classList.contains('expanded')) {
+                location.href = '/main/';
+            } else {
+                // 사이드바가 닫혀있으면 사이드바 확장
+                toggleSidebar();
+            }
         });
     }
 
@@ -271,6 +277,14 @@ function toggleSidebar() {
 function expandSidebar() {
     sidebarLogged.classList.add('expanded');
     document.body.classList.add('sidebar-expanded');
+
+    // 로고 이미지 변경
+    const logoImg = document.getElementById('sidebarLogoImg');
+    if (logoImg) {
+        logoImg.src = '/static/images/logo.png';
+        logoImg.style.width = 'auto';
+        logoImg.style.height = '110px';
+    }
 }
 
 // 사이드바 축소
@@ -278,6 +292,12 @@ function collapseSidebar() {
     sidebarLogged.classList.remove('expanded');
     document.body.classList.remove('sidebar-expanded');
     settingsModal.classList.remove('show');
+
+    // 로고 이미지 변경
+    const logoImg = document.getElementById('sidebarLogoImg');
+    if (logoImg) {
+        logoImg.src = '/static/images/small_logo.png';
+    }
 }
 
 // 로그아웃 처리
