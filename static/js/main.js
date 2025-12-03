@@ -980,57 +980,60 @@ function resetWithdrawForm() {
 
 // 메시지 전송 함수
 function sendMessage() {
-    const message = messageInput.value.trim();
-    const chatMessages = document.getElementById('chatMessages');
-    const greeting = document.getElementById('greeting');
-    const content = document.querySelector('.content');
+  const message = messageInput.value.trim();
+  const chatMessages = document.getElementById('chatMessages');
+  const greeting = document.getElementById('greeting');
+  const content = document.querySelector('.content');
 
-    // 사용자 메시지와 이미지가 있는지 확인
-    const hasMessage = message.length > 0;
-    const hasImage = imagePreviewContainer && imagePreviewContainer.style.display === 'flex';
+  // 사용자 메시지와 이미지가 있는지 확인
+  const hasMessage = message.length > 0;
+  const hasImage = imagePreviewContainer && imagePreviewContainer.style.display === 'flex';
 
-    if (hasMessage || hasImage) {
-        // 첫 메시지 전송 시 레이아웃 전환
-        if (!chatMessages.classList.contains('active')) {
-            // 인사말 페이드아웃
-            if (greeting) {
-                greeting.classList.add('hidden');
-            }
+  if (hasMessage || hasImage) {
+    // 첫 메시지 전송 시 레이아웃 전환
+    if (!chatMessages.classList.contains('active')) {
+      // 인사말 페이드아웃
+      if (greeting) {
+          greeting.classList.add('hidden');
+      }
 
-            // 채팅 영역 활성화 및 레이아웃 전환
-            setTimeout(() => {
-                if (greeting) {
-                    greeting.style.display = 'none';
-                }
-                chatMessages.classList.add('active');
-                content.classList.add('chat-started');
-            }, 300);
-        }
-
-        // 사용자 메시지 표시
-        addUserMessage(message, hasImage ? previewImage.src : null);
-
-        // 입력 필드 초기화
-        messageInput.value = '';
-        if (hasImage) {
-            selectedImageFile = null;
-            imagePreviewContainer.style.display = 'none';
-            previewImage.src = '';
-            imageFileInput.value = '';
-        }
-
-        // 전송 버튼 비활성화
-        sendBtn.disabled = true;
-        sendBtn.classList.remove('active');
-
-        // textarea 높이 리셋
-        autoResizeTextarea(messageInput);
-
-        // 3초 후 챗봇 응답
-        setTimeout(() => {
-            addBotMessage('안녕하세요 무엇을 도와드릴까요?');
-        }, 3000);
+      // 채팅 영역 활성화 및 레이아웃 전환
+      setTimeout(() => {
+          if (greeting) {
+              greeting.style.display = 'none';
+          }
+          chatMessages.classList.add('active');
+          content.classList.add('chat-started');
+      }, 300);
     }
+
+    // 사용자 메시지 표시
+    addUserMessage(message, hasImage ? previewImage.src : null);
+
+    // 사용자 업로드 이미지 저장
+    if (hasImage) addGallery('user');
+
+    // 입력 필드 초기화
+    messageInput.value = '';
+    if (hasImage) {
+        selectedImageFile = null;
+        imagePreviewContainer.style.display = 'none';
+        previewImage.src = '';
+        imageFileInput.value = '';
+    }
+
+    // 전송 버튼 비활성화
+    sendBtn.disabled = true;
+    sendBtn.classList.remove('active');
+
+    // textarea 높이 리셋
+    autoResizeTextarea(messageInput);
+
+    // 3초 후 챗봇 응답
+    setTimeout(() => {
+        addBotMessage('안녕하세요 무엇을 도와드릴까요?');
+    }, 3000);
+  }
 }
 
 // 사용자 메시지 추가
@@ -1089,4 +1092,36 @@ function addBotMessage(text) {
 
     // 스크롤을 최신 메시지로 이동
     chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+async function addGallery(role) {
+  try {
+    const formData = new FormData();
+
+    formData.append('role', role);
+    
+    if (selectedImageFile) {
+      formData.append('image', selectedImageFile);
+    } else if (previewImage.src) {
+      const blob = await fetch(previewImage.src).then(r => r.blob());
+
+      const filename = `profile_image_${new Date().getTime()}.png`;
+      formData.append('image', blob, filename);
+    }
+    
+    const res = await fetch('/main/gallery/upload', {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": getCookie('csrftoken')
+      },
+      body: formData
+    });
+    
+    const data = await res.json();
+    
+    if (!data.success) console.error('사진 저장 실패');
+  } catch (err) {
+    console.error('오류 디버깅: ', err);
+    alert('이미지 저장 중 문제 발생');
+  } 
 }

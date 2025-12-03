@@ -70,28 +70,31 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
 //   2) 이미지 저장 (파일 탐색기)
-  function handleImageSave(menu, img) {
-    const imageSrc = menu.dataset.imageSrc || img.getAttribute("src");
-    const filename = img.dataset.filename || "image.jpg";
-
+  async function handleImageSave(menu, img) {
+    const imageSrc = img.getAttribute("src");
+    const filename = img.dataset.filename;
+    console.log(filename)
     // 브라우저 보안상 경로를 바로 쓸 수는 없고,
     // 다운로드 대화상자를 띄워서 유저가 경로/이름 고르게 하는 방식.
-    fetch(imageSrc)
-      .then((res) => res.blob())
-      .then((blob) => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-      })
-      .catch((err) => {
+    try {
+      const res = await fetch(imageSrc);
+      const blob = await res.blob();
+
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      console.log("디버그 - 저장 완료")
+    } catch (err) {
         console.error("이미지 저장 오류:", err);
         alert("이미지 저장 중 문제가 발생했습니다.");
-      });
+    }
   }
 
 //   3) 이미지 삭제 모달
@@ -115,70 +118,57 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   if (deleteConfirmBtn) {
-    deleteConfirmBtn.addEventListener("click", function () {
-      // 실제 삭제 API 연결
-      if (targetItemForDelete) {
-        const del_img = targetItemForDelete.querySelector('.gallery-image');
-        const imageId = del_img.dataset.imageId;
-
-        if (!imageId) {
-          alert('이미지 ID를 찾을 수 없습니다.');
-          closeDeleteModal();
-          return;
-        }
-
-        // CSRF 토큰 가져오기
-        function getCookie(name) {
-          let cookieValue = null;
-          if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-              const cookie = cookies[i].trim();
-              if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-              }
-            }
-          }
-          return cookieValue;
-        }
-
-        // 서버에 삭제 요청
-        const formData = new FormData();
-        formData.append('image_id', imageId);
-
-        fetch('/gallery/delete', {
+    deleteConfirmBtn.addEventListener("click", async () => {
+      if (!targetItemForDelete) return;
+      
+      const del_img = targetItemForDelete.querySelector('.gallery-image');
+      const imageId = del_img?.dataset.imageId;
+      
+      console.log(del_img);
+      
+      if (!imageId) {
+        alert('이미지 ID를 찾을 수 없습니다.');
+        closeDeleteModal();
+        return;
+      }
+      // formData.append('image_id', imageId);
+      
+      try {
+        const res = await fetch('delete', {
           method: 'POST',
-          body: formData,
+          body: JSON.stringify({
+            'image_id': imageId
+          }),
           headers: {
+            "Content-Type": "application/json",
             'X-CSRFToken': getCookie('csrftoken')
           }
-        })
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            // DOM에서 이미지 제거
-            targetItemForDelete.remove();
-            closeDeleteModal();
-
-            // 이미지가 하나도 없으면 페이지 새로고침
-            const remainingImages = document.querySelectorAll('.gallery-item');
-            if (remainingImages.length === 0) {
-              window.location.reload();
-            }
-          } else {
-            alert(data.message || '이미지 삭제에 실패했습니다.');
-            closeDeleteModal();
-          }
-        })
-        .catch(err => {
-          console.error('삭제 오류:', err);
-          alert('이미지 삭제 중 문제가 발생했습니다.');
-          closeDeleteModal();
         });
+
+        const data = await res.json();
+        console.log(data);
+
+        if (data.success) {
+          // DOM 에서 이미지 제거
+          console.log('in success');
+          targetItemForDelete.remove();
+
+          // 이미지가 하나도 없으면 페이지 새로고침
+          const remainingImages = document.querySelectorAll('.gallery-item');
+          if (remainingImages.length === 0) window.location.reload();
+        } else {
+          console.log('in else')
+          alert(data.message || '이미지 삭제 실패');
+        }
+      } catch (err) {
+        console.error('오류 디버깅: ', err);
+        alert('이미지 삭제 중 문제 발생');
+      } finally {
+        closeDeleteModal();
       }
     });
   }
+
 
   if (deleteModal) {
     deleteModal.addEventListener("click", function (event) {
@@ -186,5 +176,21 @@ document.addEventListener("DOMContentLoaded", function () {
         closeDeleteModal();
       }
     });
+  }
+
+  // CSRF 토큰 가져오기
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
   }
 });
