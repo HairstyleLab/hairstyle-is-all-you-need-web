@@ -87,18 +87,6 @@ body {
     height: auto;
 }
 
-.sidebar-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-primary);
-    white-space: nowrap;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.sidebar-logged.expanded .sidebar-title {
-    opacity: 1;
-}
 
 /* 사이드바 메뉴 */
 .sidebar-menu {
@@ -124,6 +112,15 @@ body {
 
 .menu-item:hover {
     background: rgba(250, 176, 169, 0.3);
+}
+
+.menu-item:disabled {
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.menu-item:disabled:hover {
+    background: none;
 }
 
 .menu-icon {
