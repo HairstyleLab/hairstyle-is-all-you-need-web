@@ -2,6 +2,8 @@
 let isLoggedIn = false;
 let currentUser = null;
 let isWaitingForResponse = false; // 챗봇 응답 대기 중 상태
+let currentChatId = null; // 현재 채팅 ID
+let chatHistory = []; // 채팅 기록 목록
 
 const sidebar = document.getElementById('sidebar');
 const sidebarLogged = document.getElementById('sidebarLogged');
@@ -28,6 +30,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     await checkLoginStatus();
     initSidebarEvents();
     initTextareaAutoResize();
+
+    // 로그인 상태면 채팅 기록 불러오기
+    if (isLoggedIn) {
+        await loadChatHistory();
+    }
 
     const editIcon = document.getElementById("editProfileImageBtn");
     const fileInput = document.getElementById("profileImgInput");
@@ -670,14 +677,19 @@ if (addIcon) {
     addIcon.addEventListener('click', function(e) {
         e.stopPropagation();
 
+        console.log('addIcon clicked, isLoggedIn:', isLoggedIn, 'isWaitingForResponse:', isWaitingForResponse);
+
         // 응답 대기 중이면 아무 동작도 하지 않음
         if (isWaitingForResponse) {
+            console.log('응답 대기 중이므로 무시');
             return;
         }
 
         if (isLoggedIn) {
+            console.log('모달 토글');
             addIconModal.classList.toggle('show');
         } else {
+            console.log('로그인 모달 표시');
             // 로그인 안 된 상태에서 로그인 모달 표시
             const loginModal = document.getElementById('loginModal');
             if (loginModal) {
@@ -712,8 +724,9 @@ if (deviceExploreBtn) {
 function updateProfileImageButtonState() {
     if (profileImageBtn) {
         const hasCustomProfile = currentUser && currentUser.profile_image && !currentUser.profile_image.includes('default_profile');
-        
-        if (hasCustomProfile) {
+        const isGifImage = currentUser && currentUser.profile_image && currentUser.profile_image.toLowerCase().endsWith('.gif');
+
+        if (hasCustomProfile && !isGifImage) {
             profileImageBtn.disabled = false;
             profileImageBtn.style.cursor = 'pointer';
             profileImageBtn.style.opacity = '1';
@@ -1077,10 +1090,170 @@ if (withdrawCompleteBtn) {
     });
 }
 
+// ========== 채팅 기록 관리 기능 ==========
+
+// 채팅 기록 불러오기
+async function loadChatHistory() {
+    try {
+        const response = await fetch('/main/chat/list', {
+            method: 'GET',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            chatHistory = data.chats;
+            renderChatHistory();
+        }
+    } catch (error) {
+        console.error('채팅 기록 불러오기 실패:', error);
+    }
+}
+
+// 채팅 기록을 사이드바에 렌더링
+function renderChatHistory() {
+    const chatHistoryArea = document.getElementById('chatHistoryArea');
+    chatHistoryArea.innerHTML = '';
+
+    chatHistory.forEach(chat => {
+        const chatItem = document.createElement('div');
+        chatItem.className = 'chat-history-item';
+        chatItem.textContent = chat.chat_title;
+        chatItem.dataset.chatId = chat.chat_id;
+
+        // 현재 선택된 채팅이면 active 클래스 추가
+        if (currentChatId === chat.chat_id) {
+            chatItem.classList.add('active');
+        }
+
+        // 클릭 이벤트
+        chatItem.addEventListener('click', function() {
+            loadChat(chat.chat_id);
+        });
+
+        chatHistoryArea.appendChild(chatItem);
+    });
+}
+
+// 특정 채팅 불러오기
+async function loadChat(chatId) {
+    try {
+        const response = await fetch(`/main/chat/${chatId}/`, {
+            method: 'GET',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            currentChatId = chatId;
+
+            // 채팅 메시지 영역 초기화 및 표시
+            const chatMessages = document.getElementById('chatMessages');
+            const greeting = document.getElementById('greeting');
+            const content = document.querySelector('.content');
+
+            // 인사말 숨기기
+            if (greeting) {
+                greeting.style.display = 'none';
+            }
+
+            // 채팅 영역 활성화
+            chatMessages.classList.add('active');
+            content.classList.add('chat-started');
+
+            // 기존 메시지 지우기
+            chatMessages.innerHTML = '';
+
+            // 메시지 렌더링
+            data.messages.forEach(msg => {
+                if (msg.is_answer === 'Q') {
+                    addUserMessage(msg.content, msg.image_url || null);
+                } else {
+                    addBotMessage(msg.content);
+                }
+            });
+
+            // 채팅 기록 목록 업데이트 (active 클래스 표시)
+            renderChatHistory();
+
+            // 스크롤을 최신 메시지로 이동
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    } catch (error) {
+        console.error('채팅 불러오기 실패:', error);
+    }
+}
+
+// 새 채팅 생성
+async function createNewChat(messageText) {
+    try {
+        const response = await fetch('/main/chat/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ message: messageText })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            currentChatId = data.chat_id;
+
+            // 채팅 기록 목록 갱신
+            await loadChatHistory();
+
+            return data.chat_id;
+        }
+    } catch (error) {
+        console.error('채팅 생성 실패:', error);
+    }
+    return null;
+}
+
+// 메시지 저장
+async function saveMessage(content, isAnswer = 'Q', imageId = null) {
+    if (!currentChatId) {
+        console.error('현재 채팅 ID가 없습니다.');
+        return;
+    }
+
+    try {
+        const response = await fetch('/main/message/save', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                chat_id: currentChatId,
+                content: content,
+                is_answer: isAnswer,
+                image_id: imageId
+            })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            console.error('메시지 저장 실패:', data.message);
+        }
+    } catch (error) {
+        console.error('메시지 저장 중 오류:', error);
+    }
+}
+
 // ========== 채팅 메시지 기능 ==========
 
 // 메시지 전송 함수
-function sendMessage() {
+async function sendMessage() {
   const message = messageInput.value.trim();
   const chatMessages = document.getElementById('chatMessages');
   const greeting = document.getElementById('greeting');
@@ -1091,8 +1264,14 @@ function sendMessage() {
   const hasImage = imagePreviewContainer && imagePreviewContainer.style.display === 'flex';
 
   if (hasMessage || hasImage) {
+    // 첫 메시지 전송 시 새 채팅 생성
+    const isFirstMessage = !chatMessages.classList.contains('active');
+    if (isFirstMessage && hasMessage) {
+      await createNewChat(message);
+    }
+
     // 첫 메시지 전송 시 레이아웃 전환
-    if (!chatMessages.classList.contains('active')) {
+    if (isFirstMessage) {
       // 인사말 페이드아웃
       if (greeting) {
           greeting.classList.add('hidden');
@@ -1110,6 +1289,11 @@ function sendMessage() {
 
     // 사용자 메시지 표시
     addUserMessage(message, hasImage ? previewImage.src : null);
+
+    // 메시지 저장
+    if (hasMessage) {
+      await saveMessage(message, 'Q', null);
+    }
 
     // 사용자 업로드 이미지 저장
     if (hasImage) addGallery('user');
@@ -1139,9 +1323,13 @@ function sendMessage() {
     }, 1500);
 
     // 3초 후 챗봇 응답
-    setTimeout(() => {
+    setTimeout(async () => {
         removeLoadingMessage();
-        addBotMessage('안녕하세요 무엇을 도와드릴까요?');
+        const botResponse = '안녕하세요 무엇을 도와드릴까요?';
+        addBotMessage(botResponse);
+
+        // 봇 응답 메시지 저장
+        await saveMessage(botResponse, 'A', null);
 
         // 응답 대기 상태 해제
         isWaitingForResponse = false;
