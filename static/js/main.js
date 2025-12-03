@@ -47,42 +47,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    const saveBtn = document.getElementById("profileSaveBtn");
-    const nicknameInput = document.getElementById("nicknameInput");
-
-    if (saveBtn && nicknameInput) {
-        saveBtn.addEventListener("click", async function () {
-            const formData = new FormData();
-            formData.append("nickname", nicknameInput.value);
-
-            if (fileInput && fileInput.files.length > 0) {
-                formData.append("profile_image", fileInput.files[0]);
-            }
-
-            const res = await fetch("/uauth/profile/edit/", {
-                method: "POST",
-                body: formData,
-                headers: {
-                    "X-CSRFToken": getCookie("csrftoken")
-                }
-            });
-
-            const data = await res.json();
-
-            if (data.success) {
-                // 서버 업데이트 후, 전역 currentUser 최신화
-                currentUser.nickname = data.nickname;
-                currentUser.profile_image = data.profile_image;
-
-                // UI 전역 반영
-                updateUserProfile();
-
-                // 모달 닫기
-                document.getElementById("profileEditModal").classList.remove("show");
-            }
-        });
-    }
-
 });
 
 // Textarea 자동 높이 조정
@@ -243,6 +207,30 @@ function initSidebarEvents() {
         editProfileBtn.addEventListener('click', function (e) {
             e.stopPropagation();
             settingsModal.classList.remove('show');
+            
+            // 모달 열기 전에 currentUser 정보로 폼 채우기
+            if (currentUser) {
+                // 이메일 표시
+                const emailText = document.querySelector('.profile-edit-email-text');
+                if (emailText) {
+                    emailText.textContent = currentUser.email || '';
+                }
+                // 닉네임 입력란
+                const nicknameInput = document.getElementById('nicknameInput');
+                if (nicknameInput) {
+                    nicknameInput.value = currentUser.nickname || '';
+                }
+                // 프로필 이미지
+                const modalImg = document.getElementById('modalProfileImg');
+                if (modalImg) {
+                    if (currentUser.profile_image) {
+                        modalImg.src = currentUser.profile_image + "?t=" + new Date().getTime();
+                    } else {
+                        modalImg.src = '/static/images/default_profile.png';
+                    }
+                }
+            }
+            
             profileEditModal.classList.add('show');
         });
     }
@@ -252,7 +240,13 @@ function initSidebarEvents() {
         if (e.target.classList.contains('close-modal')) {
             const targetId = e.target.dataset.target;
             const modal = document.getElementById(targetId);
-            if (modal) modal.classList.remove('show');
+            if (modal) {
+                modal.classList.remove('show');
+                // 프로필 편집 모달이면 폼 초기화
+                if (targetId === 'profileEditModal') {
+                    resetProfileEditForm();
+                }
+            }
         }
     });
     
@@ -490,6 +484,31 @@ const profileSaveBtn = document.getElementById("profileSaveBtn");
 const nicknameInput = document.getElementById("nicknameInput");
 const profileImgInput = document.getElementById("profileImgInput");
 const nicknameError = document.getElementById("nicknameError");
+const modalProfileImg = document.getElementById("modalProfileImg");
+
+// 프로필 편집 폼 초기화 함수
+function resetProfileEditForm() {
+    // 닉네임을 원래 값으로 복원
+    if (nicknameInput && currentUser) {
+        nicknameInput.value = currentUser.nickname || '';
+    }
+    // 에러 메시지 숨기기
+    if (nicknameError) {
+        nicknameError.classList.remove("show");
+    }
+    // 파일 입력 초기화
+    if (profileImgInput) {
+        profileImgInput.value = '';
+    }
+    // 프로필 이미지 미리보기를 원래 이미지로 복원
+    if (modalProfileImg && currentUser) {
+        if (currentUser.profile_image) {
+            modalProfileImg.src = currentUser.profile_image + "?t=" + new Date().getTime();
+        } else {
+            modalProfileImg.src = '/static/images/default_profile.png';
+        }
+    }
+}
 
 // 닉네임 유효성 검사 함수 (한글 또는 영어만, 2~10글자)
 function validateNickname(nickname) {
@@ -501,6 +520,11 @@ function validateNickname(nickname) {
 // "수정" 버튼 클릭 시 API 호출
 if (profileSaveBtn) {
     profileSaveBtn.addEventListener("click", () => {
+        // 버튼이 비활성화 상태면 무시
+        if (profileSaveBtn.classList.contains("disabled")) {
+            return;
+        }
+        
         const nickname = nicknameInput.value.trim();
         const originalNickname = currentUser ? currentUser.nickname : nicknameInput.defaultValue;
 
@@ -508,6 +532,7 @@ if (profileSaveBtn) {
         if (nickname === originalNickname) {
             nicknameError.textContent = "같은 닉네임으로는 수정할 수 없습니다.";
             nicknameError.classList.add("show");
+            profileSaveBtn.classList.add("disabled");  // 버튼 비활성화
             return;
         }
 
@@ -515,6 +540,7 @@ if (profileSaveBtn) {
         if (!validateNickname(nickname)) {
             nicknameError.textContent = "해당 닉네임은 형식에 맞지 않습니다.";
             nicknameError.classList.add("show");
+            profileSaveBtn.classList.add("disabled");  // 버튼 비활성화
             return;
         }
 
@@ -558,11 +584,15 @@ if (profileSaveBtn) {
     });
 }
 
-// 닉네임 입력 시 에러 메시지 숨김
+// 닉네임 입력 시 에러 메시지 숨김 및 버튼 활성화
 if (nicknameInput) {
     nicknameInput.addEventListener("input", () => {
         if (nicknameError.classList.contains("show")) {
             nicknameError.classList.remove("show");
+        }
+        // 버튼 다시 활성화
+        if (profileSaveBtn) {
+            profileSaveBtn.classList.remove("disabled");
         }
     });
 }
@@ -954,7 +984,7 @@ if (withdrawConfirmBtn) {
                 withdrawModal.classList.remove('show');
                 resetWithdrawForm();
                 withdrawCompleteModal.classList.add('show');
-                window.location.href = '/';
+                // 확인 버튼 클릭 시 메인 페이지로 이동
             } else {
                 withdrawError.textContent = data.message || '회원탈퇴에 실패했습니다.';
                 withdrawError.classList.add('show');
@@ -974,6 +1004,14 @@ function resetWithdrawForm() {
     if (withdrawError) withdrawError.classList.remove('show');
     if (withdrawConfirmBtn) withdrawConfirmBtn.disabled = true;
 
+}
+
+// 8. 회원탈퇴 완료 모달 확인 버튼 클릭 → 메인 페이지로 이동
+const withdrawCompleteBtn = document.getElementById('withdrawCompleteBtn');
+if (withdrawCompleteBtn) {
+    withdrawCompleteBtn.addEventListener('click', function() {
+        window.location.href = '/';
+    });
 }
 
 // ========== 채팅 메시지 기능 ==========
