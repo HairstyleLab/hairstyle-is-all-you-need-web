@@ -5,7 +5,7 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.core.files import File
-from .models import Gallery
+from .models import Gallery, Chat, Message
 from django.http import JsonResponse
 from urllib.parse import quote
 import json
@@ -136,4 +136,103 @@ def get_hair_images(request):
                 })
 
     return JsonResponse({"images": result_images})
+
+@login_required
+def chat_list(request):
+    """사용자의 채팅 기록 목록 조회"""
+    user_id = request.user.id
+    chats = Chat.objects.filter(user_id=user_id).order_by('-created_at')
+
+    chat_list = [{
+        'chat_id': chat.chat_id,
+        'chat_title': chat.chat_title,
+        'created_at': chat.created_at.strftime('%Y-%m-%d %H:%M:%S')
+    } for chat in chats]
+
+    return JsonResponse({'success': True, 'chats': chat_list})
+
+@login_required
+def chat_create(request):
+    """새로운 채팅 생성"""
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        user_id = request.user.id
+        message_text = data.get('message', '')
+
+        # 채팅 제목: 메시지의 첫 15글자
+        chat_title = message_text[:15] if len(message_text) <= 15 else message_text[:15] + '...'
+
+        # Chat 생성
+        chat = Chat.objects.create(
+            user_id=user_id,
+            chat_title=chat_title
+        )
+
+        return JsonResponse({
+            'success': True,
+            'chat_id': chat.chat_id,
+            'chat_title': chat.chat_title
+        })
+
+    return JsonResponse({'success': False, 'message': 'Invalid request method'})
+
+@login_required
+def chat_detail(request, chat_id):
+    """특정 채팅의 메시지 조회"""
+    try:
+        chat = Chat.objects.get(chat_id=chat_id, user_id=request.user.id)
+        messages = Message.objects.filter(chat=chat).order_by('created_at')
+
+        message_list = []
+        for msg in messages:
+            message_data = {
+                'message_id': msg.message_id,
+                'is_answer': msg.is_answer,
+                'content': msg.content,
+                'created_at': msg.created_at.strftime('%Y-%m-%d %H:%M:%S')
+            }
+
+            # 이미지가 있으면 추가
+            if msg.image:
+                message_data['image_url'] = msg.image.image_path.url
+
+            message_list.append(message_data)
+
+        return JsonResponse({
+            'success': True,
+            'chat_title': chat.chat_title,
+            'messages': message_list
+        })
+    except Chat.DoesNotExist:
+        return JsonResponse({'success': False, 'message': '채팅을 찾을 수 없습니다.'})
+
+@login_required
+def message_save(request):
+    """메시지 저장"""
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        chat_id = data.get('chat_id')
+        content = data.get('content')
+        is_answer = data.get('is_answer', 'Q')
+        image_id = data.get('image_id', None)
+
+        try:
+            chat = Chat.objects.get(chat_id=chat_id, user_id=request.user.id)
+
+            # Message 생성
+            message = Message.objects.create(
+                chat=chat,
+                content=content,
+                is_answer=is_answer,
+                image_id=image_id
+            )
+
+            return JsonResponse({
+                'success': True,
+                'message_id': message.message_id
+            })
+        except Chat.DoesNotExist:
+            return JsonResponse({'success': False, 'message': '채팅을 찾을 수 없습니다.'})
+
+    return JsonResponse({'success': False, 'message': 'Invalid request method'})
 

@@ -170,6 +170,12 @@ body {
     color: var(--text-primary);
 }
 
+.chat-history-item.active {
+    background: rgba(250, 176, 169, 0.3);
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
 /* 사이드바 하단 */
 .sidebar-footer {
     padding: 16px 8px;
@@ -547,7 +553,8 @@ body.logged-in .add-icon {
     color: white;
     border: none;
     cursor: pointer;
-    background-color: transparent;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 50%;
     font-size: 20px;
     display: flex;
     align-items: center;
@@ -940,10 +947,12 @@ body.logged-in.sidebar-expanded .header {
     flex-direction: column;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     z-index: 2000;
+    pointer-events: none;
 }
 
 .add-icon-modal.show {
     display: flex;
+    pointer-events: auto;
 }
 
 .add-icon-modal-overlay {
@@ -953,6 +962,11 @@ body.logged-in.sidebar-expanded .header {
     width: 100%;
     height: 100%;
     cursor: pointer;
+    pointer-events: none;
+}
+
+.add-icon-modal.show .add-icon-modal-overlay {
+    pointer-events: auto;
 }
 
 .add-icon-modal-content {

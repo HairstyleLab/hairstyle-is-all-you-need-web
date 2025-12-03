@@ -7,6 +7,7 @@
     height: 100vh;
     overflow: visible;
     z-index: 1;
+    pointer-events: none;
 }
 
 /* 사이드바 확장 시 위치 이동 */
@@ -37,6 +38,11 @@ body.sidebar-expanded .pictorial-wrapper {
 .pictorial-book.open {
     transform: translateX(0);
     opacity: 1;
+    pointer-events: auto;
+}
+
+/* pictorial이 열릴 때 wrapper도 pointer-events 활성화 */
+body.pictorial-open .pictorial-wrapper {
     pointer-events: auto;
 }
 
