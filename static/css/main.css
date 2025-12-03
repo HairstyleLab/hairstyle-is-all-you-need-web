@@ -380,11 +380,13 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 20px 60px rgba(42, 36, 32, 0.15);
     gap: 6px;
 }
 
 .login-btn:hover{
-    border:#FAB0A9;
+    background-color:#f9f2c5;
+    border: var(--accent-coral) !important;
 }
 
 
