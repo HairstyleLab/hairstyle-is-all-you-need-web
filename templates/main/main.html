@@ -13,9 +13,8 @@
         <!-- 사이드바 헤더 (로고) -->
         <div class="sidebar-header">
             <button class="logo-btn" id="toggleSidebar">
-                <img src="{% static 'images/small_logo.png'%}" alt="Logo" class="sidebar-logo-img"/>
+                <img src="{% static 'images/small_logo.png'%}" alt="Logo" class="sidebar-logo-img" id="sidebarLogoImg"/>
             </button>
-            <span class="sidebar-title">HAIR STYLE</span>
         </div>
 
         <!-- 메뉴 영역 -->
@@ -32,7 +31,7 @@
                 <img src="{% static 'images/hairdo_icon.png'%}" alt="헤어도감" class="menu-icon"/>
                 <span class="menu-text">헤어도감</span>
             </button>
-            <button class="menu-item" id="chatHistoryBtn">
+            <button class="menu-item" id="chatHistoryBtn" disabled>
                 <img src="{% static 'images/chat_history_icon.png'%}" alt="채팅 기록" class="menu-icon"/>
                 <span class="menu-text">채팅 기록</span>
             </button>
@@ -82,6 +81,9 @@
         <!-- 메인 콘텐츠 -->
         <main class="content">
             <h1 class="greeting" id="greeting">안녕하세요</h1>
+
+            <!-- 채팅 메시지 영역 -->
+            <div class="chat-messages" id="chatMessages"></div>
 
             <div class="input-area">
                 <div class="input-container">

@@ -2,6 +2,7 @@
 .gallery-page {
   display: flex;
   min-height: 100vh;
+  margin-top:100px;
 }
 
 /* 메인 영역(사이드바 옆) */
@@ -18,21 +19,28 @@
 
 .gallery-title {
   margin: 0;
-  font-size: 24px;
+  font-size: 50px;
   font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
+/* 추후에 아이콘 기능으로 추가 예정 */
 .gallery-subtitle {
   margin-top: 4px;
-  font-size: 14px;
+  font-size: 15px;
   color: #666666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* 이미지 없음 메시지 */
 .gallery-empty {
   margin-top: 24px;
   color: #888888;
-  font-size: 14px;
+  font-size: 20px;
 }
 
 /* 갤러리 그리드: 기본 2열에서 점점 늘려서 데스크탑 기준 최대 5열 */
@@ -162,11 +170,13 @@
 
 .image-menu-item {
   display: flex;
+  justify-content: center;
+  align-items: center;
   width: 100%;
   padding: 4px 0;
   border: none;
   background: none;
-  text-align: left;
+  text-align: center;
   font-size: 13px;
   cursor: pointer;
   white-space: nowrap;
@@ -201,7 +211,7 @@ body.no-scroll {
   display: none;
   align-items: center;
   justify-content: center;
-  background-color: rgba(0, 0, 0, 0.35);
+  /* background-color: rgba(0, 0, 0, 0.35); */
   z-index: 1000;
 }
 
@@ -210,48 +220,66 @@ body.no-scroll {
 }
 
 .delete-modal {
-  background-color: #ffffff;
-  border-radius: 12px;
-  padding: 22px 20px 18px;
-  min-width: 260px;
-  max-width: 340px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-  box-sizing: border-box;
+  width: 380px;
+  height: 230px;
+  background: white;
+  border-radius: 20px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 .delete-modal-text {
-  margin: 0 0 16px 0;
-  font-size: 14px;
-  color: #333333;
+  font-size: 20px;
+  color: var(--text-primary);
+  margin-bottom: 20px;
   text-align: center;
+  font-weight: bold;
 }
 
 .delete-modal-actions {
   display: flex;
-  justify-content: flex-end;
-  gap: 8px;
+  flex-direction: row;
+  gap: 12px;
+  justify-content: center;
+  width: 100%;
+  margin-top: 10px;
 }
 
 .delete-modal-btn {
-  min-width: 72px;
-  padding: 6px 12px;
-  font-size: 13px;
-  border-radius: 6px;
-  border: 1px solid #dddddd;
+  flex: 1;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 16px;
   cursor: pointer;
-  background-color: #f5f5f5;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  height: 49px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.delete-modal-btn.cancel {
+  background: #fff;
+  border: 1px solid #ddd;
+  color: var(--text-primary);
 }
 
 .delete-modal-btn.cancel:hover {
-  background-color: #eaeaea;
+  background: #f5f5f5;
 }
 
 .delete-modal-btn.confirm {
-  border-color: #ff6b4a;
-  background-color: #ff6b4a;
-  color: #ffffff;
+  background: #D9D9D9;
+  border: none;
+  color: #333;
 }
 
 .delete-modal-btn.confirm:hover {
-  background-color: #f25b39;
+  background: #cccccc;
 }

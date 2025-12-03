@@ -1,6 +1,7 @@
 // 로그인 상태
 let isLoggedIn = false;
 let currentUser = null;
+let isWaitingForResponse = false; // 챗봇 응답 대기 중 상태
 
 const sidebar = document.getElementById('sidebar');
 const sidebarLogged = document.getElementById('sidebarLogged');
@@ -43,42 +44,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (file) {
                 const previewUrl = URL.createObjectURL(file);
                 previewImg.src = previewUrl;
-            }
-        });
-    }
-
-    const saveBtn = document.getElementById("profileSaveBtn");
-    const nicknameInput = document.getElementById("nicknameInput");
-
-    if (saveBtn && nicknameInput) {
-        saveBtn.addEventListener("click", async function () {
-            const formData = new FormData();
-            formData.append("nickname", nicknameInput.value);
-
-            if (fileInput && fileInput.files.length > 0) {
-                formData.append("profile_image", fileInput.files[0]);
-            }
-
-            const res = await fetch("/uauth/profile/edit/", {
-                method: "POST",
-                body: formData,
-                headers: {
-                    "X-CSRFToken": getCookie("csrftoken")
-                }
-            });
-
-            const data = await res.json();
-
-            if (data.success) {
-                // 서버 업데이트 후, 전역 currentUser 최신화
-                currentUser.nickname = data.nickname;
-                currentUser.profile_image = data.profile_image;
-
-                // UI 전역 반영
-                updateUserProfile();
-
-                // 모달 닫기
-                document.getElementById("profileEditModal").classList.remove("show");
             }
         });
     }
@@ -173,12 +138,15 @@ function updateUIForLoginState() {
 
 // 사이드바 이벤트 초기화
 function initSidebarEvents() {
-    // 로고 클릭 시 사이드바 확장
+    // 로고 클릭 시 사이드바 확장 또는 메인 페이지로 이동
     if (toggleSidebarBtn) {
         toggleSidebarBtn.addEventListener('click', function() {
             if (document.body.classList.contains("pictorial-open")) {
                 return;
             }
+            if (sidebarLogged.classList.contains('expanded')) {
+                location.href = '/main/';
+            }          
             toggleSidebar();
         });
     }
@@ -246,6 +214,30 @@ function initSidebarEvents() {
         editProfileBtn.addEventListener('click', function (e) {
             e.stopPropagation();
             settingsModal.classList.remove('show');
+            
+            // 모달 열기 전에 currentUser 정보로 폼 채우기
+            if (currentUser) {
+                // 이메일 표시
+                const emailText = document.querySelector('.profile-edit-email-text');
+                if (emailText) {
+                    emailText.textContent = currentUser.email || '';
+                }
+                // 닉네임 입력란
+                const nicknameInput = document.getElementById('nicknameInput');
+                if (nicknameInput) {
+                    nicknameInput.value = currentUser.nickname || '';
+                }
+                // 프로필 이미지
+                const modalImg = document.getElementById('modalProfileImg');
+                if (modalImg) {
+                    if (currentUser.profile_image) {
+                        modalImg.src = currentUser.profile_image + "?t=" + new Date().getTime();
+                    } else {
+                        modalImg.src = '/static/images/default_profile.png';
+                    }
+                }
+            }
+            
             profileEditModal.classList.add('show');
         });
     }
@@ -255,7 +247,13 @@ function initSidebarEvents() {
         if (e.target.classList.contains('close-modal')) {
             const targetId = e.target.dataset.target;
             const modal = document.getElementById(targetId);
-            if (modal) modal.classList.remove('show');
+            if (modal) {
+                modal.classList.remove('show');
+                // 프로필 편집 모달이면 폼 초기화
+                if (targetId === 'profileEditModal') {
+                    resetProfileEditForm();
+                }
+            }
         }
     });
     
@@ -280,6 +278,14 @@ function toggleSidebar() {
 function expandSidebar() {
     sidebarLogged.classList.add('expanded');
     document.body.classList.add('sidebar-expanded');
+
+    // 로고 이미지 변경
+    const logoImg = document.getElementById('sidebarLogoImg');
+    if (logoImg) {
+        logoImg.src = '/static/images/logo.png';
+        logoImg.style.width = 'auto';
+        logoImg.style.height = '110px';
+    }
 }
 
 // 사이드바 축소
@@ -287,6 +293,12 @@ function collapseSidebar() {
     sidebarLogged.classList.remove('expanded');
     document.body.classList.remove('sidebar-expanded');
     settingsModal.classList.remove('show');
+
+    // 로고 이미지 변경
+    const logoImg = document.getElementById('sidebarLogoImg');
+    if (logoImg) {
+        logoImg.src = '/static/images/small_logo.png';
+    }
 }
 
 // 로그아웃 처리
@@ -336,26 +348,20 @@ if (messageInput && sendBtn) {
     // 전송 버튼 클릭 이벤트
     sendBtn.addEventListener('click', function() {
         if (this.disabled) return;
-        
+
         if (!isLoggedIn) {
             // 로그인되지 않았으면 로그인 모달 표시
             toggleModal();
         } else {
             // 로그인되어 있으면 메시지 전송
-            const message = messageInput.value.trim();
-            if (message) {
-                console.log('메시지 전송:', message);
-                // 여기에 메시지 전송 로직 추가
-                messageInput.value = '';
-                sendBtn.disabled = true;
-                sendBtn.classList.remove('active');
-            }
+            sendMessage();
         }
     });
 
-    // Enter 키로 전송
+    // Enter 키로 전송 (Shift+Enter는 줄바꿈)
     messageInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter' && !sendBtn.disabled) {
+        if (e.key === 'Enter' && !e.shiftKey && !sendBtn.disabled) {
+            e.preventDefault();
             sendBtn.click();
         }
     });
@@ -499,12 +505,72 @@ if (confirmBtn) {
 const profileSaveBtn = document.getElementById("profileSaveBtn");
 const nicknameInput = document.getElementById("nicknameInput");
 const profileImgInput = document.getElementById("profileImgInput");
+const nicknameError = document.getElementById("nicknameError");
+const modalProfileImg = document.getElementById("modalProfileImg");
+
+// 프로필 편집 폼 초기화 함수
+function resetProfileEditForm() {
+    // 닉네임을 원래 값으로 복원
+    if (nicknameInput && currentUser) {
+        nicknameInput.value = currentUser.nickname || '';
+    }
+    // 에러 메시지 숨기기
+    if (nicknameError) {
+        nicknameError.classList.remove("show");
+    }
+    // 파일 입력 초기화
+    if (profileImgInput) {
+        profileImgInput.value = '';
+    }
+    // 프로필 이미지 미리보기를 원래 이미지로 복원
+    if (modalProfileImg && currentUser) {
+        if (currentUser.profile_image) {
+            modalProfileImg.src = currentUser.profile_image + "?t=" + new Date().getTime();
+        } else {
+            modalProfileImg.src = '/static/images/default_profile.png';
+        }
+    }
+}
+
+// 닉네임 유효성 검사 함수 (한글 또는 영어만, 2~10글자)
+function validateNickname(nickname) {
+    const koreanOnly = /^[가-힣]{2,10}$/;
+    const englishOnly = /^[a-zA-Z]{2,10}$/;
+    return koreanOnly.test(nickname) || englishOnly.test(nickname);
+}
 
 // "수정" 버튼 클릭 시 API 호출
 if (profileSaveBtn) {
     profileSaveBtn.addEventListener("click", () => {
+        // 버튼이 비활성화 상태면 무시
+        if (profileSaveBtn.classList.contains("disabled")) {
+            return;
+        }
+        
+        const nickname = nicknameInput.value.trim();
+        const originalNickname = currentUser ? currentUser.nickname : nicknameInput.defaultValue;
+
+        // 닉네임이 원래와 같은지 확인
+        if (nickname === originalNickname) {
+            nicknameError.textContent = "같은 닉네임으로는 수정할 수 없습니다.";
+            nicknameError.classList.add("show");
+            profileSaveBtn.classList.add("disabled");  // 버튼 비활성화
+            return;
+        }
+
+        // 닉네임 유효성 검사
+        if (!validateNickname(nickname)) {
+            nicknameError.textContent = "해당 닉네임은 형식에 맞지 않습니다.";
+            nicknameError.classList.add("show");
+            profileSaveBtn.classList.add("disabled");  // 버튼 비활성화
+            return;
+        }
+
+        // 유효성 검사 통과하면 에러 메시지 숨김
+        nicknameError.classList.remove("show");
+
         const formData = new FormData();
-        formData.append("nickname", nicknameInput.value.trim());
+        formData.append("nickname", nickname);
         if (profileImgInput.files[0]) {
             formData.append("profile_image", profileImgInput.files[0]);
         }
@@ -531,8 +597,25 @@ if (profileSaveBtn) {
 
                 profileEditModal.classList.remove("show");
                 showConfirmModal("프로필이 수정되었습니다!");
+            } else {
+                // 서버에서 유효성 검사 실패한 경우
+                nicknameError.textContent = data.message || "해당 닉네임은 형식에 맞지 않습니다.";
+                nicknameError.classList.add("show");
             }
         });
+    });
+}
+
+// 닉네임 입력 시 에러 메시지 숨김 및 버튼 활성화
+if (nicknameInput) {
+    nicknameInput.addEventListener("input", () => {
+        if (nicknameError.classList.contains("show")) {
+            nicknameError.classList.remove("show");
+        }
+        // 버튼 다시 활성화
+        if (profileSaveBtn) {
+            profileSaveBtn.classList.remove("disabled");
+        }
     });
 }
 // Add Icon Modal 관련 이벤트
@@ -550,6 +633,13 @@ let selectedImageFile = null;
 
 // 전송 버튼 상태 업데이트 함수
 function updateSendBtnState() {
+    // 응답 대기 중이면 항상 비활성화
+    if (isWaitingForResponse) {
+        sendBtn.disabled = true;
+        sendBtn.classList.remove('active');
+        return;
+    }
+
     if (messageInput.value.trim().length > 0 || (imagePreviewContainer && imagePreviewContainer.style.display === 'flex')) {
         sendBtn.disabled = false;
         sendBtn.classList.add('active');
@@ -563,6 +653,12 @@ function updateSendBtnState() {
 if (addIcon) {
     addIcon.addEventListener('click', function(e) {
         e.stopPropagation();
+
+        // 응답 대기 중이면 아무 동작도 하지 않음
+        if (isWaitingForResponse) {
+            return;
+        }
+
         if (isLoggedIn) {
             addIconModal.classList.toggle('show');
         } else {
@@ -641,9 +737,21 @@ if (imageFileInput) {
     imageFileInput.addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (file) {
+            // 파일 확장자 검사
+            const fileName = file.name.toLowerCase();
+            const allowedExtensions = ['.jpg', '.jpeg', '.png'];
+            const isValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
+
+            if (!isValidExtension) {
+                // 유효하지 않은 파일 형식
+                showConfirmModal('jpg, jpeg, png 형식의 이미지만 첨부할 수 있습니다.');
+                imageFileInput.value = ''; // 파일 입력 초기화
+                return;
+            }
+
             // 선택된 파일을 변수에 저장
             selectedImageFile = file;
-            
+
             // 이미지 미리보기 표시
             const reader = new FileReader();
             reader.onload = function(event) {
@@ -652,7 +760,7 @@ if (imageFileInput) {
                 updateSendBtnState();
             };
             reader.readAsDataURL(file);
-            
+
             addIconModal.classList.remove('show');
         }
     });
@@ -923,7 +1031,7 @@ if (withdrawConfirmBtn) {
                 withdrawModal.classList.remove('show');
                 resetWithdrawForm();
                 withdrawCompleteModal.classList.add('show');
-                window.location.href = '/';
+                // 확인 버튼 클릭 시 메인 페이지로 이동
             } else {
                 withdrawError.textContent = data.message || '회원탈퇴에 실패했습니다.';
                 withdrawError.classList.add('show');
@@ -942,5 +1050,174 @@ function resetWithdrawForm() {
     if (withdrawPassword) withdrawPassword.value = '';
     if (withdrawError) withdrawError.classList.remove('show');
     if (withdrawConfirmBtn) withdrawConfirmBtn.disabled = true;
-    
+
+}
+
+// 8. 회원탈퇴 완료 모달 확인 버튼 클릭 → 메인 페이지로 이동
+const withdrawCompleteBtn = document.getElementById('withdrawCompleteBtn');
+if (withdrawCompleteBtn) {
+    withdrawCompleteBtn.addEventListener('click', function() {
+        window.location.href = '/';
+    });
+}
+
+// ========== 채팅 메시지 기능 ==========
+
+// 메시지 전송 함수
+function sendMessage() {
+    const message = messageInput.value.trim();
+    const chatMessages = document.getElementById('chatMessages');
+    const greeting = document.getElementById('greeting');
+    const content = document.querySelector('.content');
+
+    // 사용자 메시지와 이미지가 있는지 확인
+    const hasMessage = message.length > 0;
+    const hasImage = imagePreviewContainer && imagePreviewContainer.style.display === 'flex';
+
+    if (hasMessage || hasImage) {
+        // 첫 메시지 전송 시 레이아웃 전환
+        if (!chatMessages.classList.contains('active')) {
+            // 인사말 페이드아웃
+            if (greeting) {
+                greeting.classList.add('hidden');
+            }
+
+            // 채팅 영역 활성화 및 레이아웃 전환
+            setTimeout(() => {
+                if (greeting) {
+                    greeting.style.display = 'none';
+                }
+                chatMessages.classList.add('active');
+                content.classList.add('chat-started');
+            }, 300);
+        }
+
+        // 사용자 메시지 표시
+        addUserMessage(message, hasImage ? previewImage.src : null);
+
+        // 입력 필드 초기화
+        messageInput.value = '';
+        if (hasImage) {
+            selectedImageFile = null;
+            imagePreviewContainer.style.display = 'none';
+            previewImage.src = '';
+            imageFileInput.value = '';
+        }
+
+        // 응답 대기 상태로 설정
+        isWaitingForResponse = true;
+
+        // 전송 버튼 비활성화
+        sendBtn.disabled = true;
+        sendBtn.classList.remove('active');
+
+        // textarea 높이 리셋
+        autoResizeTextarea(messageInput);
+
+        // "답변을 생성중입니다..." 1.5초 후에 메시지 표시
+        setTimeout(() => {
+            addLoadingMessage();
+        }, 1500);
+
+        // 3초 후 챗봇 응답
+        setTimeout(() => {
+            removeLoadingMessage();
+            addBotMessage('안녕하세요 무엇을 도와드릴까요?');
+
+            // 응답 대기 상태 해제
+            isWaitingForResponse = false;
+
+            // 전송 버튼 상태 업데이트
+            updateSendBtnState();
+        }, 10000);
+    }
+}
+
+// 사용자 메시지 추가
+function addUserMessage(text, imageSrc) {
+    const chatMessages = document.getElementById('chatMessages');
+
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'chat-message user-message';
+
+    // 메시지 내용 영역
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+
+    // 업로드한 이미지가 있으면 표시
+    if (imageSrc) {
+        const uploadedImage = document.createElement('img');
+        uploadedImage.className = 'message-uploaded-image';
+        uploadedImage.src = imageSrc;
+        uploadedImage.alt = '업로드된 이미지';
+        contentDiv.appendChild(uploadedImage);
+    }
+
+    // 텍스트 메시지가 있으면 표시
+    if (text) {
+        const textBubble = document.createElement('div');
+        textBubble.className = 'message-bubble user-bubble';
+        textBubble.textContent = text;
+        contentDiv.appendChild(textBubble);
+    }
+
+    messageDiv.appendChild(contentDiv);
+    chatMessages.appendChild(messageDiv);
+
+    // 스크롤을 최신 메시지로 이동
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// 로딩 메시지 추가
+function addLoadingMessage() {
+    const chatMessages = document.getElementById('chatMessages');
+
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'chat-message bot-message loading-message';
+    messageDiv.id = 'loadingMessage';
+
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+
+    const textBubble = document.createElement('div');
+    textBubble.className = 'message-bubble bot-bubble';
+    textBubble.textContent = '답변을 생성중입니다...';
+
+    contentDiv.appendChild(textBubble);
+    messageDiv.appendChild(contentDiv);
+    chatMessages.appendChild(messageDiv);
+
+    // 스크롤을 최신 메시지로 이동
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// 로딩 메시지 제거
+function removeLoadingMessage() {
+    const loadingMessage = document.getElementById('loadingMessage');
+    if (loadingMessage) {
+        loadingMessage.remove();
+    }
+}
+
+// 챗봇 메시지 추가
+function addBotMessage(text) {
+    const chatMessages = document.getElementById('chatMessages');
+
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'chat-message bot-message';
+
+    // 메시지 내용
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+
+    const textBubble = document.createElement('div');
+    textBubble.className = 'message-bubble bot-bubble';
+    textBubble.textContent = text;
+
+    contentDiv.appendChild(textBubble);
+    messageDiv.appendChild(contentDiv);
+    chatMessages.appendChild(messageDiv);
+
+    // 스크롤을 최신 메시지로 이동
+    chatMessages.scrollTop = chatMessages.scrollHeight;
 }

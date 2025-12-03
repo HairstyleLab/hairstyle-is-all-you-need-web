@@ -2,7 +2,7 @@
 :root {
     --bg-primary: #fff;
     --accent-flame: #ff6b4a;
-    --accent-coral: #ffb5a0;
+    --accent-coral: #f8c4b6;
     --accent-yellow: #FEF9D9;
     --text-primary: #333;
     --text-secondary: #ABA7A7;
@@ -87,18 +87,6 @@ body {
     height: auto;
 }
 
-.sidebar-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-primary);
-    white-space: nowrap;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.sidebar-logged.expanded .sidebar-title {
-    opacity: 1;
-}
 
 /* 사이드바 메뉴 */
 .sidebar-menu {
@@ -124,6 +112,15 @@ body {
 
 .menu-item:hover {
     background: rgba(250, 176, 169, 0.3);
+}
+
+.menu-item:disabled {
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.menu-item:disabled:hover {
+    background: none;
 }
 
 .menu-icon {
@@ -360,11 +357,12 @@ body {
     top: 0;
     right: 0;
     left: 60px;
+    height: 120px;
     padding: 30px 40px;
     display: flex;
     justify-content: flex-end;
     align-items: center;
-    background: transparent;
+    background: var(--bg-primary);
     z-index: 50;
 }
 
@@ -382,11 +380,13 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 20px 60px rgba(42, 36, 32, 0.15);
     gap: 6px;
 }
 
 .login-btn:hover{
-    border:#FAB0A9;
+    background-color:#f9f2c5;
+    border: var(--accent-coral) !important;
 }
 
 
@@ -402,7 +402,15 @@ body {
     align-items: center;
     justify-content: center;
     min-height: 100vh;
-    padding: 0 20px;
+    padding: 40px 20px 20px;
+    transition: justify-content 0.5s ease;
+    position: relative;
+}
+
+.content.chat-started {
+    justify-content: flex-start;
+    padding-top: 120px;
+    padding-bottom: 120px;
 }
 
 .greeting {
@@ -412,6 +420,13 @@ body {
     text-align: center;
     margin-bottom: 80px;
     letter-spacing: -0.02em;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.greeting.hidden {
+    opacity: 0;
+    transform: translateY(-20px);
+    pointer-events: none;
 }
 
 /* 입력 필드 */
@@ -421,6 +436,29 @@ body {
     display: flex;
     flex-direction: column;
     gap: 10px;
+}
+
+.content.chat-started .input-area {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    background: var(--bg-primary);
+    padding: 20px;
+    max-width: 900px;
+    box-sizing: border-box;
+}
+
+/* 로그인 상태에서 입력창 위치 조정 */
+body.logged-in .content.chat-started .input-area {
+    left: 50%;
+    margin-left: 50px;
+}
+
+body.logged-in.sidebar-expanded .content.chat-started .input-area {
+    left: 50%;
+    margin-left: 140px;
 }
 
 .input-container {
@@ -576,6 +614,7 @@ body.logged-in .add-icon {
     padding: 32px;
     width: 400px;
     max-width: 90vw;
+    /* box-sizing: border-box; */
     box-shadow: 0 20px 60px rgba(42, 36, 32, 0.15);
     transform: translateY(-10px);
     opacity: 0;
@@ -592,7 +631,7 @@ body.logged-in .add-icon {
 }
 
 .form-group {
-    margin-bottom: 16px;
+    margin-bottom: 24px;
 }
 
 .form-label {
@@ -605,19 +644,19 @@ body.logged-in .add-icon {
 
 .form-input {
     width: 100%;
-    padding: 12px 14px;
+    padding: 16px 20px;
     border: 1px solid var(--border-light);
     border-radius: 10px;
     font-size: 15px;
     font-family: 'Noto Sans KR', sans-serif;
     color: var(--text-primary);
     transition: all 0.2s ease;
-    background: #fafaf9;
+    background: white;
 }
 
 .form-input:focus {
     outline: none;
-    border-color: var(--accent-flame);
+    border-color: #aaa;
     background: white;
 }
 
@@ -643,7 +682,7 @@ body.logged-in .add-icon {
 
 .forgot-password:hover {
     text-decoration: underline;
-    cursor:pointer;
+    cursor: pointer;
 }
 
 .error-message {
@@ -659,22 +698,27 @@ body.logged-in .add-icon {
 
 .submit-btn {
     width: 100%;
-    padding: 14px;
-    background: #D9D9D9;
-    color: white;
+    padding: 18px;
+    background: #FAB0A9;
+    color: #333;
     border: none;
-    border-radius: 10px;
-    font-size: 15px;
+    border-radius: 20px;
+    font-size: 17px;
     font-weight: 600;
     font-family: 'Noto Sans KR', sans-serif;
     transition: all 0.2s ease;
-    margin-bottom: 16px;
+    margin-bottom: 24px;
+    cursor: pointer;
 }
 
 .submit-btn:not(:disabled) {
     background: #FAB0A9;
-    cursor:pointer;
-    color:#333;
+    cursor: pointer;
+    color: #333;
+}
+
+.submit-btn:not(:disabled):hover {
+    background: #f5a094;
 }
 
 .submit-btn:disabled {
@@ -690,12 +734,12 @@ body.logged-in .add-icon {
 
 .signup-link a {
     text-decoration: none;
-    font-weight: 500;
+    font-weight: 400;
 }
 
 .signup-link a:hover {
     text-decoration: underline;
-    cursor:pointer;
+    cursor: pointer;
 }
 
 /* 로그아웃 확인 모달 */
@@ -747,11 +791,11 @@ body.logged-in .add-icon {
 
 .logout-cancel-btn {
     padding: 10px 24px;
-    background: #f5f5f5;
-    border: none;
+    background: white;
+    border: 1px solid var(--border-light);
     border-radius: 8px;
     font-size: 14px;
-    color: var(--text-secondary);
+    color: var(--text-primary);
     cursor: pointer;
     transition: background 0.2s ease;
 }
@@ -766,13 +810,13 @@ body.logged-in .add-icon {
     border: none;
     border-radius: 8px;
     font-size: 14px;
-    color: white;
+    color: var(--text-primary);
     cursor: pointer;
     transition: background 0.2s ease;
 }
 
 .logout-confirm-btn:hover {
-    background: var(--accent-flame);
+    background: #f5af9a;
 }
 
 /* 로그인 상태에 따른 레이아웃 변경 */
@@ -831,7 +875,9 @@ body.logged-in.sidebar-expanded .header {
 }
 
 .confirm-modal-content {
-    width: 360px;
+    min-width: 360px;
+    max-width: 600px;
+    width: auto;
     height: 230px;
     background: white;
     border-radius: 20px;
@@ -845,10 +891,11 @@ body.logged-in.sidebar-expanded .header {
 }
 
 .confirm-modal-content p {
-    font-size: 16px;
+    font-size: 20px;
     color: var(--text-primary);
     margin-bottom: 20px;
     text-align: center;
+    font-weight:bold;
 }
 
 .confirm-modal-buttons {
@@ -857,15 +904,16 @@ body.logged-in.sidebar-expanded .header {
     gap: 12px;
     justify-content: center;
     width: 100%;
+    margin-top: 30px;
 }
 
 .confirm-btn {
     padding: 12px 24px;
-    background: var(--sidebar-bg);
+    background: var(--accent-coral);
     border: none;
     border-radius: 10px;
     font-size: 16px;
-    color: white;
+    color: var(--text-primary);
     cursor: pointer;
     transition: background 0.2s ease;
     font-weight: 500;
@@ -876,7 +924,7 @@ body.logged-in.sidebar-expanded .header {
 }
 
 .confirm-btn:hover {
-    background: var(--accent-flame);
+    background: #f5af9a;
 }
 
 /* Add Icon Modal */
@@ -886,7 +934,7 @@ body.logged-in.sidebar-expanded .header {
     left: 0;
     margin-bottom: 8px;
     border-radius: 10px;
-    width: 150px;
+    width: 190px;
     height: auto;
     display: none;
     flex-direction: column;
@@ -911,8 +959,8 @@ body.logged-in.sidebar-expanded .header {
     position: relative;
     background: white;
     border: none;
-    padding: 16px;
-    width: 150px;
+    padding: 13px;
+    width: 100%;
     max-width: 90vw;
     border-radius: 10px;
     z-index: 2001;
@@ -941,11 +989,11 @@ body.logged-in.sidebar-expanded .header {
     flex-direction: column;
     align-items: center;
     gap: 7px;
-    padding: 7px 5px;
+    padding: 8px 8px;
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 14px;
     color: var(--text-primary);
     font-weight: 500;
     transition: all 0.2s ease;
@@ -966,7 +1014,7 @@ body.logged-in.sidebar-expanded .header {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(0,0,0,0.2);
     display: none;
     align-items: center;
     justify-content: center;
@@ -978,10 +1026,10 @@ body.logged-in.sidebar-expanded .header {
 }
 
 .password-modal-content {
-    width: 500px;
+    width: 460px;
     background: white;
     border-radius: 20px;
-    padding: 40px;
+    padding: 30px 50px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
@@ -995,7 +1043,7 @@ body.logged-in.sidebar-expanded .header {
 
 .password-modal-desc {
     font-size: 14px;
-    color: var(--text-secondary);
+    color: var(--text-primary);
     text-align: center;
     margin-bottom: 32px;
     line-height: 1.6;
@@ -1113,16 +1161,16 @@ body.logged-in.sidebar-expanded .header {
 }
 
 .withdraw-modal-content {
-    width: 500px;
+    width: 460px;
     background: white;
     border-radius: 20px;
-    padding: 40px;
+    padding: 30px 40px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     text-align: center;
 }
 
 .withdraw-title {
-    font-size: 28px;
+    font-size: 23px;
     font-weight: 700;
     color: #ff4444;
     margin-bottom: 20px;
@@ -1133,6 +1181,7 @@ body.logged-in.sidebar-expanded .header {
     color: var(--text-primary);
     line-height: 1.8;
     margin-bottom: 30px;
+    font-weight: bold;
 }
 
 .withdraw-input-group {
@@ -1141,7 +1190,7 @@ body.logged-in.sidebar-expanded .header {
 
 .withdraw-input {
     width: 100%;
-    padding: 16px;
+    padding: 10px;
     border: 1px solid var(--border-light);
     border-radius: 10px;
     font-size: 15px;
@@ -1169,13 +1218,13 @@ body.logged-in.sidebar-expanded .header {
 
 .withdraw-buttons {
     display: flex;
-    gap: 16px;
+    gap: 10px;
     margin-top: 20px;
 }
 
 .withdraw-btn {
     flex: 1;
-    padding: 16px;
+    padding: 10px;
     border-radius: 10px;
     font-size: 16px;
     font-family: 'Noto Sans KR', sans-serif;
@@ -1254,7 +1303,7 @@ body.logged-in.sidebar-expanded .header {
 }
 
 .withdraw-complete-btn {
-    width: 100%;
+    width: 80%;
     padding: 16px;
     background: white;
     border: 1px solid var(--border-light);
@@ -1279,4 +1328,118 @@ body.logged-in.sidebar-expanded .header {
 
 .password-success.show {
     display: block;
+}
+
+/* ========== 채팅 메시지 스타일 ========== */
+.chat-messages {
+    width: 100%;
+    max-width: 880px;
+    overflow-y: auto;
+    padding: 0;
+    display: none;
+    flex-direction: column;
+    gap: 20px;
+    margin-bottom: 0;
+    flex: 0;
+    transition: all 0.5s ease;
+}
+
+.chat-messages.active {
+    display: flex;
+    padding: 20px;
+    padding-bottom: 0;
+    flex: 1;
+    max-height: calc(100vh - 240px);
+}
+
+.chat-message {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    font-size: 17px;
+    animation: messageSlideIn 0.3s ease-out;
+}
+
+@keyframes messageSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 사용자 메시지 - 오른쪽 정렬 */
+.chat-message.user-message {
+    flex-direction: row;
+    justify-content: flex-end;
+}
+
+.message-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 70%;
+}
+
+.user-message .message-content {
+    align-items: flex-end;
+}
+
+.message-uploaded-image {
+    max-width: 250px;
+    max-height: 250px;
+    border-radius: 12px;
+    object-fit: cover;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.message-bubble {
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 17px;
+    line-height: 1.5;
+    word-wrap: break-word;
+}
+
+.user-bubble {
+    background: #FFE8E0;
+    color: var(--text-primary);
+    border-top-right-radius: 4px;
+}
+
+/* 챗봇 메시지 - 왼쪽 정렬 */
+.chat-message.bot-message {
+    flex-direction: row;
+    justify-content: flex-start;
+}
+
+.bot-message .message-content {
+    align-items: flex-start;
+}
+
+.bot-bubble {
+    background: #FEF9D9;
+    color: var(--text-primary);
+    border-top-left-radius: 4px;
+}
+
+/* 스크롤바 스타일 */
+.chat-messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+    background: #ddd;
+    border-radius: 3px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+    background: #ccc;
 }
