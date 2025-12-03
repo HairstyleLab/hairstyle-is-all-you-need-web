@@ -141,13 +141,13 @@ function initSidebarEvents() {
     // 로고 클릭 시 사이드바 확장 또는 메인 페이지로 이동
     if (toggleSidebarBtn) {
         toggleSidebarBtn.addEventListener('click', function() {
-            // 사이드바가 열려있으면 메인 페이지로 이동
+            if (document.body.classList.contains("pictorial-open")) {
+                return;
+            }
             if (sidebarLogged.classList.contains('expanded')) {
                 location.href = '/main/';
-            } else {
-                // 사이드바가 닫혀있으면 사이드바 확장
-                toggleSidebar();
-            }
+            }          
+            toggleSidebar();
         });
     }
 
@@ -262,6 +262,7 @@ function initSidebarEvents() {
     if (galleryBtn) {
         galleryBtn.addEventListener('click', () => location.href = '/main/gallery/');
     }
+
 }
 
 // 사이드바 확장/축소 토글
