@@ -1,14 +1,14 @@
 /* 숨기기 / 보이기 처리 */
-.modal-container.hidden {
+.profile-edit-modal-container.hidden {
     display: none !important;
 }
 
-.modal-container.show {
+.profile-edit-modal-container.show {
     display: flex !important;
 }
 
 /* 전체 화면 중앙 정렬 */
-.modal-container {
+.profile-edit-modal-container {
     position: fixed; 
     top: 0;
     left: 0;
@@ -22,9 +22,9 @@
 }
 
 /* 모달 박스 */
-.modal-box {
+.profile-edit-modal-box {
     width: 360px;
-    height: 440px;
+    height: 460px;
     background: #ffffff;
     border-radius: 20px;
     padding: 25px 30px;
@@ -33,16 +33,17 @@
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
+    position: relative;
 }
 
-.modal-title {
+.profile-edit-modal-title {
     font-size: 22px;
     font-weight: bold;
     margin-bottom: 15px;
 }
 
 /* 프로필 이미지 */
-.profile-image-wrapper {
+.profile-edit-profile-image-wrapper {
     position: relative;
     width: 150px;
     height: 150px;
@@ -53,7 +54,7 @@
     }
 }
 
-.profile-image {
+.profile-edit-profile-image {
     width: 100%;
     height: 100%;
     border-radius: 50%;
@@ -61,7 +62,7 @@
     border: 1px solid #ddd;
 }
 
-.edit-icon {
+.profile-edit-edit-icon {
     position: absolute;
     right: 0;
     bottom: 0;
@@ -76,7 +77,7 @@
     align-items: center;
 }
 
-.form-group {
+.profile-edit-form-group {
     display: flex;
     align-items: flex-start;
     margin-bottom: 8px;
@@ -84,7 +85,7 @@
     margin-top:15px;
 }
 
-.label {
+.profile-edit-label {
     width: 50px;
     font-weight: 500;
     margin-top: 8px;
@@ -93,27 +94,27 @@
     font-size: 15px;
 }
 
-.form-value {
+.profile-edit-form-value {
     display: flex;
     flex-direction: column;
     flex: 1;
 }
 
 /* 이메일 텍스트 */
-.email-text {
+.profile-edit-email-text {
     font-size: 15px;
     margin-bottom: 2px;
 }
 
-.email-desc {
-    font-size: 13px;
-    color: #999;
-    margin-top: 2px;
-    margin-bottom: 0;
+.profile-edit-email-desc {
+    font-size: 13px !important;
+    color: #999 !important;
+    margin-top: 2px !important;
+    margin-bottom: 0 !important;
 }
 
 /* 입력박스 */
-.input-box {
+.profile-edit-input-box {
     width: 100%;
     padding: 7px 10px;
     border: 1px solid #e8ddd4;
@@ -122,12 +123,12 @@
     outline: none;
 }
 
-.input-box:focus {
-    border-color: #888;
+.profile-edit-input-box:focus {
+    border-color: #ffb5a0;
 }
 
 /* 에러문구 */
-.error-text {
+.profile-edit-error-text {
     margin-top: 3px;
     font-size: 13px;
     color: #d9534f;
@@ -135,20 +136,22 @@
     display: none;
 }
 
-.error-text.show {
+.profile-edit-error-text.show {
     display: block;
 }
 
 /* 버튼 영역 */
-.button-group {
+.profile-edit-button-group {
+    position: absolute;
+    bottom: 18px;
+    left: 30px;
+    right: 30px;
     display: flex;
     justify-content: center;
     gap: 10px;
-    margin-top: auto;
-    padding-top: 15px;
 }
 
-.btn-cancel {
+.profile-edit-btn-cancel {
     flex: 1;
     padding: 10px 0;
     border: 1px solid #ccc;
@@ -159,11 +162,11 @@
     transition: all 0.2s;
 }
 
-.btn-cancel:hover {
+.profile-edit-btn-cancel:hover {
     background: #f5f5f5;
 }
 
-.btn-submit {
+.profile-edit-btn-submit {
     flex: 1;
     padding: 10px 0;
     background: #D9D9D9;
@@ -175,12 +178,12 @@
     transition: all 0.2s;
 }
 
-.btn-submit:hover{
+.profile-edit-btn-submit:hover{
     background:#cccccc
 }
 
 /* 비활성화 */
-.btn-submit.disabled {
+.profile-edit-btn-submit.disabled {
     background: #cccccc;
     cursor: not-allowed;
 }

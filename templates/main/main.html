@@ -3,7 +3,6 @@
 
 {% block content %}
 
-
     <!-- 사이드바 -->
     <aside class="sidebar" id="sidebar">
         <img class='sidebar-logo' src="{% static 'images/small_logo.png'%}"/>
@@ -14,9 +13,8 @@
         <!-- 사이드바 헤더 (로고) -->
         <div class="sidebar-header">
             <button class="logo-btn" id="toggleSidebar">
-                <img src="{% static 'images/small_logo.png'%}" alt="Logo" class="sidebar-logo-img"/>
+                <img src="{% static 'images/small_logo.png'%}" alt="Logo" class="sidebar-logo-img" id="sidebarLogoImg"/>
             </button>
-            <span class="sidebar-title">HAIR STYLE</span>
         </div>
 
         <!-- 메뉴 영역 -->
@@ -33,7 +31,7 @@
                 <img src="{% static 'images/hairdo_icon.png'%}" alt="헤어도감" class="menu-icon"/>
                 <span class="menu-text">헤어도감</span>
             </button>
-            <button class="menu-item" id="chatHistoryBtn">
+            <button class="menu-item" id="chatHistoryBtn" disabled>
                 <img src="{% static 'images/chat_history_icon.png'%}" alt="채팅 기록" class="menu-icon"/>
                 <span class="menu-text">채팅 기록</span>
             </button>
@@ -107,6 +105,9 @@
         </main>
     </div>
 
+    <!-- 헤어도감 -->
+    {% include 'main/pictorial_book.html' %}
+
     <!-- 로그인 모달 -->
     {% include 'main/login_modal.html' %}
 
@@ -125,4 +126,5 @@
 {% endblock content %}
 {% block script %}
 <script src="{% static 'js/main.js' %}"></script>
+<script src="{% static 'js/pictorial_book.js' %}"></script>
 {% endblock script %}

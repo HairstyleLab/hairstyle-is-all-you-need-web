@@ -87,18 +87,6 @@ body {
     height: auto;
 }
 
-.sidebar-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-primary);
-    white-space: nowrap;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.sidebar-logged.expanded .sidebar-title {
-    opacity: 1;
-}
 
 /* 사이드바 메뉴 */
 .sidebar-menu {
@@ -124,6 +112,15 @@ body {
 
 .menu-item:hover {
     background: rgba(250, 176, 169, 0.3);
+}
+
+.menu-item:disabled {
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.menu-item:disabled:hover {
+    background: none;
 }
 
 .menu-icon {
@@ -383,11 +380,13 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 20px 60px rgba(42, 36, 32, 0.15);
     gap: 6px;
 }
 
 .login-btn:hover{
-    border:#FAB0A9;
+    background-color:#f9f2c5;
+    border: var(--accent-coral) !important;
 }
 
 
@@ -842,6 +841,17 @@ body.logged-in.sidebar-expanded .main-container {
     padding-left: var(--sidebar-width-expanded);
 }
 
+/* 패널만 열림 (sidebar 접힘) */
+body.logged-in.pictorial-open .main-container {
+    padding-left: calc(60px + 700px);
+    transition: padding-left .3s ease;
+}
+
+/* 패널 열림 + sidebar 펼쳐짐 */
+body.logged-in.sidebar-expanded.pictorial-open .main-container {
+    padding-left: calc(var(--sidebar-width-expanded) + 700px);
+}
+
 body.logged-in.sidebar-expanded .header {
     left: var(--sidebar-width-expanded);
 }
@@ -865,7 +875,9 @@ body.logged-in.sidebar-expanded .header {
 }
 
 .confirm-modal-content {
-    width: 360px;
+    min-width: 360px;
+    max-width: 600px;
+    width: auto;
     height: 230px;
     background: white;
     border-radius: 20px;
@@ -1281,7 +1293,7 @@ body.logged-in.sidebar-expanded .header {
 
 .withdraw-complete-desc {
     font-size: 15px;
-    color: var(--text-secondary);
+    color: var(--text-primary);
     margin-bottom: 40px;
 }
 
@@ -1293,7 +1305,7 @@ body.logged-in.sidebar-expanded .header {
 .withdraw-complete-btn {
     width: 80%;
     padding: 16px;
-    background: white;
+    background: var(--accent-yellow);
     border: 1px solid var(--border-light);
     border-radius: 10px;
     font-size: 16px;
@@ -1304,7 +1316,8 @@ body.logged-in.sidebar-expanded .header {
 }
 
 .withdraw-complete-btn:hover {
-    background: #f5f5f5;
+    background: #f5e6a3;
+    border: 1px solid var(--accent-coral);
 }
 
 .password-success {
@@ -1344,6 +1357,7 @@ body.logged-in.sidebar-expanded .header {
     display: flex;
     gap: 12px;
     align-items: flex-start;
+    font-size: 17px;
     animation: messageSlideIn 0.3s ease-out;
 }
 
@@ -1386,7 +1400,7 @@ body.logged-in.sidebar-expanded .header {
 .message-bubble {
     padding: 12px 16px;
     border-radius: 12px;
-    font-size: 15px;
+    font-size: 17px;
     line-height: 1.5;
     word-wrap: break-word;
 }

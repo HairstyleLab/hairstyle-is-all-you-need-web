@@ -8,5 +8,6 @@ urlpatterns = [
     path('gallery/', views.gallery, name='gallery'),
     path('gallery/upload', views.gallery_upload, name='gallery_upload'),
     path('gallery/delete', views.gallery_delete, name='gallery_delete')
+    path("get-hair-images/", views.get_hair_images),
 ]
 
