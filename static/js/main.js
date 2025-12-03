@@ -38,12 +38,22 @@ document.addEventListener('DOMContentLoaded', async function() {
             fileInput.click();
         });
 
-        // 이미지 파일 선택 → 즉시 모달 이미지 미리보기 변경
+        // 이미지 파일 선택 → 즉시 모달 이미지 미리보기 변경 + 버튼 활성화
         fileInput.addEventListener("change", function (event) {
             const file = event.target.files[0];
             if (file) {
                 const previewUrl = URL.createObjectURL(file);
                 previewImg.src = previewUrl;
+                
+                // 에러 메시지 숨기고 버튼 활성화
+                const nicknameError = document.getElementById("nicknameError");
+                const profileSaveBtn = document.getElementById("profileSaveBtn");
+                if (nicknameError) {
+                    nicknameError.classList.remove("show");
+                }
+                if (profileSaveBtn) {
+                    profileSaveBtn.classList.remove("disabled");
+                }
             }
         });
     }
@@ -549,17 +559,20 @@ if (profileSaveBtn) {
         
         const nickname = nicknameInput.value.trim();
         const originalNickname = currentUser ? currentUser.nickname : nicknameInput.defaultValue;
+        
+        // 새 이미지가 선택되었는지 확인
+        const hasNewImage = profileImgInput && profileImgInput.files && profileImgInput.files.length > 0;
 
-        // 닉네임이 원래와 같은지 확인
-        if (nickname === originalNickname) {
-            nicknameError.textContent = "같은 닉네임으로는 수정할 수 없습니다.";
+        // 닉네임도 같고, 새 이미지도 없으면 → 에러
+        if (nickname === originalNickname && !hasNewImage) {
+            nicknameError.textContent = "변경된 내용이 없습니다.";
             nicknameError.classList.add("show");
             profileSaveBtn.classList.add("disabled");  // 버튼 비활성화
             return;
         }
 
-        // 닉네임 유효성 검사
-        if (!validateNickname(nickname)) {
+        // 닉네임이 변경된 경우에만 유효성 검사
+        if (nickname !== originalNickname && !validateNickname(nickname)) {
             nicknameError.textContent = "해당 닉네임은 형식에 맞지 않습니다.";
             nicknameError.classList.add("show");
             profileSaveBtn.classList.add("disabled");  // 버튼 비활성화
@@ -594,6 +607,9 @@ if (profileSaveBtn) {
 
                 // UI 즉시 갱신 (캐시 방지 포함)
                 updateUserProfile();
+
+                // 폼 초기화 (파일 입력 등 리셋)
+                resetProfileEditForm();
 
                 profileEditModal.classList.remove("show");
                 showConfirmModal("프로필이 수정되었습니다!");
