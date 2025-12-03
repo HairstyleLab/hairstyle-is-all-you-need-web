@@ -107,7 +107,6 @@ async function checkLoginStatus() {
         }
         updateUIForLoginState();
     } catch (error) {
-        console.log('로그인 상태 확인 실패:', error);
         isLoggedIn = false;
         updateUIForLoginState();
     }
@@ -468,10 +467,9 @@ async function handleLogin(event) {
             },
             body: JSON.stringify({ email, password })
         });
-        
+
         const data = await response.json();
-        console.log('Login response:', data, 'Status:', response.status);
-        
+
         if (data.success) {
             isLoggedIn = true;
             currentUser = data.user;
@@ -677,19 +675,14 @@ if (addIcon) {
     addIcon.addEventListener('click', function(e) {
         e.stopPropagation();
 
-        console.log('addIcon clicked, isLoggedIn:', isLoggedIn, 'isWaitingForResponse:', isWaitingForResponse);
-
         // 응답 대기 중이면 아무 동작도 하지 않음
         if (isWaitingForResponse) {
-            console.log('응답 대기 중이므로 무시');
             return;
         }
 
         if (isLoggedIn) {
-            console.log('모달 토글');
             addIconModal.classList.toggle('show');
         } else {
-            console.log('로그인 모달 표시');
             // 로그인 안 된 상태에서 로그인 모달 표시
             const loginModal = document.getElementById('loginModal');
             if (loginModal) {
@@ -745,10 +738,8 @@ if (profileImageBtn) {
             e.preventDefault();
             return;
         }
-        
-        console.log('프로필 이미지 버튼 클릭, currentUser:', currentUser);
+
         if (currentUser && currentUser.profile_image && !currentUser.profile_image.includes('default_profile')) {
-            console.log('프로필 이미지 표시:', currentUser.profile_image);
             previewImage.src = currentUser.profile_image;
             imagePreviewContainer.style.display = 'flex';
             selectedImageFile = null; // 파일 선택 초기화
@@ -1121,16 +1112,57 @@ function renderChatHistory() {
     chatHistory.forEach(chat => {
         const chatItem = document.createElement('div');
         chatItem.className = 'chat-history-item';
-        chatItem.textContent = chat.chat_title;
         chatItem.dataset.chatId = chat.chat_id;
+
+        // 채팅 제목 영역
+        const chatTitle = document.createElement('span');
+        chatTitle.className = 'chat-title';
+        chatTitle.textContent = chat.chat_title;
+
+        // 메뉴 버튼
+        const menuBtn = document.createElement('button');
+        menuBtn.className = 'chat-menu-btn';
+        menuBtn.innerHTML = '<span class="chat-menu-dot"></span><span class="chat-menu-dot"></span><span class="chat-menu-dot"></span>';
+        menuBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            toggleChatMenu(chat.chat_id);
+        });
+
+        // 메뉴 드롭다운
+        const menuDropdown = document.createElement('div');
+        menuDropdown.className = 'chat-menu-dropdown';
+        menuDropdown.dataset.chatId = chat.chat_id;
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'chat-menu-item';
+        editBtn.textContent = '채팅 이름 수정';
+        editBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            startEditingChatTitle(chat.chat_id, chat.chat_title);
+        });
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'chat-menu-item delete';
+        deleteBtn.textContent = '채팅 기록 삭제';
+        deleteBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            confirmDeleteChat(chat.chat_id);
+        });
+
+        menuDropdown.appendChild(editBtn);
+        menuDropdown.appendChild(deleteBtn);
+
+        chatItem.appendChild(chatTitle);
+        chatItem.appendChild(menuBtn);
+        chatItem.appendChild(menuDropdown);
 
         // 현재 선택된 채팅이면 active 클래스 추가
         if (currentChatId === chat.chat_id) {
             chatItem.classList.add('active');
         }
 
-        // 클릭 이벤트
-        chatItem.addEventListener('click', function() {
+        // 클릭 이벤트 (제목 클릭 시)
+        chatTitle.addEventListener('click', function() {
             loadChat(chat.chat_id);
         });
 
@@ -1175,7 +1207,7 @@ async function loadChat(chatId) {
                 if (msg.is_answer === 'Q') {
                     addUserMessage(msg.content, msg.image_url || null);
                 } else {
-                    addBotMessage(msg.content);
+                    addBotMessage(msg.content, msg.image_url || null);
                 }
             });
 
@@ -1287,16 +1319,20 @@ async function sendMessage() {
       }, 300);
     }
 
+    // 사용자 업로드 이미지 저장 (먼저 저장해서 image_id를 받음)
+    let imageId = null;
+    if (hasImage) {
+      imageId = await addGallery('user');
+    }
+
     // 사용자 메시지 표시
     addUserMessage(message, hasImage ? previewImage.src : null);
 
-    // 메시지 저장
-    if (hasMessage) {
-      await saveMessage(message, 'Q', null);
+    // 메시지 저장 (이미지 ID와 함께)
+    // 메시지가 있거나 이미지가 있으면 저장
+    if (hasMessage || hasImage) {
+      await saveMessage(message || '', 'Q', imageId);
     }
-
-    // 사용자 업로드 이미지 저장
-    if (hasImage) addGallery('user');
 
     // 입력 필드 초기화
     messageInput.value = '';
@@ -1407,7 +1443,7 @@ function removeLoadingMessage() {
 }
 
 // 챗봇 메시지 추가
-function addBotMessage(text) {
+function addBotMessage(text, imageSrc) {
     const chatMessages = document.getElementById('chatMessages');
 
     const messageDiv = document.createElement('div');
@@ -1417,11 +1453,23 @@ function addBotMessage(text) {
     const contentDiv = document.createElement('div');
     contentDiv.className = 'message-content';
 
-    const textBubble = document.createElement('div');
-    textBubble.className = 'message-bubble bot-bubble';
-    textBubble.textContent = text;
+    // 챗봇이 보낸 이미지가 있으면 표시
+    if (imageSrc) {
+        const botImage = document.createElement('img');
+        botImage.className = 'message-uploaded-image';
+        botImage.src = imageSrc;
+        botImage.alt = '챗봇 응답 이미지';
+        contentDiv.appendChild(botImage);
+    }
 
-    contentDiv.appendChild(textBubble);
+    // 텍스트 메시지가 있으면 표시
+    if (text) {
+        const textBubble = document.createElement('div');
+        textBubble.className = 'message-bubble bot-bubble';
+        textBubble.textContent = text;
+        contentDiv.appendChild(textBubble);
+    }
+
     messageDiv.appendChild(contentDiv);
     chatMessages.appendChild(messageDiv);
 
@@ -1434,7 +1482,7 @@ async function addGallery(role) {
     const formData = new FormData();
 
     formData.append('role', role);
-    
+
     if (selectedImageFile) {
       formData.append('image', selectedImageFile);
     } else if (previewImage.src) {
@@ -1443,7 +1491,7 @@ async function addGallery(role) {
       const filename = `profile_image_${new Date().getTime()}.png`;
       formData.append('image', blob, filename);
     }
-    
+
     const res = await fetch('/main/gallery/upload', {
       method: "POST",
       headers: {
@@ -1451,12 +1499,240 @@ async function addGallery(role) {
       },
       body: formData
     });
-    
+
     const data = await res.json();
-    
-    if (!data.success) console.error('사진 저장 실패');
+
+    if (!data.success) {
+      console.error('사진 저장 실패');
+      return null;
+    }
+
+    // 저장된 이미지의 ID를 반환
+    return data.image_id || null;
   } catch (err) {
     console.error('오류 디버깅: ', err);
     alert('이미지 저장 중 문제 발생');
-  } 
+    return null;
+  }
 }
+
+// ========== 채팅 기록 관리 기능 ==========
+
+let currentEditingChatId = null;
+
+// 채팅 메뉴 토글
+function toggleChatMenu(chatId) {
+    // 모든 메뉴 닫기
+    document.querySelectorAll('.chat-menu-dropdown').forEach(menu => {
+        if (menu.dataset.chatId !== chatId.toString()) {
+            menu.classList.remove('show');
+        }
+    });
+
+    // 선택한 메뉴 토글
+    const menu = document.querySelector(`.chat-menu-dropdown[data-chat-id="${chatId}"]`);
+    if (menu) {
+        menu.classList.toggle('show');
+    }
+}
+
+// 채팅 이름 수정 시작
+function startEditingChatTitle(chatId, currentTitle) {
+    // 메뉴 닫기
+    const menu = document.querySelector(`.chat-menu-dropdown[data-chat-id="${chatId}"]`);
+    if (menu) {
+        menu.classList.remove('show');
+    }
+
+    currentEditingChatId = chatId;
+
+    // 해당 채팅 아이템 찾기
+    const chatItem = document.querySelector(`.chat-history-item[data-chat-id="${chatId}"]`);
+    if (!chatItem) return;
+
+    const chatTitle = chatItem.querySelector('.chat-title');
+    const menuBtn = chatItem.querySelector('.chat-menu-btn');
+
+    // 제목을 input으로 변경
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'chat-title-input';
+    input.value = currentTitle;
+    input.maxLength = 15;
+
+    // 수정 버튼 생성
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'chat-save-btn';
+    saveBtn.innerHTML = '✓';
+    saveBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        saveChatTitle(chatId, input.value);
+    });
+
+    // 기존 제목과 메뉴 버튼 숨기기
+    chatTitle.style.display = 'none';
+    menuBtn.style.display = 'none';
+
+    // input과 저장 버튼 추가
+    chatItem.insertBefore(input, menuBtn);
+    chatItem.insertBefore(saveBtn, menuBtn);
+
+    // input에 포커스
+    input.focus();
+    input.select();
+
+    // Enter 키로 저장
+    input.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            saveChatTitle(chatId, input.value);
+        }
+    });
+}
+
+// 채팅 이름 저장
+async function saveChatTitle(chatId, newTitle) {
+    const trimmedTitle = newTitle.trim();
+
+    if (trimmedTitle.length === 0) {
+        showConfirmModal('채팅 이름을 입력해주세요.');
+        return;
+    }
+
+    if (trimmedTitle.length > 15) {
+        showConfirmModal('채팅 이름은 15글자 이하로 입력해주세요.');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/main/chat/${chatId}/update`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ chat_title: trimmedTitle })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // 채팅 기록 목록 갱신
+            await loadChatHistory();
+            showConfirmModal('채팅 이름이 수정되었습니다.');
+        } else {
+            showConfirmModal(data.message || '채팅 이름 수정에 실패했습니다.');
+        }
+    } catch (error) {
+        console.error('채팅 이름 수정 실패:', error);
+        showConfirmModal('서버 오류가 발생했습니다.');
+    }
+
+    currentEditingChatId = null;
+}
+
+// 채팅 삭제 확인
+function confirmDeleteChat(chatId) {
+    // 메뉴 닫기
+    const menu = document.querySelector(`.chat-menu-dropdown[data-chat-id="${chatId}"]`);
+    if (menu) {
+        menu.classList.remove('show');
+    }
+
+    // 삭제 모달 표시
+    const deleteModal = document.getElementById('chatDeleteModal');
+    const confirmBtn = document.getElementById('chatDeleteConfirmBtn');
+
+    if (deleteModal) {
+        deleteModal.classList.add('show');
+
+        // 기존 이벤트 리스너 제거를 위해 새 버튼 생성
+        const newConfirmBtn = confirmBtn.cloneNode(true);
+        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+        // 삭제 확인 버튼 이벤트
+        newConfirmBtn.addEventListener('click', function() {
+            deleteChat(chatId);
+        });
+    }
+}
+
+// 채팅 삭제
+async function deleteChat(chatId) {
+    try {
+        const response = await fetch(`/main/chat/${chatId}/delete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // 삭제 모달 닫기
+            const deleteModal = document.getElementById('chatDeleteModal');
+            if (deleteModal) {
+                deleteModal.classList.remove('show');
+            }
+
+            // 삭제된 채팅이 현재 선택된 채팅이면 초기화
+            if (currentChatId === chatId) {
+                currentChatId = null;
+                const chatMessages = document.getElementById('chatMessages');
+                const greeting = document.getElementById('greeting');
+                const content = document.querySelector('.content');
+
+                if (chatMessages) {
+                    chatMessages.innerHTML = '';
+                    chatMessages.classList.remove('active');
+                }
+                if (content) {
+                    content.classList.remove('chat-started');
+                }
+                if (greeting) {
+                    greeting.style.display = 'block';
+                }
+            }
+
+            // 채팅 기록 목록 갱신
+            await loadChatHistory();
+            showConfirmModal('채팅 기록이 삭제되었습니다.');
+        } else {
+            showConfirmModal(data.message || '채팅 삭제에 실패했습니다.');
+        }
+    } catch (error) {
+        console.error('채팅 삭제 실패:', error);
+        showConfirmModal('서버 오류가 발생했습니다.');
+    }
+}
+
+// 채팅 삭제 모달 취소 버튼
+const chatDeleteCancelBtn = document.getElementById('chatDeleteCancelBtn');
+if (chatDeleteCancelBtn) {
+    chatDeleteCancelBtn.addEventListener('click', function() {
+        const deleteModal = document.getElementById('chatDeleteModal');
+        if (deleteModal) {
+            deleteModal.classList.remove('show');
+        }
+    });
+}
+
+// 모달 외부 클릭 시 닫기
+const chatDeleteModal = document.getElementById('chatDeleteModal');
+if (chatDeleteModal) {
+    chatDeleteModal.addEventListener('click', function(e) {
+        if (e.target === chatDeleteModal) {
+            chatDeleteModal.classList.remove('show');
+        }
+    });
+}
+
+// 문서 클릭 시 열린 메뉴 닫기
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.chat-menu-btn') && !e.target.closest('.chat-menu-dropdown')) {
+        document.querySelectorAll('.chat-menu-dropdown').forEach(menu => {
+            menu.classList.remove('show');
+        });
+    }
+});
