@@ -20,13 +20,13 @@ body.sidebar-expanded .pictorial-wrapper {
     top: 0;
     left: 0;
 
-    width: 800px;
+    width: 650px;
     height: 100vh;
 
     background-color: #ffe6f2;
     box-shadow: 0 0 10px rgba(0,0,0,0.1);
 
-    transform: translateX(-100%); /* <- 정확히 panel width만큼 숨김 */
+    transform: translateX(-100%);
     opacity: 0;
     pointer-events: none;
 
@@ -42,7 +42,7 @@ body.sidebar-expanded .pictorial-wrapper {
 
 .pictorial-content {
     padding: 20px;
-    margin-top: 100px; 
+    margin-top: 50px; 
     height: calc(100vh - 60px);
     overflow-y: auto;
 }
@@ -58,17 +58,17 @@ body.sidebar-expanded .pictorial-wrapper {
     padding: 8px 14px;
     border: none;
     background: #ffb8c6;
-    border-radius: 12px;
+    border-radius: 5px;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
 }
 
-.pt-gender {
+.pt-gender-select {
     padding: 8px 14px;
-    background: #ffffff;
-    border: 1px solid #ddd;
-    border-radius: 12px;
+    background: #ffb8c6;
+    border: none;
+    border-radius: 5px;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
@@ -76,12 +76,12 @@ body.sidebar-expanded .pictorial-wrapper {
 
 .pt-search {
     position: relative;
-    width: 400px;
-    left: 50px;
+    width: 250px;
+    left: 90px;
     display: flex;
     padding: 0 12px;
     background: #ffffff;
-    border-radius: 20px;
+    border-radius: 5px;
     padding: 0 12px;
     border: 1px solid #ddd;
 }
@@ -102,35 +102,108 @@ body.sidebar-expanded .pictorial-wrapper {
     margin-bottom: 20px;
 }
 
-/* 카드 그리드 */
-.pictorial-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 18px;
+.pictorial-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
 }
 
-/* 카드 */
-.pt-card {
-    background: #fff;
-    border-radius: 16px;
+/* 2열 그리드 — 칸 너비는 자동, 높이는 카드 height로 고정됨 */
+.pictorial-images {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-top: 20px;
+    align-items: start;
+}
+
+/* 이미지 카드 — height로 고정, width는 그리드 칸 크기에 맞게 */
+.pictorial-images .pt-card {
+    background: none;
+    border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 3px 6px rgba(0,0,0,0.08);
-    transition: transform .2s ease;
+    height: 260px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.pictorial-images .pt-card img {
+    width: 80%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+
+/* 태그 형태의 작은 아이템 */
+.pt-item {
+    display: inline-block;
+    padding: 6px 12px;
+
+    background: #ffb8c6;
+    border-radius: 5px;
+    border: none;
+
+    font-size: 14px;
+    font-weight: 600;
+    color: #444;
+
     cursor: pointer;
-    text-align: center;
+    transition: 0.2s ease;
+    white-space: nowrap;
+}
+
+/* hover 효과 */
+.pt-item:hover {
+    background: #ffccdb;
+    transform: translateY(-2px);
 }
 
 .pt-card:hover {
     transform: translateY(-5px);
 }
 
-.pt-card img {
-    width: 100%;
-    display: block;
-}
-
 .pt-card-name {
     padding: 12px 0;
     font-size: 15px;
+    font-weight: 600;
+}
+
+/* 전체 필터 영역 */
+.pictorial-filter {
+    padding: 10px 0;
+    border-bottom: 3px solid #f097a1;
+    margin-bottom: 20px;
+}
+
+/* ㄱ~ㅎ 컨테이너 */
+.initial-filter {
+    display: flex;
+    justify-content: center; 
+    gap: 3px;
+    padding: 6px 4px;
+}
+
+/* ㄱ~ㅎ 개별 요소 */
+.initial-filter span {
+    font-size: 15px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+/* 호버 스타일 */
+.initial-filter span:hover {
+    background: #ffd4dd;
+}
+
+/* 선택된 초성 (active class 추가됨) */
+.initial-filter span.active {
+    background: #ff8fa3;
+    color: white;
     font-weight: 600;
 }
