@@ -1314,6 +1314,38 @@ async function saveMessage(content, isAnswer = 'Q', imageId = null) {
     }
 }
 
+// 특정 채팅에 메시지 저장 (챗봇 응답 저장용)
+async function saveMessageToChat(chatId, content, isAnswer = 'Q', imageId = null) {
+    if (!chatId) {
+        console.error('채팅 ID가 없습니다.');
+        return;
+    }
+
+    try {
+        const response = await fetch('/main/message/save', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                chat_id: chatId,
+                content: content,
+                is_answer: isAnswer,
+                image_id: imageId
+            })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            console.error('메시지 저장 실패:', data.message);
+        }
+    } catch (error) {
+        console.error('메시지 저장 중 오류:', error);
+    }
+}
+
 // ========== 채팅 메시지 기능 ==========
 
 // 메시지 전송 함수
@@ -1333,6 +1365,9 @@ async function sendMessage() {
     if (isFirstMessage && hasMessage) {
       await createNewChat(message);
     }
+
+    // 현재 채팅 ID를 저장 (사용자가 다른 채팅으로 전환해도 원래 채팅에 응답 저장)
+    const targetChatId = currentChatId;
 
     // 첫 메시지 전송 시 레이아웃 전환
     if (isFirstMessage) {
@@ -1387,17 +1422,24 @@ async function sendMessage() {
 
     // "답변을 생성중입니다..." 1.5초 후에 메시지 표시
     setTimeout(() => {
-        addLoadingMessage();
+        // 여전히 같은 채팅을 보고 있을 때만 로딩 메시지 표시
+        if (currentChatId === targetChatId) {
+            addLoadingMessage();
+        }
     }, 1500);
 
     // 3초 후 챗봇 응답
     setTimeout(async () => {
-        removeLoadingMessage();
-        const botResponse = '안녕하세요 무엇을 도와드릴까요?';
-        addBotMessage(botResponse);
+        // 여전히 같은 채팅을 보고 있을 때만 UI 업데이트
+        if (currentChatId === targetChatId) {
+            removeLoadingMessage();
+            const botResponse = '안녕하세요 무엇을 도와드릴까요?';
+            addBotMessage(botResponse);
+        }
 
-        // 봇 응답 메시지 저장
-        await saveMessage(botResponse, 'A', null);
+        // 봇 응답 메시지는 항상 원래 채팅에 저장
+        const botResponse = '안녕하세요 무엇을 도와드릴까요?';
+        await saveMessageToChat(targetChatId, botResponse, 'A', null);
 
         // 응답 대기 상태 해제
         isWaitingForResponse = false;
