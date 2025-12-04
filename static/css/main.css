@@ -42,8 +42,8 @@ body {
 }
 
 .sidebar-logo {
-    width: 44px;
-    height: 108px;
+    width: 45px;
+    height: auto;
 }
 
 /* 로그인 후 사이드바 */
@@ -180,15 +180,12 @@ body {
 .sidebar-footer {
     padding: 16px 8px;
     border-top: 1px solid rgba(0, 0, 0, 0.05);
-    display: none;
+    display: flex;
     flex-direction: column;
     align-items: center;
     gap: 12px;
     position: relative;
-}
-
-.sidebar-logged.expanded .sidebar-footer {
-    display: flex;
+    margin-top: auto;
 }
 
 .profile-area {
@@ -199,6 +196,7 @@ body {
     min-width: 0;
     width: 100%;
     justify-content: flex-start;
+    padding-left: 4px;
 }
 
 .profile-img {
@@ -234,13 +232,16 @@ body {
     cursor: pointer;
     transition: all 0.2s ease;
     opacity: 0;
+    visibility: hidden;
     font-family: 'Noto Sans KR', sans-serif;
     text-align: left;
     width: 100%;
+    height: 20px;
 }
 
 .sidebar-logged.expanded .logout-sidebar-btn {
     opacity: 1;
+    visibility: visible;
 }
 
 .logout-sidebar-btn:hover {
