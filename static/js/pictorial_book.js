@@ -39,9 +39,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    // hair_dict.json 로드
     async function loadHairData() {
-        const res = await fetch("/static/data/hair_dict.json");
+        const gender = genderSelect.value;
+        const category = categorySelect.value;
+
+        const res = await fetch(`/main/get-hair-list/?gender=${gender}&category=${category}`);
         HAIR_DATA = await res.json();
     }
 
@@ -59,37 +61,18 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // 현재 카테고리 + 성별 기준 전체 이름 배열 가져오기
     function getAllNamesByCategory() {
-        const category = categorySelect.value;
-        const gender = genderSelect.value;
-        let result = [];
-
-        if (category === "color") {
-            Object.values(HAIR_DATA.color).forEach(arr => {
-                result = result.concat(arr);
-            });
-        } else {
-            Object.values(HAIR_DATA[gender][category]).forEach(arr => {
-                result = result.concat(arr);
-            });
-        }
-        return result;
+        let all = [];
+        Object.values(HAIR_DATA).forEach(arr => {
+            all = all.concat(arr);
+        });
+        return all;
     }
 
     // 리스트 렌더링 함수 (초성 기준)
     function renderList(initial) {
+        let names = HAIR_DATA[initial] || [];  // 초성 키로 직접 접근
 
-        const category = categorySelect.value;
-        const gender = genderSelect.value;
-
-        let names = [];
-
-        if (category === "color") {
-            names = HAIR_DATA["color"][initial] || [];
-        } else {
-            names = HAIR_DATA[gender][category][initial] || [];
-        }
-
-        currentList = names;         // 현재 선택된 초성 리스트 저장
+        currentList = names;
         listBox.innerHTML = "";
         imagesBox.innerHTML = "";
 
@@ -99,7 +82,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             item.textContent = name;
 
             item.addEventListener("click", async () => {
-                const images = await fetchImages(name, gender, category);
+                const images = await fetchImages(name, genderSelect.value, categorySelect.value);
                 renderImages(images);
             });
 
@@ -185,16 +168,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     });
 
-
-    // 카테고리 변경 → 현재 초성 유지
-    categorySelect.addEventListener("change", () => {
+    categorySelect.addEventListener("change", async () => {
+        await loadHairData();
         const active = document.querySelector(".initial-filter .active");
         if (active) renderList(active.dataset.initial);
     });
 
-
-    // 성별 변경 → 현재 초성 유지
-    genderSelect.addEventListener("change", () => {
+    genderSelect.addEventListener("change", async () => {
+        await loadHairData();
         const active = document.querySelector(".initial-filter .active");
         if (active) renderList(active.dataset.initial);
     });
