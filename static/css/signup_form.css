@@ -10,6 +10,9 @@
     --terms-bg: #FFF5F0;
     --error-color: #ff6b6b;
     --success-color: #4CAF50;
+    --sidebar-bg: rgba(250, 176, 169, 0.15);
+    --sidebar-width-collapsed: 60px;
+    --sidebar-width-expanded: 280px;
 }
 
 * {
@@ -30,19 +33,19 @@ body {
     position: fixed;
     left: 0;
     top: 0;
-    width: 60px;
+    width: var(--sidebar-width-collapsed);
     height: 100vh;
     background: linear-gradient(to right, rgba(250, 176, 169, 0.2), rgba(255, 255, 255, 0));
     display: flex;
     align-items: flex-start;
-    justify-content: center;
+    flex-direction: flex-start;
     padding-top: 30px;
     z-index: 100;
 }
 
 .sidebar-logo {
-    width: 44px;
-    height: 108px;
+    width: auto;
+    height: 110px;
 }
 
 .sidebar-logo:hover {
