@@ -32,17 +32,22 @@ document.addEventListener('DOMContentLoaded', async function() {
     initTextareaAutoResize();
     const urlParams = new URLSearchParams(window.location.search);
     const chatIdToLoad = urlParams.get('chatId');
+    const sidebarOpen = urlParams.get('sidebar');
 
     if (chatIdToLoad) {
-        loadChat(chatIdToLoad);
+        await loadChat(chatIdToLoad);
 
         const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
         window.history.replaceState({path: newUrl}, '', newUrl);
     }
 
-    // 로그인 상태면 채팅 기록 불러오기
-    if (isLoggedIn) {
-        await loadChatHistory();
+    // 사이드바를 열어야 하는 경우 (채팅 로드 후에 실행)
+    if (sidebarOpen === 'open' && isLoggedIn) {
+        expandSidebar();
+        // 사이드바를 연 후 채팅 기록 다시 렌더링하여 active 클래스 표시
+        if (currentChatId) {
+            renderChatHistory();
+        }
     }
 
     const editIcon = document.getElementById("editProfileImageBtn");
@@ -121,11 +126,13 @@ async function checkLoginStatus() {
     try {
         const response = await fetch('/uauth/check/');
         const data = await response.json();
-        
+
         if (data.is_logged_in) {
             isLoggedIn = true;
             currentUser = data.user;
             updateUserProfile();
+            // 로그인 상태면 채팅 기록 불러오기
+            await loadChatHistory();
         } else {
             isLoggedIn = false;
             currentUser = null;
@@ -354,28 +361,99 @@ async function handleLogout() {
                 'X-CSRFToken': getCookie('csrftoken')
             }
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             isLoggedIn = false;
             currentUser = null;
+            currentChatId = null;
             logoutModal.classList.remove('show');
+
+            // 채팅 상태 초기화
+            const chatMessages = document.getElementById('chatMessages');
+            const greeting = document.getElementById('greeting');
+            const content = document.querySelector('.content');
+
+            if (chatMessages) {
+                chatMessages.innerHTML = '';
+                chatMessages.classList.remove('active');
+            }
+            if (content) {
+                content.classList.remove('chat-started');
+            }
+            if (greeting) {
+                greeting.textContent = `안녕하세요`;
+                greeting.classList.remove('hidden');
+                greeting.style.display = '';
+            }
+
+            // 헤어도감 패널 닫기
+            document.body.classList.remove('pictorial-open');
+
             updateUIForLoginState();
             collapseSidebar();
+
             // 확인 모달 표시
             showConfirmModal('로그아웃 되었습니다.');
-            greeting.textContent = `안녕하세요`;
+
+            // 갤러리 페이지에서 로그아웃하는 경우 모달 닫힌 후 메인으로 이동
+            if (window.location.pathname.includes('/gallery')) {
+                const confirmBtn = document.getElementById('confirmBtn');
+                if (confirmBtn) {
+                    const handleRedirect = function() {
+                        window.location.href = '/main/';
+                        confirmBtn.removeEventListener('click', handleRedirect);
+                    };
+                    confirmBtn.addEventListener('click', handleRedirect);
+                }
+            }
         }
     } catch (error) {
         // 서버 연결 실패 시에도 로컬에서 로그아웃 처리
         isLoggedIn = false;
         currentUser = null;
+        currentChatId = null;
         logoutModal.classList.remove('show');
+
+        // 채팅 상태 초기화
+        const chatMessages = document.getElementById('chatMessages');
+        const greeting = document.getElementById('greeting');
+        const content = document.querySelector('.content');
+
+        if (chatMessages) {
+            chatMessages.innerHTML = '';
+            chatMessages.classList.remove('active');
+        }
+        if (content) {
+            content.classList.remove('chat-started');
+        }
+        if (greeting) {
+            greeting.textContent = `안녕하세요`;
+            greeting.classList.remove('hidden');
+            greeting.style.display = '';
+        }
+
+        // 헤어도감 패널 닫기
+        document.body.classList.remove('pictorial-open');
+
         updateUIForLoginState();
         collapseSidebar();
+
         // 확인 모달 표시
         showConfirmModal('로그아웃 되었습니다.');
+
+        // 갤러리 페이지에서 로그아웃하는 경우 모달 닫힌 후 메인으로 이동
+        if (window.location.pathname.includes('/gallery')) {
+            const confirmBtn = document.getElementById('confirmBtn');
+            if (confirmBtn) {
+                const handleRedirect = function() {
+                    window.location.href = '/main/';
+                    confirmBtn.removeEventListener('click', handleRedirect);
+                };
+                confirmBtn.addEventListener('click', handleRedirect);
+            }
+        }
     }
 }
 
@@ -503,6 +581,8 @@ async function handleLogin(event) {
             toggleModal();
             updateUserProfile();
             updateUIForLoginState();
+            // 로그인 성공 시 채팅 기록 불러오기
+            await loadChatHistory();
             submitBtn.disabled = false;
             submitBtn.textContent = '로그인';
             document.getElementById('email').value = '';
@@ -1184,7 +1264,7 @@ function renderChatHistory() {
         chatItem.appendChild(menuDropdown);
 
         // 현재 선택된 채팅이면 active 클래스 추가
-        if (currentChatId === chat.chat_id) {
+        if (currentChatId == chat.chat_id) {
             chatItem.classList.add('active');
         }
 
@@ -1201,7 +1281,15 @@ function renderChatHistory() {
 async function loadChat(chatId) {
     try {
         if (!window.location.pathname.endsWith('main/')) {
-            window.location.href = `/main?chatId=${chatId}`;
+            // 메인 페이지가 아닌 경우 currentChatId 업데이트 후 active 클래스 표시
+            currentChatId = chatId;
+            renderChatHistory();
+
+            // 사이드바가 열려있는지 확인하고 URL에 파라미터 추가
+            const isSidebarExpanded = sidebarLogged.classList.contains('expanded');
+
+            // 메인 페이지로 리디렉션 (사이드바 상태 유지를 위해 파라미터 추가)
+            window.location.href = `/main?chatId=${chatId}${isSidebarExpanded ? '&sidebar=open' : ''}`;
             return;
         }
 
@@ -1362,8 +1450,10 @@ async function sendMessage() {
   if (hasMessage || hasImage) {
     // 첫 메시지 전송 시 새 채팅 생성
     const isFirstMessage = !chatMessages.classList.contains('active');
-    if (isFirstMessage && hasMessage) {
-      await createNewChat(message);
+    if (isFirstMessage) {
+      // 메시지가 있으면 메시지로, 없으면 "이미지"로 채팅 제목 설정
+      const chatTitle = hasMessage ? message : '이미지';
+      await createNewChat(chatTitle);
     }
 
     // 현재 채팅 ID를 저장 (사용자가 다른 채팅으로 전환해도 원래 채팅에 응답 저장)
@@ -1420,34 +1510,96 @@ async function sendMessage() {
     // textarea 높이 리셋
     autoResizeTextarea(messageInput);
 
-    // "답변을 생성중입니다..." 1.5초 후에 메시지 표시
-    setTimeout(() => {
-        // 여전히 같은 채팅을 보고 있을 때만 로딩 메시지 표시
-        if (currentChatId === targetChatId) {
-            addLoadingMessage();
-        }
-    }, 1500);
+    // 챗봇 응답 생성 및 저장 (비동기로 즉시 시작)
+    generateAndSaveBotResponse(targetChatId, message, hasImage);
+  }
+}
 
-    // 3초 후 챗봇 응답
-    setTimeout(async () => {
-        // 여전히 같은 채팅을 보고 있을 때만 UI 업데이트
+// 챗봇 응답 생성 및 저장 함수
+async function generateAndSaveBotResponse(targetChatId, userMessage, hasImage) {
+    try {
+        // 1.5초 후 로딩 메시지 표시
+        const loadingTimeout = setTimeout(() => {
+            if (currentChatId === targetChatId) {
+                addLoadingMessage();
+            }
+        }, 1500);
+
+        // TODO: 실제 챗봇 API 호출
+        // const response = await fetch('/api/chatbot/', {
+        //     method: 'POST',
+        //     headers: {
+        //         'Content-Type': 'application/json',
+        //         'X-CSRFToken': getCookie('csrftoken')
+        //     },
+        //     body: JSON.stringify({
+        //         chat_id: targetChatId,
+        //         message: userMessage,
+        //         has_image: hasImage
+        //     })
+        // });
+        // const data = await response.json();
+        // const botResponse = data.response;
+
+        // 임시: 10초 대기 (실제 API 호출로 대체 필요)
+        await new Promise(resolve => setTimeout(resolve, 10000));
+        const botResponse = '안녕하세요 무엇을 도와드릴까요?';
+
+        // 봇 응답 메시지를 DB에 저장 (keepalive를 사용하여 페이지를 벗어나도 저장됨)
+        try {
+            const saveResponse = await fetch('/main/message/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    chat_id: targetChatId,
+                    content: botResponse,
+                    is_answer: 'A',
+                    image_id: null
+                }),
+                keepalive: true  // 페이지를 벗어나도 요청이 완료되도록 함
+            });
+
+            const saveData = await saveResponse.json();
+
+            if (!saveData.success) {
+                console.error('메시지 저장 실패:', saveData.message);
+            } else {
+                console.log('챗봇 응답 저장 성공:', botResponse);
+            }
+        } catch (saveError) {
+            console.error('메시지 저장 중 오류:', saveError);
+        }
+
+        // UI 업데이트 (현재 채팅을 보고 있을 때만)
         if (currentChatId === targetChatId) {
             removeLoadingMessage();
-            const botResponse = '안녕하세요 무엇을 도와드릴까요?';
             addBotMessage(botResponse);
+        } else {
+            // 다른 채팅으로 이동했을 때는 로딩 타임아웃만 취소
+            clearTimeout(loadingTimeout);
         }
-
-        // 봇 응답 메시지는 항상 원래 채팅에 저장
-        const botResponse = '안녕하세요 무엇을 도와드릴까요?';
-        await saveMessageToChat(targetChatId, botResponse, 'A', null);
 
         // 응답 대기 상태 해제
         isWaitingForResponse = false;
 
         // 전송 버튼 상태 업데이트
         updateSendBtnState();
-    }, 10000);
-  }
+    } catch (error) {
+        console.error('챗봇 응답 생성 실패:', error);
+
+        // 에러 발생 시에도 응답 대기 상태 해제
+        isWaitingForResponse = false;
+        updateSendBtnState();
+
+        // 현재 채팅을 보고 있을 때만 에러 메시지 표시
+        if (currentChatId === targetChatId) {
+            removeLoadingMessage();
+            showConfirmModal('챗봇 응답 생성 중 오류가 발생했습니다.');
+        }
+    }
 }
 
 // 사용자 메시지 추가
@@ -1633,23 +1785,15 @@ function startEditingChatTitle(chatId, currentTitle) {
     input.className = 'chat-title-input';
     input.value = currentTitle;
     input.maxLength = 15;
-
-    // 수정 버튼 생성
-    const saveBtn = document.createElement('button');
-    saveBtn.className = 'chat-save-btn';
-    saveBtn.innerHTML = '✓';
-    saveBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        saveChatTitle(chatId, input.value);
-    });
+    input.dataset.chatId = chatId;
+    input.dataset.originalTitle = currentTitle;
 
     // 기존 제목과 메뉴 버튼 숨기기
     chatTitle.style.display = 'none';
     menuBtn.style.display = 'none';
 
-    // input과 저장 버튼 추가
+    // input 추가
     chatItem.insertBefore(input, menuBtn);
-    chatItem.insertBefore(saveBtn, menuBtn);
 
     // input에 포커스
     input.focus();
@@ -1658,9 +1802,36 @@ function startEditingChatTitle(chatId, currentTitle) {
     // Enter 키로 저장
     input.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
+            e.preventDefault();
             saveChatTitle(chatId, input.value);
         }
     });
+
+    // 외부 클릭 시 저장
+    const handleClickOutside = function(e) {
+        // input 자체를 클릭한 경우는 무시
+        if (e.target === input) {
+            return;
+        }
+
+        // input이 아닌 다른 곳을 클릭하면 저장
+        if (!input.contains(e.target)) {
+            saveChatTitle(chatId, input.value);
+            document.removeEventListener('click', handleClickOutside);
+        }
+    };
+
+    // 약간의 지연 후 이벤트 리스너 추가 (현재 클릭 이벤트와 충돌 방지)
+    setTimeout(() => {
+        document.addEventListener('click', handleClickOutside);
+    }, 100);
+}
+
+// 채팅 이름 유효성 검사 (영어대소문자, 한글, 숫자, 특수문자로 구성된 15글자)
+function validateChatTitle(title) {
+    // 영어대소문자, 한글, 숫자, 특수문자만 허용
+    const regex = /^[a-zA-Z가-힣0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`\s]{1,15}$/;
+    return regex.test(title);
 }
 
 // 채팅 이름 저장
@@ -1669,11 +1840,20 @@ async function saveChatTitle(chatId, newTitle) {
 
     if (trimmedTitle.length === 0) {
         showConfirmModal('채팅 이름을 입력해주세요.');
+        await loadChatHistory();
         return;
     }
 
     if (trimmedTitle.length > 15) {
         showConfirmModal('채팅 이름은 15글자 이하로 입력해주세요.');
+        await loadChatHistory();
+        return;
+    }
+
+    // 유효성 검사
+    if (!validateChatTitle(trimmedTitle)) {
+        showConfirmModal('채팅 이름은 영어 대소문자, 한글, 숫자, 특수문자로만 구성되어야 합니다.');
+        await loadChatHistory();
         return;
     }
 
@@ -1692,13 +1872,14 @@ async function saveChatTitle(chatId, newTitle) {
         if (data.success) {
             // 채팅 기록 목록 갱신
             await loadChatHistory();
-            showConfirmModal('채팅 이름이 수정되었습니다.');
         } else {
             showConfirmModal(data.message || '채팅 이름 수정에 실패했습니다.');
+            await loadChatHistory();
         }
     } catch (error) {
         console.error('채팅 이름 수정 실패:', error);
         showConfirmModal('서버 오류가 발생했습니다.');
+        await loadChatHistory();
     }
 
     currentEditingChatId = null;
@@ -1765,7 +1946,15 @@ async function deleteChat(chatId) {
                     content.classList.remove('chat-started');
                 }
                 if (greeting) {
-                    greeting.style.display = 'block';
+                    // 로그인 상태에 맞게 greeting 텍스트 업데이트
+                    if (isLoggedIn && currentUser) {
+                        greeting.textContent = `안녕하세요, ${currentUser.nickname || '사용자'}님😊`;
+                    } else {
+                        greeting.textContent = `안녕하세요`;
+                    }
+                    // hidden 클래스 제거 및 display 설정
+                    greeting.classList.remove('hidden');
+                    greeting.style.display = '';  // inline style 제거
                 }
             }
 
@@ -1802,9 +1991,12 @@ if (chatDeleteModal) {
     });
 }
 
-// 문서 클릭 시 열린 메뉴 닫기
+// 문서 클릭 시 열린 chat-menu 닫기
 document.addEventListener('click', function(e) {
-    if (!e.target.closest('.chat-menu-btn') && !e.target.closest('.chat-menu-dropdown')) {
+    // chat-menu-btn이나 chat-menu-dropdown 내부를 클릭하지 않았으면 모든 chat-menu 닫기
+    const isClickInsideChatMenu = e.target.closest('.chat-menu-btn') || e.target.closest('.chat-menu-dropdown');
+
+    if (!isClickInsideChatMenu) {
         document.querySelectorAll('.chat-menu-dropdown').forEach(menu => {
             menu.classList.remove('show');
         });
