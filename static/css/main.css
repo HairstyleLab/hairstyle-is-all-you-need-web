@@ -447,13 +447,23 @@ body {
 .content.chat-started .input-area {
     position: fixed;
     bottom: 0;
-    left: 50%;
+    /* left: 50%; */
+    left: clamp(340px, 50%, 50%);
     transform: translateX(-50%);
     z-index: 10;
     background: var(--bg-primary);
     padding: 20px;
-    max-width: 900px;
+    max-width: 860px;
+    min-width: 770px;
+    width: auto;
     box-sizing: border-box;
+    transition: left .3s ease, max-width .3s ease;
+}
+
+body.pictorial-open .content.chat-started .input-area {
+    max-width: 700px !important;
+    left: calc(50% + 340px) !important;
+    transition: left .3s ease;
 }
 
 /* 로그인 상태에서 입력창 위치 조정 */

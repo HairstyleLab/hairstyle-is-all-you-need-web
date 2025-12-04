@@ -21,10 +21,11 @@ body.sidebar-expanded .pictorial-wrapper {
     top: 0;
     left: 0;
 
-    width: 650px;
+    width: min(650px, 45vw);
     height: 100vh;
 
-    background-color: #ffe6f2;
+    /* background-color: #ffe6f2; */
+    background: linear-gradient(to left, rgba(250, 176, 169, 0.2), rgba(255, 255, 255, 0));
     box-shadow: 0 0 10px rgba(0,0,0,0.1);
 
     transform: translateX(-100%);
@@ -32,6 +33,25 @@ body.sidebar-expanded .pictorial-wrapper {
     pointer-events: none;
 
     transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* 헤더 전체 영역을 중앙 정렬 */
+.pictorial-header {
+    width: 100%;
+    height: 60px;   /* 이미지 높이에 맞게 조절 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    top: 50px;
+    left: 0;
+}
+
+/* 이미지 스타일 */
+.pictorial-title-img {
+    height: 150px;        /* 적당한 높이 */
+    object-fit: contain;
+    pointer-events: none; 
 }
 
 /* 열릴 때 */
@@ -48,7 +68,7 @@ body.pictorial-open .pictorial-wrapper {
 
 .pictorial-content {
     padding: 20px;
-    margin-top: 50px; 
+    margin-top: 150px; 
     height: calc(100vh - 60px);
     overflow-y: auto;
 }
