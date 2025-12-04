@@ -27,6 +27,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         if (isOpen) {
             document.body.classList.add("pictorial-open");
+            const logoImg = document.getElementById('sidebarLogoImg');
+            if (logoImg) {
+                logoImg.src = '/static/images/small_logo.png';
+                logoImg.style.width = 'auto';
+                logoImg.style.height = '110px';
+            }
+
         } else {
             document.body.classList.remove("pictorial-open");
         }
