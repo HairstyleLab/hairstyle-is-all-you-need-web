@@ -155,29 +155,6 @@ body {
     display: block;
 }
 
-.chat-history-item {
-    padding: 10px 12px;
-    font-size: 13px;
-    color: var(--text-secondary);
-    border-radius: 6px;
-    cursor: pointer;
-    white-space: nowrap;
-    overflow: visible;
-    text-overflow: ellipsis;
-    transition: background 0.2s ease;
-}
-
-.chat-history-item:hover {
-    background: rgba(250, 176, 169, 0.2);
-    color: var(--text-primary);
-}
-
-.chat-history-item.active {
-    background: rgba(250, 176, 169, 0.3);
-    color: var(--text-primary);
-    font-weight: 500;
-}
-
 /* 사이드바 하단 */
 .sidebar-footer {
     padding: 16px 8px;
@@ -250,10 +227,7 @@ body {
     color: var(--text-primary);
     text-decoration: underline;
 }
-
-/* 로그아웃 버튼 */
-
-
+/* 설정 버튼 */
 .settings-btn {
     background: none;
     border: none;
@@ -281,8 +255,9 @@ body {
 /* 설정 모달 */
 .settings-modal {
     position: absolute;
-    bottom: 100px;
+    bottom: 100%;
     right: 8px;
+    margin-bottom: 8px;
     background: white;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
@@ -624,7 +599,6 @@ body.logged-in .add-icon {
     padding: 32px;
     width: 400px;
     max-width: 90vw;
-    /* box-sizing: border-box; */
     box-shadow: 0 20px 60px rgba(42, 36, 32, 0.15);
     transform: translateY(-10px);
     opacity: 0;
@@ -1473,11 +1447,13 @@ body.logged-in.sidebar-expanded .header {
     gap: 8px;
     cursor: pointer;
     border-radius: 8px;
-    transition: background 0.2s;
+    transition: background 0.2s ease;
+    font-size: 13px;
 }
 
 .chat-history-item:hover {
     background: rgba(255, 107, 74, 0.1);
+    color: var(--text-primary);
 }
 
 .chat-history-item:hover .chat-menu-btn {
@@ -1486,7 +1462,9 @@ body.logged-in.sidebar-expanded .header {
 }
 
 .chat-history-item.active {
-    background: rgba(255, 107, 74, 0.15);
+    background: rgba(250, 176, 169, 0.3);
+    color: var(--text-primary);
+    font-weight: 500;
 }
 
 /* 채팅 제목 */
@@ -1506,22 +1484,23 @@ body.logged-in.sidebar-expanded .header {
     gap: 2px;
     background: none;
     border: none;
-    padding: 4px;
+    border-radius: 10px;
+    padding: 8px;
     cursor: pointer;
     opacity: 0;
+    margin-left: auto;
     visibility: hidden;
-    transition: opacity 0.2s, visibility 0.2s;
+    transition: opacity 0.3s ease, background 0.2s ease;
 }
 
 .chat-menu-btn:hover {
     background: rgba(0, 0, 0, 0.05);
-    border-radius: 4px;
 }
 
 .chat-menu-dot {
     width: 4px;
     height: 4px;
-    background: var(--text-secondary);
+    background: var(--text-primary);
     border-radius: 50%;
 }
 
@@ -1532,30 +1511,37 @@ body.logged-in.sidebar-expanded .header {
     bottom: 100%;
     margin-bottom: 4px;
     background: white;
-    border: 1px solid var(--border-light);
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    min-width: 150px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    flex-direction: column;
+    align-items: center;
+    padding: 8px;
+    width: auto;
+    min-width: 120px;
+    max-width: 200px;
     z-index: 1000;
     display: none;
     overflow: hidden;
 }
 
 .chat-menu-dropdown.show {
-    display: block;
+    display: flex;
 }
 
 .chat-menu-item {
-    display: block;
+    display: flex;
     width: 100%;
-    padding: 10px 16px;
+    padding: 10px 12px;
     background: none;
     border: none;
+    border-radius:8px;
     text-align: left;
-    font-size: 14px;
+    align-items: center;
+    font-size: 13px;
     color: var(--text-primary);
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background 0.2s ease;
+    animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 9000;
 }
 
@@ -1564,7 +1550,7 @@ body.logged-in.sidebar-expanded .header {
 }
 
 .chat-menu-item.delete {
-    color: #dc3545;
+    color: var(--accent-flame);
 }
 
 .chat-menu-item.delete:hover {
@@ -1574,74 +1560,73 @@ body.logged-in.sidebar-expanded .header {
 /* 채팅 이름 수정 input */
 .chat-title-input {
     flex: 1;
-    padding: 4px 8px;
-    border: 1px solid var(--accent-flame);
+    padding: 4px 4px;
+    border: 1px solid var(--accent-coral);
     border-radius: 4px;
     font-size: 14px;
     outline: none;
 }
 
-/* 채팅 저장 버튼 */
-.chat-save-btn {
-    background: var(--accent-flame);
-    color: white;
-    border: none;
-    border-radius: 4px;
-    padding: 4px 8px;
-    font-size: 16px;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.chat-save-btn:hover {
-    background: #ff5533;
-}
-
 /* 채팅 삭제 확인 모달 */
-#chatDeleteModal {
-    display: none;
+.chatDelete-modal {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 2000;
+    background: rgba(0, 0, 0, 0.4);
+    display: none;
     align-items: center;
     justify-content: center;
+    z-index: 2000;
 }
 
-#chatDeleteModal.show {
+.chatDelete-modal.show {
     display: flex;
 }
 
 .small-modal-content {
-    display: flex;
-    background: white;
-    border-radius: 12px;
-    padding: 24px;
-    min-width: 300px;
-    max-width: 500px;
+    min-width: 360px;
+    max-width: 600px;
     width: auto;
-    z-index: 99999;
+    min-height: 180px;
+    height: auto;
+    background: white;
+    border-radius: 20px;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
-.modal-message {
-    font-size: 16px;
+.chatDelete-modal-message {
+    font-size: 20px;
     color: var(--text-primary);
     text-align: center;
     margin-bottom: 20px;
+    font-weight:bold;
 }
 
-.modal-buttons {
+.chatDelete-buttons {
     display: flex;
+    flex-direction: row;
     gap: 12px;
+    justify-content: center;
+    width: 100%;
+    margin-top:20px;
+}
+
+.chatdelete-modal-buttons {
+    display: flex;
+    gap: 10px;
     justify-content: center;
 }
 
-.modal-btn {
-    padding: 10px 24px;
+.chatdelete-modal-btn {
+    padding: 10px 14px;
     border: none;
     border-radius: 8px;
     font-size: 14px;
@@ -1650,20 +1635,32 @@ body.logged-in.sidebar-expanded .header {
     transition: background 0.2s;
 }
 
-.cancel-btn {
-    background: #f0f0f0;
+.chatDelete-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-family: 'Noto Sans KR', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.chatDelete-btn.cancel-btn {
+    background: white;
+    border: 1px solid var(--border-light);
     color: var(--text-primary);
 }
 
-.cancel-btn:hover {
-    background: #e0e0e0;
+.chatDelete-btn.cancel-btn:hover {
+    background: #f5f5f5;
 }
 
-.confirm-btn {
-    background: #dc3545;
-    color: white;
+.chatDelete-btn.confirm-btn {
+    background: #D9D9D9;
+    border: none;
+    color: var(--text-primary);
 }
 
-.confirm-btn:hover {
-    background: #c82333;
+.chatDelete-btn.confirm-btn:hover {
+    background: #c9c9c9;
 }
