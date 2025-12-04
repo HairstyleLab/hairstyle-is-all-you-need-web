@@ -314,6 +314,8 @@ function collapseSidebar() {
     const logoImg = document.getElementById('sidebarLogoImg');
     if (logoImg) {
         logoImg.src = '/static/images/small_logo.png';
+        logoImg.style.width = 'auto';
+        logoImg.style.height = '110px';
     }
 }
 
