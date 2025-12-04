@@ -30,6 +30,15 @@ document.addEventListener('DOMContentLoaded', async function() {
     await checkLoginStatus();
     initSidebarEvents();
     initTextareaAutoResize();
+    const urlParams = new URLSearchParams(window.location.search);
+    const chatIdToLoad = urlParams.get('chatId');
+
+    if (chatIdToLoad) {
+        loadChat(chatIdToLoad);
+
+        const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+        window.history.replaceState({path: newUrl}, '', newUrl);
+    }
 
     // 로그인 상태면 채팅 기록 불러오기
     if (isLoggedIn) {
@@ -1180,7 +1189,7 @@ function renderChatHistory() {
         }
 
         // 클릭 이벤트 (제목 클릭 시)
-        chatTitle.addEventListener('click', function() {
+        chatItem.addEventListener('click', function() {
             loadChat(chat.chat_id);
         });
 
@@ -1191,6 +1200,11 @@ function renderChatHistory() {
 // 특정 채팅 불러오기
 async function loadChat(chatId) {
     try {
+        if (!window.location.pathname.endsWith('main/')) {
+            window.location.href = `/main?chatId=${chatId}`;
+            return;
+        }
+
         const response = await fetch(`/main/chat/${chatId}/`, {
             method: 'GET',
             headers: {
