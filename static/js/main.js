@@ -42,6 +42,22 @@ document.addEventListener('DOMContentLoaded', async function() {
         fileInput.addEventListener("change", function (event) {
             const file = event.target.files[0];
             if (file) {
+                // 파일 확장자 검사
+                const fileName = file.name.toLowerCase();
+                const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
+                const isValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
+
+                if (!isValidExtension) {
+                    // 유효하지 않은 파일 형식
+                    const nicknameError = document.getElementById("nicknameError");
+                    if (nicknameError) {
+                        nicknameError.textContent = "jpg, jpeg, png, gif 형식의 이미지만 업로드할 수 있습니다.";
+                        nicknameError.classList.add("show");
+                    }
+                    fileInput.value = ''; // 파일 입력 초기화
+                    return;
+                }
+
                 const previewUrl = URL.createObjectURL(file);
                 previewImg.src = previewUrl;
                 
