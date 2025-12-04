@@ -4,6 +4,7 @@ from django.conf import settings
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
+from .models import HairStyleDictionary, HairStyleImage
 from django.core.files import File
 from .models import Gallery, Chat, Message
 from django.http import JsonResponse
@@ -12,12 +13,6 @@ import json
 import os
 
 # Create your views here.
-
-# JSON 로드 (프로젝트 시작 시 1번만)
-HAIR_INFO_PATH = os.path.join(settings.BASE_DIR, "static", "data", "hair_info.json")
-
-with open(HAIR_INFO_PATH, "r", encoding="utf-8") as f:
-    HAIR_INFO = json.load(f)
 
 def main_view(request):
     return render(request, 'main/main.html')
@@ -84,52 +79,149 @@ def gallery_delete(request):
             {'success': False, "message": "이미지 삭제 오류!"}
         )
 
+# def get_hair_images(request):
+#     gender = request.GET.get("gender")
+#     category = request.GET.get("category")
+#     name = request.GET.get("name")
+
+#     try:
+#         base_folder = HAIR_INFO["헤어스타일"][gender][category][name]
+#     except KeyError:
+#         return JsonResponse({"images": []})
+
+#     abs_base_path = os.path.join(settings.BASE_DIR, "static", base_folder)
+
+#     if not os.path.exists(abs_base_path):
+#         return JsonResponse({"images": []})
+
+#     result_images = []
+
+#     subfolders = [
+#         d for d in os.listdir(abs_base_path)
+#         if os.path.isdir(os.path.join(abs_base_path, d))
+#     ]
+
+#     if subfolders:
+#         for length_folder in subfolders:
+#             length_path = os.path.join(abs_base_path, length_folder)
+
+#             for file in os.listdir(length_path):
+#                 if file.lower().endswith(('.jpg', '.jpeg', '.png')):
+#                     relative_path = f"{base_folder}/{length_folder}/{file}"
+#                     img_url = "/static/" + quote(relative_path)
+#                     result_images.append({
+#                         "length": length_folder,
+#                         "url": img_url
+#                     })
+
+#     else:
+#         for file in os.listdir(abs_base_path):
+#             if file.lower().endswith(('.jpg', '.jpeg', '.png')):
+#                 relative_path = f"{base_folder}/{file}"
+#                 img_url = "/static/" + quote(relative_path)
+#                 result_images.append({
+#                     "length": None,
+#                     "url": img_url
+#                 })
+
+#     return JsonResponse({"images": result_images})
+
+
 def get_hair_images(request):
-    gender = request.GET.get("gender")
-    category = request.GET.get("category")
-    name = request.GET.get("name")
+    # Step 1. 프론트에서 전달받은 값
+    gender = request.GET.get("gender")         # male / female
+    category = request.GET.get("category")     # cut / perm / color
+    name = request.GET.get("name")             # 예: 가일컷
 
+    # Step 2. JS 코드 값을 DB 코드로 변환
+    gender_map = {
+        "male": "m",
+        "female": "f"
+    }
+
+    category_map = {
+        "cut": "c",
+        "perm": "p",
+        "color": "l"
+    }
+
+    gender_code = gender_map.get(gender)
+    category_code = category_map.get(category)
+
+    if not gender_code or not category_code:
+        return JsonResponse({"images": []})
+
+    # Step 3. HairStyleDictionary에서 해당 스타일 찾기
     try:
-        base_folder = HAIR_INFO["헤어스타일"][gender][category][name]
-    except KeyError:
+        style = HairStyleDictionary.objects.get(
+            name=name,
+            gender=gender_code,
+            category=category_code
+        )
+    except HairStyleDictionary.DoesNotExist:
         return JsonResponse({"images": []})
 
-    abs_base_path = os.path.join(settings.BASE_DIR, "static", base_folder)
+    # Step 4. 해당 스타일의 이미지 목록 가져오기
+    images = HairStyleImage.objects.filter(name_gender=style)
 
-    if not os.path.exists(abs_base_path):
-        return JsonResponse({"images": []})
+    result = []
 
-    result_images = []
+    for img in images:
+        # DB에는 "hairstyle/male/가일컷/숏/1.jpg" 형태로 저장되어 있음
+        relative_path = img.image_path
 
-    subfolders = [
-        d for d in os.listdir(abs_base_path)
-        if os.path.isdir(os.path.join(abs_base_path, d))
-    ]
+        # 실제 파일 경로 (MEDIA_ROOT 기준)
+        abs_path = os.path.join(settings.MEDIA_ROOT, relative_path)
 
-    if subfolders:
-        for length_folder in subfolders:
-            length_path = os.path.join(abs_base_path, length_folder)
+        # 파일 체크 (필수 아님)
+        if not os.path.exists(abs_path):
+            continue
 
-            for file in os.listdir(length_path):
-                if file.lower().endswith(('.jpg', '.jpeg', '.png')):
-                    relative_path = f"{base_folder}/{length_folder}/{file}"
-                    img_url = "/static/" + quote(relative_path)
-                    result_images.append({
-                        "length": length_folder,
-                        "url": img_url
-                    })
+        # 웹 URL (MEDIA_URL + DB 경로)
+        url = settings.MEDIA_URL + quote(relative_path)
 
-    else:
-        for file in os.listdir(abs_base_path):
-            if file.lower().endswith(('.jpg', '.jpeg', '.png')):
-                relative_path = f"{base_folder}/{file}"
-                img_url = "/static/" + quote(relative_path)
-                result_images.append({
-                    "length": None,
-                    "url": img_url
-                })
+        result.append({
+            "length": img.length,
+            "url": url
+        })
 
-    return JsonResponse({"images": result_images})
+    return JsonResponse({"images": result})
+
+
+def get_hair_list(request):
+    gender_param = request.GET.get("gender")      # male / female
+    category_param = request.GET.get("category")  # cut / perm / color
+
+    gender_map = {"male": "M", "female": "F"}
+    category_map = {"cut": "C", "perm": "P", "color": "L"}
+
+    gender_code = gender_map.get(gender_param)
+    category_code = category_map.get(category_param)
+
+    # DB에서 gender + category 에 해당하는 모든 스타일 조회
+    styles = HairStyleDictionary.objects.filter(
+        gender=gender_code,
+        category=category_code
+    )
+
+    # 초성별 그룹핑
+    result = {}
+
+    def get_initial(name):
+        char = name[0]
+        code = ord(char) - 44032
+        if code < 0 or code > 11171:
+            return None
+        initials = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"]
+        return initials[code // 588]
+
+    for style in styles:
+        initial = get_initial(style.name)
+        if initial:
+            result.setdefault(initial, []).append(style.name)
+
+    return JsonResponse(result)
+
 
 @login_required
 def chat_list(request):
