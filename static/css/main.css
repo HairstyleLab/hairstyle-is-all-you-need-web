@@ -145,7 +145,7 @@ body {
 .chat-history-area {
     flex: 1;
     padding: 10px 8px;
-    overflow-y: auto;
+    overflow-y: flex;
     display: none;
 }
 
@@ -160,7 +160,7 @@ body {
     border-radius: 6px;
     cursor: pointer;
     white-space: nowrap;
-    overflow: hidden;
+    overflow: visible;
     text-overflow: ellipsis;
     transition: background 0.2s ease;
 }
@@ -1554,6 +1554,7 @@ body.logged-in.sidebar-expanded .header {
     color: var(--text-primary);
     cursor: pointer;
     transition: background 0.2s;
+    z-index: 9000;
 }
 
 .chat-menu-item:hover {
@@ -1613,12 +1614,14 @@ body.logged-in.sidebar-expanded .header {
 }
 
 .small-modal-content {
+    display: flex;
     background: white;
     border-radius: 12px;
     padding: 24px;
     min-width: 300px;
     max-width: 500px;
     width: auto;
+    z-index: 99999;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
