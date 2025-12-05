@@ -189,12 +189,24 @@ function initSidebarEvents() {
     // 로고 클릭 시 사이드바 확장 또는 메인 페이지로 이동
     if (toggleSidebarBtn) {
         toggleSidebarBtn.addEventListener('click', function() {
-            if (document.body.classList.contains("pictorial-open")) {
+            // 헤어도감이 열려있으면 닫고 사이드바 열기
+            const pictorialBook = document.getElementById('pictorial-book');
+            if (pictorialBook && pictorialBook.classList.contains('open')) {
+                pictorialBook.classList.remove('open');
+                document.body.classList.remove('pictorial-open');
+
+                // transition 끝난 후 사이드바 열기
+                setTimeout(() => {
+                    if (!sidebarLogged.classList.contains('expanded')) {
+                        toggleSidebar();
+                    }
+                }, 300);
                 return;
             }
+
             if (sidebarLogged.classList.contains('expanded')) {
                 location.href = '/main/';
-            }          
+            }
             toggleSidebar();
         });
     }
@@ -204,6 +216,31 @@ function initSidebarEvents() {
         closeSidebarBtn.addEventListener('click', function() {
             collapseSidebar();
         });
+    }
+
+    // 프로필 이미지 클릭 시 사이드바 토글
+    const profileImg = document.getElementById('profileImg');
+    if (profileImg) {
+        profileImg.addEventListener('click', function() {
+            toggleSidebar();
+        });
+        // 클릭 가능하도록 스타일 추가
+        profileImg.style.cursor = 'pointer';
+    }
+
+    // 채팅기록 아이콘 클릭 시 사이드바 열기 (닫힌 상태에서만)
+    const chatHistoryBtn = document.getElementById('chatHistoryBtn');
+    if (chatHistoryBtn) {
+        chatHistoryBtn.addEventListener('click', function() {
+            if (!sidebarLogged.classList.contains('expanded')) {
+                chatHistoryBtn.disabled=true;
+                chatHistoryBtn.style.cursor = 'default';
+                toggleSidebar();
+            }
+        });
+        // disabled 속성 제거하고 스타일 업데이트
+        chatHistoryBtn.disabled = false;
+        chatHistoryBtn.style.cursor = 'pointer';
     }
 
     // 설정 버튼 클릭 시 설정 모달 토글
@@ -324,6 +361,23 @@ function toggleSidebar() {
 
 // 사이드바 확장
 function expandSidebar() {
+    const pictorialBook = document.getElementById('pictorial-book');
+
+    // 헤어도감이 열려있으면 먼저 닫기
+    if (pictorialBook && pictorialBook.classList.contains('open')) {
+        pictorialBook.classList.remove('open');
+        document.body.classList.remove('pictorial-open');
+
+        // transition 끝난 후 사이드바 열기
+        setTimeout(() => {
+            openSidebarAfterPictorial();
+        }, 300); // 0.3s transition time
+    } else {
+        openSidebarAfterPictorial();
+    }
+}
+
+function openSidebarAfterPictorial() {
     sidebarLogged.classList.add('expanded');
     document.body.classList.add('sidebar-expanded');
 
@@ -1270,6 +1324,10 @@ function renderChatHistory() {
 
         // 클릭 이벤트 (제목 클릭 시)
         chatItem.addEventListener('click', function() {
+            // 사이드바가 열린 상태에서는 채팅 선택 불가
+            if (sidebarLogged.classList.contains('expanded')) {
+                return;
+            }
             loadChat(chat.chat_id);
         });
 
@@ -1758,7 +1816,19 @@ function toggleChatMenu(chatId) {
     // 선택한 메뉴 토글
     const menu = document.querySelector(`.chat-menu-dropdown[data-chat-id="${chatId}"]`);
     if (menu) {
+        const isShowing = menu.classList.contains('show');
         menu.classList.toggle('show');
+
+        // 메뉴가 열릴 때 위치 계산
+        if (!isShowing) {
+            const chatItem = menu.closest('.chat-history-item');
+            const menuBtn = chatItem.querySelector('.chat-menu-btn');
+            const rect = menuBtn.getBoundingClientRect();
+
+            // 버튼 바로 위에 표시
+            menu.style.left = `${rect.left}px`;
+            menu.style.top = `${rect.top - menu.offsetHeight - 4}px`;
+        }
     }
 }
 
@@ -1931,9 +2001,16 @@ async function deleteChat(chatId) {
                 deleteModal.classList.remove('show');
             }
 
+            // 갤러리 페이지에서 현재 보고 있는 채팅을 삭제하는 경우 메인 페이지로 이동
+            if (window.location.pathname.includes('/gallery') && currentChatId == chatId) {
+                window.location.href = '/main/';
+                return;
+            }
+
             // 삭제된 채팅이 현재 선택된 채팅이면 초기화
-            if (currentChatId === chatId) {
+            if (currentChatId == chatId) {
                 currentChatId = null;
+
                 const chatMessages = document.getElementById('chatMessages');
                 const greeting = document.getElementById('greeting');
                 const content = document.querySelector('.content');

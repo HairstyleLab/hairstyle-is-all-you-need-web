@@ -56,7 +56,7 @@ body {
     width: var(--sidebar-width-collapsed);
     height: 100vh;
     background: linear-gradient(to right, rgba(250, 176, 169, 0.2), rgba(255, 255, 255, 0));
-    box-shadow:rgba(0, 0, 0, 0.05);
+    /* box-shadow:rgba(0, 0, 0, 0.05); */
     display: none;
     flex-direction: column;
     z-index: 100;
@@ -153,6 +153,25 @@ body {
 
 .sidebar-logged.expanded .chat-history-area {
     display: block;
+    overflow-y:auto;
+}
+
+/* 채팅 기록 영역 스크롤바 */
+.chat-history-area::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-history-area::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.chat-history-area::-webkit-scrollbar-thumb {
+    background: #ddd;
+    border-radius: 3px;
+}
+
+.chat-history-area::-webkit-scrollbar-thumb:hover {
+    background: #ccc;
 }
 
 /* 사이드바 하단 */
@@ -425,34 +444,48 @@ body {
 .content.chat-started .input-area {
     position: fixed;
     bottom: 0;
-    /* left: 50%; */
-    left: clamp(340px, 50%, 50%);
+    left: 50%;
     transform: translateX(-50%);
     z-index: 10;
     background: var(--bg-primary);
-    padding: 20px;
-    max-width: 860px;
-    min-width: 770px;
-    width: auto;
+    padding: 20px 0;
+    max-width: 880px;
+    width: 880px;
     box-sizing: border-box;
-    transition: left .3s ease, max-width .3s ease;
+    transition: left .3s ease, width .3s ease, max-width .3s ease;
 }
 
 body.pictorial-open .content.chat-started .input-area {
-    max-width: 700px !important;
-    left: calc(50% + 340px) !important;
-    transition: left .3s ease;
+    width: 880px;
+    max-width: 880px;
+    left: 50%;
+    transition: left .3s ease, width .3s ease, max-width .3s ease;
 }
 
 /* 로그인 상태에서 입력창 위치 조정 */
 body.logged-in .content.chat-started .input-area {
-    left: 50%;
-    margin-left: 50px;
+    left: calc((100vw + 100px) / 2);
 }
 
 body.logged-in.sidebar-expanded .content.chat-started .input-area {
-    left: 50%;
-    margin-left: 140px;
+    width: 880px;
+    max-width: 880px;
+    left: calc((100vw + 280px) / 2);
+    transition: left .3s ease, width .3s ease, max-width .3s ease;
+}
+
+body.logged-in.sidebar-expanded.pictorial-open .content.chat-started .input-area {
+    width: 880px;
+    max-width: 880px;
+    left: calc((100vw + 980px) / 2);
+    transition: left .3s ease, width .3s ease, max-width .3s ease;
+}
+
+body.logged-in.pictorial-open .content.chat-started .input-area {
+    width: 880px;
+    max-width: 880px;
+    left: calc((100vw + 760px) / 2);
+    transition: left .3s ease, width .3s ease, max-width .3s ease;
 }
 
 .input-container {
@@ -844,6 +877,15 @@ body.logged-in.pictorial-open .main-container {
 /* 패널 열림 + sidebar 펼쳐짐 */
 body.logged-in.sidebar-expanded.pictorial-open .main-container {
     padding-left: calc(var(--sidebar-width-expanded) + 700px);
+}
+
+body.logged-in.sidebar-expanded.pictorial-open .sidebar-logged-in {
+    padding-left: calc(var(--sidebar-width-expanded) + 700px);
+    box-shadow:none;
+}
+
+body.logged-in.sidebar-expanded.pictorial-open {
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
 }
 
 body.logged-in.sidebar-expanded .header {
@@ -1516,10 +1558,7 @@ body.logged-in.sidebar-expanded .header {
 
 /* 채팅 메뉴 드롭다운 */
 .chat-menu-dropdown {
-    position: absolute;
-    right: 8px;
-    bottom: 100%;
-    margin-bottom: 4px;
+    position: fixed;
     background: white;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
@@ -1529,9 +1568,8 @@ body.logged-in.sidebar-expanded .header {
     width: auto;
     min-width: 120px;
     max-width: 200px;
-    z-index: 1000;
+    z-index: 9999;
     display: none;
-    overflow: hidden;
 }
 
 .chat-menu-dropdown.show {
