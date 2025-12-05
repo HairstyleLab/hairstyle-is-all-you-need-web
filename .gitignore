@@ -10,3 +10,4 @@ images/
 media/
 
 db.sqlite3
+*.pem
