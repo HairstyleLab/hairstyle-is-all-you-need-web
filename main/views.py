@@ -1,16 +1,20 @@
 import os
 import json
+import requests
+import uuid
+import base64
 from django.conf import settings
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from .models import HairStyleDictionary, HairStyleImage
 from django.core.files import File
+from django.views.decorators.http import require_http_methods
 from .models import Gallery, Chat, Message
 from django.http import JsonResponse
 from urllib.parse import quote
-import json
-import os
+
+FASTAPI_URL = "http://127.0.0.1:8000/query"
 
 # Create your views here.
 
@@ -360,3 +364,39 @@ def chat_delete(request, chat_id):
 
     return JsonResponse({'success': False, 'message': 'Invalid request method'})
 
+
+@require_http_methods(["GET", "POST"])
+def message_response(request):
+    if request.method == "GET":
+        return render(request, "chat/chat.html")
+
+    msg = request.POST.get("message", "").strip()
+    image_id = request.POST.get("image_id")  # ← ★ 여기가 추가돼야 함
+
+    # 기본 payload
+    payload = {
+        "query": msg,
+        "session_id": f"{request.user.id}",
+        "image_path": None
+    }
+
+    # image_id가 존재하면 DB에서 경로 불러오기
+    if image_id:
+        try:
+            gallery_obj = Gallery.objects.get(id=image_id, is_deleted=False)
+            image_path = gallery_obj.image_path  # 모델 필드명에 따라 수정
+            payload["image_path"] = image_path
+        except Gallery.DoesNotExist:
+            pass
+
+    print("➡ FastAPI 전달 payload:", payload)
+
+    try:
+        res = requests.post(FASTAPI_URL, json=payload, timeout=60)
+        res.raise_for_status()
+        data = res.json()
+        bot_message = data.get("output", "응답을 가져오지 못했습니다.")
+    except Exception as e:
+        bot_message = f"FastAPI 서버 호출 오류: {str(e)}"
+
+    return JsonResponse({"response": bot_message}, json_dumps_params={"ensure_ascii": False})

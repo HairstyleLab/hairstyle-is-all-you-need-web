@@ -16,5 +16,5 @@ urlpatterns = [
     path('chat/<int:chat_id>/update', views.chat_update, name='chat_update'),
     path('chat/<int:chat_id>/delete', views.chat_delete, name='chat_delete'),
     path('message/save', views.message_save, name='message_save'),
+    path('message/response/', views.message_response, name='message_response'),
 ]
-

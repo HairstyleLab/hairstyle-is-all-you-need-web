@@ -1494,6 +1494,26 @@ async function saveMessageToChat(chatId, content, isAnswer = 'Q', imageId = null
 
 // ========== 채팅 메시지 기능 ==========
 
+// Django CSRF 토큰 가져오기
+function getCookie(name) {
+    let cookieValue = null;
+
+    if (document.cookie && document.cookie !== "") {
+        const cookies = document.cookie.split(";");
+
+        for (let cookie of cookies) {
+            cookie = cookie.trim();
+            // name= 형태로 시작하는지 확인
+            if (cookie.startsWith(name + "=")) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+
 // 메시지 전송 함수
 async function sendMessage() {
   const message = messageInput.value.trim();
@@ -1569,41 +1589,34 @@ async function sendMessage() {
     autoResizeTextarea(messageInput);
 
     // 챗봇 응답 생성 및 저장 (비동기로 즉시 시작)
-    generateAndSaveBotResponse(targetChatId, message, hasImage);
+    generateAndSaveBotResponse(targetChatId, message, imageId);
   }
 }
 
 // 챗봇 응답 생성 및 저장 함수
-async function generateAndSaveBotResponse(targetChatId, userMessage, hasImage) {
+async function generateAndSaveBotResponse(targetChatId, userMessage, imageId) {
     try {
-        // 1.5초 후 로딩 메시지 표시
         const loadingTimeout = setTimeout(() => {
             if (currentChatId === targetChatId) {
                 addLoadingMessage();
             }
         }, 1500);
 
-        // TODO: 실제 챗봇 API 호출
-        // const response = await fetch('/api/chatbot/', {
-        //     method: 'POST',
-        //     headers: {
-        //         'Content-Type': 'application/json',
-        //         'X-CSRFToken': getCookie('csrftoken')
-        //     },
-        //     body: JSON.stringify({
-        //         chat_id: targetChatId,
-        //         message: userMessage,
-        //         has_image: hasImage
-        //     })
-        // });
-        // const data = await response.json();
-        // const botResponse = data.response;
+        const response = await fetch("/main/message/response/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": getCookie("csrftoken"),
+            },
+            body: new URLSearchParams({
+                "message": userMessage,
+                "image_id": imageId || ""   // ← 반드시 추가
+            }),
+        });
 
-        // 임시: 10초 대기 (실제 API 호출로 대체 필요)
-        await new Promise(resolve => setTimeout(resolve, 10000));
-        const botResponse = '안녕하세요 무엇을 도와드릴까요?';
+        const data = await response.json();
+        const botResponse = data.response || "응답을 가져오지 못했습니다.";
 
-        // 봇 응답 메시지를 DB에 저장 (keepalive를 사용하여 페이지를 벗어나도 저장됨)
         try {
             const saveResponse = await fetch('/main/message/save', {
                 method: 'POST',
@@ -1617,7 +1630,7 @@ async function generateAndSaveBotResponse(targetChatId, userMessage, hasImage) {
                     is_answer: 'A',
                     image_id: null
                 }),
-                keepalive: true  // 페이지를 벗어나도 요청이 완료되도록 함
+                keepalive: true
             });
 
             const saveData = await saveResponse.json();
@@ -1631,34 +1644,29 @@ async function generateAndSaveBotResponse(targetChatId, userMessage, hasImage) {
             console.error('메시지 저장 중 오류:', saveError);
         }
 
-        // UI 업데이트 (현재 채팅을 보고 있을 때만)
         if (currentChatId === targetChatId) {
             removeLoadingMessage();
             addBotMessage(botResponse);
         } else {
-            // 다른 채팅으로 이동했을 때는 로딩 타임아웃만 취소
             clearTimeout(loadingTimeout);
         }
 
-        // 응답 대기 상태 해제
         isWaitingForResponse = false;
-
-        // 전송 버튼 상태 업데이트
         updateSendBtnState();
+
     } catch (error) {
         console.error('챗봇 응답 생성 실패:', error);
 
-        // 에러 발생 시에도 응답 대기 상태 해제
         isWaitingForResponse = false;
         updateSendBtnState();
 
-        // 현재 채팅을 보고 있을 때만 에러 메시지 표시
         if (currentChatId === targetChatId) {
             removeLoadingMessage();
             showConfirmModal('챗봇 응답 생성 중 오류가 발생했습니다.');
         }
     }
 }
+
 
 // 사용자 메시지 추가
 function addUserMessage(text, imageSrc) {
