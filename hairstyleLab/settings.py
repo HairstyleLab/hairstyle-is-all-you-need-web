@@ -35,7 +35,7 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["localhost", "15.164.199.30"]
 
 # Application definition
 
@@ -128,7 +128,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "ko-kr"
 
-TIME_ZONE = "ASIA/SEOUL"
+TIME_ZONE = "Asia/Seoul"
 
 USE_I18N = True
 
@@ -138,11 +138,12 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
-STATICFILES_DIRS = [
-     BASE_DIR / 'static'
-]
+# STATICFILES_DIRS = [
+#      BASE_DIR / 'static'
+# ]
 
 
 # Custom User Model
@@ -150,7 +151,7 @@ AUTH_USER_MODEL = 'uauth.User'
 
 # Media files
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(os.path.abspath("C:\\Users\\Playdata\\Desktop\\S3"), 'media')
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
