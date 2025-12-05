@@ -1,7 +1,7 @@
 import os
 from django.conf import settings
 from django.core.management.base import BaseCommand
-from main.models import HairStyleDictionary, HairStyleImage
+from pictorial_book.models import HairStyleDictionary, HairStyleImage
 
 BASE_DIR = os.path.join(settings.MEDIA_ROOT, "pictorial_book")
 

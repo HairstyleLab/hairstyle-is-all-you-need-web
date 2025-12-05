@@ -43,7 +43,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const gender = genderSelect.value;
         const category = categorySelect.value;
 
-        const res = await fetch(`/main/get-hair-list/?gender=${gender}&category=${category}`);
+        const res = await fetch(`/pictorial_book/get-hair-list/?gender=${gender}&category=${category}`);
         HAIR_DATA = await res.json();
     }
 
@@ -137,7 +137,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // 서버에서 이미지 목록 가져오기
     async function fetchImages(name, gender, category) {
         const res = await fetch(
-            `/main/get-hair-images/?gender=${gender}&category=${category}&name=${encodeURIComponent(name)}`
+            `/pictorial_book/get-hair-images/?gender=${gender}&category=${category}&name=${encodeURIComponent(name)}`
         );
         return (await res.json()).images;
     }

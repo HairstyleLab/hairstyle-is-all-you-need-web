@@ -57,8 +57,8 @@
             <button class="logout-sidebar-btn" id="logoutSidebarBtn">로그아웃</button>
 
             <!-- 설정 모달 -->
-            {% include 'main/settings_modal.html' %}
-            {% include 'main/profile_edit.html' %}
+            {% include 'uauth/settings_modal.html' %}
+            {% include 'uauth/profile_edit.html' %}
         </div>
 
         <!-- 사이드바 닫기 버튼 -->
@@ -104,7 +104,7 @@
     </div>
 
     <!-- 헤어도감 -->
-    {% include 'main/pictorial_book.html' %}
+    {% include 'pictorial_book/pictorial_book.html' %}
 
     <!-- 로그인 모달 -->
     {% include 'main/login_modal.html' %}
@@ -116,10 +116,10 @@
     {% include 'main/confirm_modal.html' %}
 
     <!-- 비밀번호 수정 모달 -->
-    {% include 'main/password_modal.html' %}
+    {% include 'uauth/password_modal.html' %}
 
     <!-- 회원탈퇴 모달 -->
-    {% include 'main/withdraw_modal.html' %}
+    {% include 'uauth/withdraw_modal.html' %}
 
     <!-- 채팅 삭제 확인 모달 -->
     {% include 'main/chat_delete_modal.html' %}
