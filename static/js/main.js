@@ -1558,6 +1558,7 @@ async function sendMessage() {
     let imageId = null;
     if (hasImage) {
       imageId = await addGallery('user');
+      console.log('🔍 이미지 업로드 후 받은 imageId:', imageId);
     }
 
     // 사용자 메시지 표시
@@ -1567,6 +1568,7 @@ async function sendMessage() {
     // 메시지가 있거나 이미지가 있으면 저장
     if (hasMessage || hasImage) {
       await saveMessage(message || '', 'Q', imageId);
+      console.log('🔍 saveMessage 호출 완료 - imageId:', imageId);
     }
 
     // 입력 필드 초기화
@@ -1589,81 +1591,146 @@ async function sendMessage() {
     autoResizeTextarea(messageInput);
 
     // 챗봇 응답 생성 및 저장 (비동기로 즉시 시작)
+    console.log('🔍 generateAndSaveBotResponse 호출 - imageId:', imageId);
     generateAndSaveBotResponse(targetChatId, message, imageId);
   }
 }
 
-// 챗봇 응답 생성 및 저장 함수
+// 챗봇 응답 생성 및 저장 함수 (SSE 스트리밍)
 async function generateAndSaveBotResponse(targetChatId, userMessage, imageId) {
     try {
-        const loadingTimeout = setTimeout(() => {
-            if (currentChatId === targetChatId) {
-                addLoadingMessage();
-            }
-        }, 1500);
-
-        const response = await fetch("/main/message/response/", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
-                "X-CSRFToken": getCookie("csrftoken"),
-            },
-            body: new URLSearchParams({
-                "message": userMessage,
-                "image_id": imageId || ""   // ← 반드시 추가
-            }),
+        console.log('🔍 FastAPI로 전송할 데이터:', {
+            message: userMessage,
+            image_id: imageId,
+            chat_id: targetChatId
         });
 
-        const data = await response.json();
-        const botResponse = data.response || "응답을 가져오지 못했습니다.";
+        // 로딩 메시지 즉시 표시
+        addLoadingMessage();
 
-        try {
-            const saveResponse = await fetch('/main/message/save', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: JSON.stringify({
-                    chat_id: targetChatId,
-                    content: botResponse,
-                    is_answer: 'A',
-                    image_id: null
-                }),
-                keepalive: true
-            });
+        // SSE를 통한 실시간 상태 업데이트
+        const eventSource = new EventSource(
+            `/main/message/response/?message=${encodeURIComponent(userMessage)}&image_id=${imageId || ''}`
+        );
 
-            const saveData = await saveResponse.json();
+        let botResponse = '';
+        let generatedImageId = null;
 
-            if (!saveData.success) {
-                console.error('메시지 저장 실패:', saveData.message);
-            } else {
-                console.log('챗봇 응답 저장 성공:', botResponse);
+        eventSource.onmessage = async function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                const eventType = data.type;
+
+                if (eventType === 'status') {
+                    // 상태 업데이트를 로딩 메시지에 반영
+                    updateLoadingStatus(data.message);
+                    console.log('📡 상태 업데이트:', data.message);
+
+                } else if (eventType === 'response') {
+                    // 최종 응답 수신
+                    botResponse = data.response || "응답을 가져오지 못했습니다.";
+                    generatedImageId = data.generated_image_id || null;
+
+                    console.log('🔍 서버 응답:', {
+                        response: botResponse,
+                        generated_image_id: generatedImageId
+                    });
+
+                    // 생성된 이미지가 있으면 이미지 URL 가져오기
+                    let generatedImageUrl = null;
+                    if (generatedImageId) {
+                        try {
+                            const imageResponse = await fetch(`/main/gallery/${generatedImageId}/`, {
+                                method: 'GET',
+                                headers: {
+                                    'X-CSRFToken': getCookie('csrftoken')
+                                }
+                            });
+                            const imageData = await imageResponse.json();
+                            if (imageData.success) {
+                                generatedImageUrl = imageData.image_url;
+                                console.log('✅ 생성된 이미지 URL:', generatedImageUrl);
+                            }
+                        } catch (err) {
+                            console.error('❌ 생성된 이미지 URL 가져오기 실패:', err);
+                        }
+                    }
+
+                    // 메시지 DB에 저장
+                    try {
+                        const saveResponse = await fetch('/main/message/save', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': getCookie('csrftoken')
+                            },
+                            body: JSON.stringify({
+                                chat_id: targetChatId,
+                                content: botResponse,
+                                is_answer: 'A',
+                                image_id: generatedImageId
+                            }),
+                            keepalive: true
+                        });
+
+                        const saveData = await saveResponse.json();
+                        if (!saveData.success) {
+                            console.error('메시지 저장 실패:', saveData.message);
+                        } else {
+                            console.log('챗봇 응답 저장 성공:', botResponse);
+                        }
+                    } catch (saveError) {
+                        console.error('메시지 저장 중 오류:', saveError);
+                    }
+
+                    if (currentChatId === targetChatId) {
+                        removeLoadingMessage();
+                        addBotMessage(botResponse, generatedImageUrl);
+                    }
+
+                    isWaitingForResponse = false;
+                    updateSendBtnState();
+
+                } else if (eventType === 'error') {
+                    // 에러 메시지 수신
+                    console.error('❌ 서버 오류:', data.message);
+                    if (currentChatId === targetChatId) {
+                        removeLoadingMessage();
+                        showConfirmModal(`오류: ${data.message}`);
+                    }
+                    isWaitingForResponse = false;
+                    updateSendBtnState();
+
+                } else if (eventType === 'done') {
+                    // 스트림 종료
+                    eventSource.close();
+                }
+
+            } catch (err) {
+                console.error('❌ SSE 이벤트 파싱 오류:', err);
             }
-        } catch (saveError) {
-            console.error('메시지 저장 중 오류:', saveError);
-        }
+        };
 
-        if (currentChatId === targetChatId) {
-            removeLoadingMessage();
-            addBotMessage(botResponse);
-        } else {
-            clearTimeout(loadingTimeout);
-        }
+        eventSource.onerror = function(error) {
+            console.error('❌ SSE 연결 오류:', error);
+            eventSource.close();
 
-        isWaitingForResponse = false;
-        updateSendBtnState();
+            if (currentChatId === targetChatId) {
+                removeLoadingMessage();
+                showConfirmModal("서버와의 연결이 끊어졌습니다.");
+            }
+            isWaitingForResponse = false;
+            updateSendBtnState();
+        };
 
     } catch (error) {
-        console.error('챗봇 응답 생성 실패:', error);
-
-        isWaitingForResponse = false;
-        updateSendBtnState();
-
+        console.error("챗봇 응답 생성 실패:", error);
         if (currentChatId === targetChatId) {
             removeLoadingMessage();
-            showConfirmModal('챗봇 응답 생성 중 오류가 발생했습니다.');
+            showConfirmModal("응답 생성 중 오류가 발생했습니다.");
         }
+        isWaitingForResponse = false;
+        updateSendBtnState();
     }
 }
 
@@ -1692,7 +1759,7 @@ function addUserMessage(text, imageSrc) {
     if (text) {
         const textBubble = document.createElement('div');
         textBubble.className = 'message-bubble user-bubble';
-        textBubble.textContent = text;
+        textBubble.innerHTML = text;
         contentDiv.appendChild(textBubble);
     }
 
@@ -1703,7 +1770,7 @@ function addUserMessage(text, imageSrc) {
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// 로딩 메시지 추가
+// 로딩 메시지 추가 (단계별 표시)
 function addLoadingMessage() {
     const chatMessages = document.getElementById('chatMessages');
 
@@ -1715,15 +1782,75 @@ function addLoadingMessage() {
     contentDiv.className = 'message-content';
 
     const textBubble = document.createElement('div');
-    textBubble.className = 'message-bubble bot-bubble';
-    textBubble.textContent = '답변을 생성중입니다...';
+    textBubble.className = 'message-bubble bot-bubble loading-bubble';
 
+    // 로딩 스피너 추가
+    const spinner = document.createElement('div');
+    spinner.className = 'loading-spinner';
+
+    // 상태 텍스트
+    const statusText = document.createElement('div');
+    statusText.className = 'loading-status';
+    statusText.id = 'loadingStatus';
+    statusText.textContent = '응답 수신 중...';
+
+    textBubble.appendChild(spinner);
+    textBubble.appendChild(statusText);
     contentDiv.appendChild(textBubble);
     messageDiv.appendChild(contentDiv);
     chatMessages.appendChild(messageDiv);
 
     // 스크롤을 최신 메시지로 이동
     chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// 로딩 상태 업데이트 함수
+function updateLoadingStatus(statusMessage) {
+    const statusElement = document.getElementById('loadingStatus');
+    if (statusElement) {
+        statusElement.textContent = statusMessage;
+    }
+}
+
+// 마크다운을 HTML로 변환하는 함수
+function renderMarkdown(text) {
+    if (!text) return '';
+
+    let html = text;
+
+    // 코드 블록 (```)
+    html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (_match, lang, code) => {
+        return `<pre><code class="language-${lang || 'plaintext'}">${escapeHtml(code.trim())}</code></pre>`;
+    });
+
+    // 인라인 코드 (`)
+    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+    // 굵은 글씨 (**)
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+    // 기울임 (*)
+    html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+    // 제목 (###)
+    html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+    html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+    html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+
+    // 링크 [text](url)
+    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+
+    // 줄바꿈을 <br>로 변환
+    html = html.replace(/\n/g, '<br>');
+
+    return html;
+}
+
+// HTML 이스케이프 함수
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 // 로딩 메시지 제거
@@ -1758,7 +1885,8 @@ function addBotMessage(text, imageSrc) {
     if (text) {
         const textBubble = document.createElement('div');
         textBubble.className = 'message-bubble bot-bubble';
-        textBubble.textContent = text;
+        // 마크다운을 HTML로 렌더링
+        textBubble.innerHTML = renderMarkdown(text);
         contentDiv.appendChild(textBubble);
     }
 
