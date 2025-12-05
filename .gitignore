@@ -8,6 +8,6 @@ __pycache__/
 
 images/
 media/
-static/
 
 db.sqlite3
+*.pem
