@@ -11,6 +11,7 @@
     {% endblock style %}
 </head>
 <body>
+    {% csrf_token%}
     <main>
 
         {%block content%}
