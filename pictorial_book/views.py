@@ -1,7 +1,5 @@
-import os
-from django.conf import settings
 from django.http import JsonResponse
-from urllib.parse import quote
+from django.core.files.storage import default_storage
 from .models import HairStyleDictionary, HairStyleImage
 
 
@@ -45,18 +43,11 @@ def get_hair_images(request):
     result = []
 
     for img in images:
-        # DB에는 "hairstyle/male/가일컷/숏/1.jpg" 형태로 저장되어 있음
+        # DB에는 "pictorial_book/male/가일컷/숏/1.jpg" 형태로 저장되어 있음
         relative_path = img.image_path
 
-        # 실제 파일 경로 (MEDIA_ROOT 기준)
-        abs_path = os.path.join(settings.MEDIA_ROOT, relative_path)
-
-        # 파일 체크 (필수 아님)
-        if not os.path.exists(abs_path):
-            continue
-
-        # 웹 URL (MEDIA_URL + DB 경로)
-        url = settings.MEDIA_URL + quote(relative_path)
+        # S3 URL 생성
+        url = default_storage.url(relative_path)
 
         result.append({
             "length": img.length,
