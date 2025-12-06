@@ -9,8 +9,6 @@ urlpatterns = [
     path('gallery/upload', views.gallery_upload, name='gallery_upload'),
     path('gallery/delete', views.gallery_delete, name='gallery_delete'),
     path('gallery/<int:image_id>/', views.gallery_image_url, name='gallery_image_url'),  # 이미지 URL 조회
-    path("get-hair-images/", views.get_hair_images),
-    path("get-hair-list/", views.get_hair_list),
     path('chat/list', views.chat_list, name='chat_list'),
     path('chat/create', views.chat_create, name='chat_create'),
     path('chat/<int:chat_id>/', views.chat_detail, name='chat_detail'),
