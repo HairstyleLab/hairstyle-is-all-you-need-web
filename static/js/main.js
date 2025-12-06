@@ -1324,9 +1324,9 @@ function renderChatHistory() {
 
         // 클릭 이벤트 (제목 클릭 시)
         chatItem.addEventListener('click', function() {
-            // 사이드바가 열린 상태에서는 채팅 선택 불가
+            // 사이드바가 열린 상태에서는 사이드바를 닫고 채팅 로드
             if (sidebarLogged.classList.contains('expanded')) {
-                return;
+                collapseSidebar();
             }
             loadChat(chat.chat_id);
         });
@@ -1338,7 +1338,9 @@ function renderChatHistory() {
 // 특정 채팅 불러오기
 async function loadChat(chatId) {
     try {
-        if (!window.location.pathname.endsWith('main/')) {
+        // 메인 페이지가 아닌 경우 리디렉션
+        const pathname = window.location.pathname;
+        if (!pathname.includes('/main/') && !pathname.includes('/main')) {
             // 메인 페이지가 아닌 경우 currentChatId 업데이트 후 active 클래스 표시
             currentChatId = chatId;
             renderChatHistory();
@@ -1347,7 +1349,7 @@ async function loadChat(chatId) {
             const isSidebarExpanded = sidebarLogged.classList.contains('expanded');
 
             // 메인 페이지로 리디렉션 (사이드바 상태 유지를 위해 파라미터 추가)
-            window.location.href = `/main?chatId=${chatId}${isSidebarExpanded ? '&sidebar=open' : ''}`;
+            window.location.href = `/main/?chatId=${chatId}${isSidebarExpanded ? '&sidebar=open' : ''}`;
             return;
         }
 

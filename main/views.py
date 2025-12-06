@@ -3,6 +3,8 @@ import json
 import requests
 import uuid
 import base64
+import boto3
+from io import BytesIO
 from django.conf import settings
 from django.shortcuts import render
 from django.http import JsonResponse, StreamingHttpResponse
@@ -15,7 +17,8 @@ from urllib.parse import quote
 from markdown import markdown
 import bleach
 
-FASTAPI_URL = "http://127.0.0.1:8000/query"
+# FASTAPI_URL = "http://127.0.0.1:8000/query"
+FASTAPI_URL = "http://194.68.245.65:22086/query"
 
 # Create your views here.
 
@@ -306,45 +309,79 @@ def message_response(request):
     print(f"🔍 받은 메시지: '{msg}'")
     print(f"🔍 받은 image_id: '{image_id}'")
 
-    # image_id가 존재하면 DB에서 이미지를 읽어서 base64 인코딩
+    # image_id가 존재하면 S3에서 이미지를 읽어서 base64 인코딩
     encoded_image = None
     if image_id and image_id.strip():
         try:
             gallery_obj = Gallery.objects.get(image_id=image_id)
             if gallery_obj.image_path:
-                image_file_path = gallery_obj.image_path.path
-                with open(image_file_path, "rb") as image_file:
-                    image_content = image_file.read()
-                    file_ext = os.path.splitext(image_file_path)[1].lower()
-                    if file_ext in [".jpg", ".jpeg"]:
-                        mime_type = "image/jpeg"
-                    elif file_ext == ".png":
-                        mime_type = "image/png"
-                    else:
-                        mime_type = "image/unknown"
+                # S3에서 이미지 다운로드
+                s3_client = boto3.client(
+                    's3',
+                    aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                    aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+                    region_name=settings.AWS_S3_REGION_NAME
+                )
 
-                    encoded_image = f"data:{mime_type};base64,{base64.b64encode(image_content).decode('utf-8')}"
-                    print(f"✅ 이미지를 base64로 인코딩 완료: {image_file_path}")
+                # gallery_obj.image_path.name은 S3 키 경로 (예: gallery/image.jpg)
+                s3_key = gallery_obj.image_path.name
+                print(f"🔍 S3에서 이미지 다운로드 시도: {s3_key}")
+
+                # S3에서 이미지 다운로드
+                buffer = BytesIO()
+                s3_client.download_fileobj(
+                    settings.AWS_STORAGE_BUCKET_NAME,
+                    s3_key,
+                    buffer
+                )
+                buffer.seek(0)
+                image_content = buffer.read()
+
+                # 파일 확장자로 MIME 타입 결정
+                file_ext = os.path.splitext(s3_key)[1].lower()
+                if file_ext in [".jpg", ".jpeg"]:
+                    mime_type = "image/jpeg"
+                elif file_ext == ".png":
+                    mime_type = "image/png"
+                elif file_ext == ".gif":
+                    mime_type = "image/gif"
+                else:
+                    mime_type = "image/jpeg"  # 기본값
+
+                encoded_image = f"data:{mime_type};base64,{base64.b64encode(image_content).decode('utf-8')}"
+                print(f"✅ S3 이미지를 base64로 인코딩 완료: {s3_key}")
         except Gallery.DoesNotExist:
             print(f"❌ 이미지 ID {image_id}를 찾을 수 없습니다.")
         except Exception as e:
             print(f"❌ 이미지 인코딩 오류: {str(e)}")
+            import traceback
+            traceback.print_exc()
 
     # FastAPI SSE 스트리밍 URL 구성
     fastapi_stream_url = f"{FASTAPI_URL}/stream"
-    params = {
+    payload = {
         "query": msg,
         "session_id": f"{request.user.id}",
     }
     if encoded_image:
-        params["image_path"] = encoded_image
+        payload["image_path"] = encoded_image
 
-    print(f"➡ FastAPI SSE 호출: {fastapi_stream_url}")
+    print(f"➡ FastAPI SSE 호출 (POST): {fastapi_stream_url}")
+    print(f"➡ Payload keys: {list(payload.keys())}")
+    if encoded_image:
+        print(f"➡ 이미지 데이터 길이: {len(encoded_image)} bytes")
 
     def event_stream():
         """SSE 이벤트를 Django에서 클라이언트로 전달"""
         try:
-            with requests.get(fastapi_stream_url, params=params, stream=True, timeout=300) as response:
+            # POST 요청으로 변경 (JSON body 사용)
+            with requests.post(
+                fastapi_stream_url,
+                json=payload,
+                stream=True,
+                timeout=300,
+                headers={'Content-Type': 'application/json'}
+            ) as response:
                 response.raise_for_status()
 
                 bot_message = ""
