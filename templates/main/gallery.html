@@ -58,7 +58,7 @@
         <button class="logout-sidebar-btn" id="logoutSidebarBtn">로그아웃</button>
 
         <!-- 설정 모달 -->
-        {% include 'main/settings_modal.html' %}
+        {% include 'uauth/settings_modal.html' %}
 
     </div>
 
@@ -115,7 +115,7 @@
 
 
 <!-- 헤어도감 -->
-{% include 'main/pictorial_book.html' %}
+{% include 'pictorial_book/pictorial_book.html' %}
 
 <!-- 사진 삭제 모달 -->
 {% include 'main/gallery_delete_modal.html' %}
@@ -124,19 +124,19 @@
 {% include 'main/chat_delete_modal.html' %}
 
 <!-- 로그아웃 확인 모달 -->
-{% include 'main/logout_modal.html' %}
+{% include 'uauth/logout_modal.html' %}
 
 <!-- 확인 모달 -->
 {% include 'main/confirm_modal.html' %}
 
 <!-- 비밀번호 수정 모달 -->
-{% include 'main/password_modal.html' %}
+{% include 'uauth/password_modal.html' %}
 
 <!-- 회원탈퇴 모달 -->
-{% include 'main/withdraw_modal.html' %}
+{% include 'uauth/withdraw_modal.html' %}
 
 <!-- 프로필 편집 모달 -->
-{% include 'main/profile_edit.html' %}
+{% include 'uauth/profile_edit.html' %}
 
 {% endblock content %}
 
