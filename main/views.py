@@ -1,15 +1,21 @@
 import os
 import json
+import requests
+import uuid
+import base64
 from django.conf import settings
 from django.shortcuts import render
-from django.http import JsonResponse
+from django.http import JsonResponse, StreamingHttpResponse
 from django.contrib.auth.decorators import login_required
 from django.core.files import File
+from django.views.decorators.http import require_http_methods
 from .models import Gallery, Chat, Message
 from django.http import JsonResponse
 from urllib.parse import quote
-import json
-import os
+from markdown import markdown
+import bleach
+
+FASTAPI_URL = "http://127.0.0.1:8000/query"
 
 # Create your views here.
 
@@ -50,14 +56,39 @@ def gallery_upload(request):
             if role == 'user':
                 gallery.is_deleted = True
 
-            gallery.image_path.save(image_file.name, image_file)
+            # 파일을 MEDIA_ROOT에 저장하고 경로를 image_path에 설정
+            gallery.image_path.save(image_file.name, image_file, save=True)
+            # save=True를 사용하면 Gallery 인스턴스도 자동으로 DB에 저장됨
+
+            print(f"✅ 이미지 DB 저장 완료 - image_id: {gallery.image_id}, path: {gallery.image_path}")
 
             return JsonResponse({'success': True, 'message': "이미지 업로드 성공", 'image_id': gallery.image_id})
 
         except Exception as e:
+            print(f"❌ 이미지 업로드 오류: {str(e)}")
             return JsonResponse({'success': False, 'message': f"{e} 오류 발생"})
     else:
         return JsonResponse({"success": True, "message": "저장할 이미지 없음"})
+
+@login_required
+def gallery_image_url(request, image_id):
+    """이미지 ID로 이미지 URL 조회"""
+    try:
+        gallery_obj = Gallery.objects.get(image_id=image_id)
+
+        # 이미지 URL 생성 (MEDIA_URL + 경로)
+        if gallery_obj.image_path:
+            image_url = gallery_obj.image_path.url
+            return JsonResponse({
+                'success': True,
+                'image_url': image_url,
+                'image_id': gallery_obj.image_id
+            })
+        else:
+            return JsonResponse({'success': False, 'message': '이미지 경로가 없습니다.'})
+
+    except Gallery.DoesNotExist:
+        return JsonResponse({'success': False, 'message': '이미지를 찾을 수 없습니다.'})
 
 @login_required
 def gallery_delete(request):
@@ -263,3 +294,108 @@ def chat_delete(request, chat_id):
 
     return JsonResponse({'success': False, 'message': 'Invalid request method'})
 
+
+@require_http_methods(["GET"])
+def message_response(request):
+    """SSE 스트리밍을 통한 실시간 상태 업데이트 및 응답 처리"""
+
+    msg = request.GET.get("message", "").strip()
+    image_id = request.GET.get("image_id")
+
+    # 디버깅: 받은 데이터 확인
+    print(f"🔍 받은 메시지: '{msg}'")
+    print(f"🔍 받은 image_id: '{image_id}'")
+
+    # image_id가 존재하면 DB에서 이미지를 읽어서 base64 인코딩
+    encoded_image = None
+    if image_id and image_id.strip():
+        try:
+            gallery_obj = Gallery.objects.get(image_id=image_id)
+            if gallery_obj.image_path:
+                image_file_path = gallery_obj.image_path.path
+                with open(image_file_path, "rb") as image_file:
+                    image_content = image_file.read()
+                    file_ext = os.path.splitext(image_file_path)[1].lower()
+                    if file_ext in [".jpg", ".jpeg"]:
+                        mime_type = "image/jpeg"
+                    elif file_ext == ".png":
+                        mime_type = "image/png"
+                    else:
+                        mime_type = "image/unknown"
+
+                    encoded_image = f"data:{mime_type};base64,{base64.b64encode(image_content).decode('utf-8')}"
+                    print(f"✅ 이미지를 base64로 인코딩 완료: {image_file_path}")
+        except Gallery.DoesNotExist:
+            print(f"❌ 이미지 ID {image_id}를 찾을 수 없습니다.")
+        except Exception as e:
+            print(f"❌ 이미지 인코딩 오류: {str(e)}")
+
+    # FastAPI SSE 스트리밍 URL 구성
+    fastapi_stream_url = f"{FASTAPI_URL}/stream"
+    params = {
+        "query": msg,
+        "session_id": f"{request.user.id}",
+    }
+    if encoded_image:
+        params["image_path"] = encoded_image
+
+    print(f"➡ FastAPI SSE 호출: {fastapi_stream_url}")
+
+    def event_stream():
+        """SSE 이벤트를 Django에서 클라이언트로 전달"""
+        try:
+            with requests.get(fastapi_stream_url, params=params, stream=True, timeout=300) as response:
+                response.raise_for_status()
+
+                bot_message = ""
+                generated_image_id = None
+
+                for line in response.iter_lines(decode_unicode=True):
+                    if line.startswith('data: '):
+                        data_str = line[6:]
+                        try:
+                            event_data = json.loads(data_str)
+                            event_type = event_data.get("type")
+
+                            if event_type == "status":
+                                yield f"data: {json.dumps({'type': 'status', 'message': event_data['message']}, ensure_ascii=False)}\n\n"
+
+                            elif event_type == "response":
+                                bot_message = event_data.get("output", "")
+                                generated_image = event_data.get("generated_image")
+
+                                if generated_image:
+                                    try:
+                                        if generated_image.startswith("data:"):
+                                            base64_data = generated_image.split(",", 1)[1]
+                                        else:
+                                            base64_data = generated_image
+
+                                        from django.core.files.base import ContentFile
+                                        from datetime import datetime
+
+                                        image_binary = base64.b64decode(base64_data)
+                                        gallery = Gallery(user_id=request.user.id, is_deleted=False)
+                                        filename = f"generated_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+                                        gallery.image_path.save(filename, ContentFile(image_binary), save=True)
+                                        generated_image_id = gallery.image_id
+
+                                        print(f"✅ 생성된 이미지 DB 저장 완료 - image_id: {generated_image_id}")
+                                    except Exception as e:
+                                        print(f"❌ 생성된 이미지 저장 오류: {str(e)}")
+
+                                yield f"data: {json.dumps({'type': 'response', 'response': bot_message, 'generated_image_id': generated_image_id}, ensure_ascii=False)}\n\n"
+
+                            elif event_type == "error":
+                                yield f"data: {json.dumps({'type': 'error', 'message': event_data['message']}, ensure_ascii=False)}\n\n"
+
+                        except json.JSONDecodeError:
+                            continue
+
+        except Exception as e:
+            print(f"❌ FastAPI SSE 스트림 오류: {str(e)}")
+            yield f"data: {json.dumps({'type': 'error', 'message': f'서버 오류: {str(e)}'}, ensure_ascii=False)}\n\n"
+
+        yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
+
+    return StreamingHttpResponse(event_stream(), content_type='text/event-stream')
