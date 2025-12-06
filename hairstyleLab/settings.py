@@ -37,6 +37,13 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["localhost", "15.164.199.30", "127.0.0.1"]
 
+# CSRF 보호 설정
+CSRF_TRUSTED_ORIGINS = [
+    "http://15.164.199.30:8080",
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+]
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -141,11 +148,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = "/static/"
-# STATIC_ROOT = os.path.join(BASE_DIR, 'static')  # 프로덕션용
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')  # 프로덕션용
 
-STATICFILES_DIRS = [
-     BASE_DIR / 'static'
-]
+# STATICFILES_DIRS = [
+#      BASE_DIR / 'static'
+# ]
 
 
 # Custom User Model

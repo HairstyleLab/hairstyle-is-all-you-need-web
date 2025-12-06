@@ -18,7 +18,7 @@ from markdown import markdown
 import bleach
 
 # FASTAPI_URL = "http://127.0.0.1:8000/query"
-FASTAPI_URL = "http://194.68.245.65:22086/query"
+FASTAPI_URL = "http://194.68.245.26:22145/query"
 
 # Create your views here.
 
