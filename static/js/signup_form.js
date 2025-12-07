@@ -443,7 +443,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (!isValidExtension) {
                 // 유효하지 않은 파일 형식
-                showConfirmModal('png, jpg, jpeg, gif 형식의 이미지만 설정할 수 있습니다.');
+                showConfirmModal('다음 형식의 이미지만 사용할 수 있습니다.\n *.png, .jpg, .jpeg, .gif*');
                 this.value = ''; // 파일 입력 초기화
                 return;
             }
