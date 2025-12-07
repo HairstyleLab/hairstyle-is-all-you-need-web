@@ -5,7 +5,7 @@
     left: var(--sidebar-width-collapsed);
     width: 600px;
     height: 100vh;
-    overflow: visible;
+    overflow: hidden;
     z-index: 1;
     pointer-events: none;
 }
@@ -20,25 +20,20 @@ body.sidebar-expanded .pictorial-wrapper {
     position: absolute;
     top: 0;
     left: 0;
-
     width: min(650px, 45vw);
     height: 100vh;
-
-    /* background-color: #ffe6f2; */
     background: linear-gradient(to left, rgba(250, 176, 169, 0.2), rgba(255, 255, 255, 0));
     box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
-
     transform: translateX(-100%);
     opacity: 0;
     pointer-events: none;
-
     transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
 /* 헤더 전체 영역을 중앙 정렬 */
 .pictorial-header {
     width: 100%;
-    height: 60px;   /* 이미지 높이에 맞게 조절 */
+    height: 60px;   
     display: flex;
     justify-content: center;
     align-items: center;
@@ -49,7 +44,7 @@ body.sidebar-expanded .pictorial-wrapper {
 
 /* 이미지 스타일 */
 .pictorial-title-img {
-    height: 150px;        /* 적당한 높이 */
+    height: 150px;       
     object-fit: contain;
     pointer-events: none; 
 }
@@ -68,9 +63,9 @@ body.pictorial-open .pictorial-wrapper {
 
 .pictorial-content {
     padding: 20px;
-    margin-top: 150px; 
+    margin-top: 150px;
     height: calc(100vh - 60px);
-    overflow-y: auto;
+    overflow-y: visible;  /* 부모는 스크롤 안되게 변경 */
 }
 
 /* 툴바 */
@@ -82,9 +77,9 @@ body.pictorial-open .pictorial-wrapper {
 
 .pt-select {
     padding: 8px 14px;
-    border: none;
-    background: #ffb8c6;
-    border-radius: 5px;
+    border: 1px solid #e8ddd4;
+    background: white;
+    border-radius: 16px;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
@@ -92,9 +87,9 @@ body.pictorial-open .pictorial-wrapper {
 
 .pt-gender-select {
     padding: 8px 14px;
-    background: #ffb8c6;
-    border: none;
-    border-radius: 5px;
+    background: white;
+    border: 1px solid #e8ddd4;
+    border-radius: 16px;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
@@ -105,11 +100,12 @@ body.pictorial-open .pictorial-wrapper {
     width: 250px;
     left: 90px;
     display: flex;
+    justify-content:flex-end;
     padding: 0 12px;
     background: #ffffff;
     border-radius: 5px;
     padding: 0 12px;
-    border: 1px solid #ddd;
+    border: 1px solid #e8ddd4;
 }
 
 .pt-search input {
@@ -135,13 +131,40 @@ body.pictorial-open .pictorial-wrapper {
     margin-top: 10px;
 }
 
+/* 헤어스타일 콘텐츠 컨테이너 (이미지 + 설명) */
+.pictorial-hairstyle-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+    overflow-y: auto;  /* 자식 컨테이너만 스크롤 */
+    height: calc(100vh - 350px);  /* 높이 제약 추가: 헤더(150px) + 툴바/필터(~100px) + 패딩/여백(~100px) */
+}
+
+/* 채팅 기록 영역 스크롤바 */
+.pictorial-hairstyle-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.pictorial-hairstyle-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.pictorial-hairstyle-content::-webkit-scrollbar-thumb {
+    background: #ddd;
+    border-radius: 3px;
+}
+
+.pictorial-hairstyle-content::-webkit-scrollbar-thumb:hover {
+    background: #ccc;
+}
+
 /* 2열 그리드 — 칸 너비는 자동, 높이는 카드 height로 고정됨 */
 .pictorial-images {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;
-    margin-top: 20px;
-    align-items: start;
+    width: 100%;
 }
 
 /* 이미지 카드 — height로 고정, width는 그리드 칸 크기에 맞게 */
@@ -160,6 +183,16 @@ body.pictorial-open .pictorial-wrapper {
     height: 100%;
     object-fit: cover;
     display: block;
+}
+
+/* 헤어스타일 설명 영역 */
+.pictorial-description {
+    width: 100%;
+    margin-top: 16px;
+    font-size: 13px;
+    color: #333;
+    line-height: 1.6;
+    text-align: center;
 }
 
 
