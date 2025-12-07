@@ -18,7 +18,7 @@ from markdown import markdown
 import bleach
 
 # FASTAPI_URL = "http://127.0.0.1:8000/query"
-FASTAPI_URL = "http://194.68.245.26:22145/query"
+FASTAPI_URL = "http://69.30.85.100:22031/query"
 
 # Create your views here.
 
@@ -304,10 +304,12 @@ def message_response(request):
 
     msg = request.GET.get("message", "").strip()
     image_id = request.GET.get("image_id")
+    chat_id = request.GET.get("chat_id")
 
     # 디버깅: 받은 데이터 확인
     print(f"🔍 받은 메시지: '{msg}'")
     print(f"🔍 받은 image_id: '{image_id}'")
+    print(f" 받은 chat_id: '{chat_id}'")
 
     # image_id가 존재하면 S3에서 이미지를 읽어서 base64 인코딩
     encoded_image = None
@@ -359,9 +361,11 @@ def message_response(request):
 
     # FastAPI SSE 스트리밍 URL 구성
     fastapi_stream_url = f"{FASTAPI_URL}/stream"
+    session_id = f"{request.user.id}_{chat_id}" if chat_id else f"{request.user.id}"
+
     payload = {
         "query": msg,
-        "session_id": f"{request.user.id}",
+        "session_id": session_id,
     }
     if encoded_image:
         payload["image_path"] = encoded_image
