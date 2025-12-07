@@ -39,37 +39,65 @@ def gallery_upload(request):
     image_file = request.FILES.get('image')
     role = request.POST.get('role')
 
-    # # 인덱싱용. 나중에 uuid로 교체
-    # galleries = Gallery.objects.filter(user_id=user_id)
-
-    # ### image를 객체로 받을때. (지금은 이미지 객체로 못받아서 저장된 이미지를 File로 바꾼거)
-    # tmp_img_path = 'static/images/logo.png'
-    # try:
-    #     with open(tmp_img_path, 'rb') as f:
-    #         gallery = Gallery(user_id=user_id)
-    #         gallery.image_path.save(str(len(galleries))+tmp_img_path.split('/')[2], File(f))
-
-    #     return JsonResponse({'success': True, 'message': '이미지 업로드 성공'})
-
-    # except Exception as e:
-    #     return JsonResponse({'success': False, 'message': f'{e} 오류 발생'})
     if image_file:
         try:
+            import time
+            from datetime import datetime
+
+            # 파일명 충돌 방지: 타임스탬프 + UUID 추가
+            file_ext = os.path.splitext(image_file.name)[1].lower()
+            unique_filename = f"{user_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}{file_ext}"
+
+            print(f"S3 업로드 시작: {unique_filename}")
+
             gallery = Gallery(user_id=user_id)
             if role == 'user':
                 gallery.is_deleted = True
 
-            # 파일을 MEDIA_ROOT에 저장하고 경로를 image_path에 설정
-            gallery.image_path.save(image_file.name, image_file, save=True)
-            # save=True를 사용하면 Gallery 인스턴스도 자동으로 DB에 저장됨
+            # S3에 파일 저장 (재시도 로직 추가)
+            max_retries = 3
+            retry_count = 0
+            last_error = None
 
-            print(f"✅ 이미지 DB 저장 완료 - image_id: {gallery.image_id}, path: {gallery.image_path}")
+            while retry_count < max_retries:
+                try:
+                    # 파일을 S3에 저장하고 경로를 image_path에 설정
+                    gallery.image_path.save(unique_filename, image_file, save=True)
+                    print(f"이미지 S3 업로드 완료 - image_id: {gallery.image_id}, path: {gallery.image_path}")
 
-            return JsonResponse({'success': True, 'message': "이미지 업로드 성공", 'image_id': gallery.image_id})
+                    return JsonResponse({
+                        'success': True,
+                        'message': "이미지 업로드 성공",
+                        'image_id': gallery.image_id
+                    })
+
+                except Exception as upload_error:
+                    retry_count += 1
+                    last_error = upload_error
+                    print(f"S3 업로드 실패 (시도 {retry_count}/{max_retries}): {str(upload_error)}")
+
+                    if retry_count < max_retries:
+                        time.sleep(1)  # 1초 대기 후 재시도
+                        image_file.seek(0)  # 파일 포인터 리셋
+                    else:
+                        raise last_error
 
         except Exception as e:
-            print(f"❌ 이미지 업로드 오류: {str(e)}")
-            return JsonResponse({'success': False, 'message': f"{e} 오류 발생"})
+            import traceback
+            error_detail = traceback.format_exc()
+            print(f"이미지 업로드 최종 실패: {str(e)}")
+            print(f"상세 에러:\n{error_detail}")
+
+            # 사용자에게 구체적인 에러 메시지 전달
+            error_message = "이미지 저장 중 문제 발생"
+            if "timeout" in str(e).lower():
+                error_message = "네트워크 타임아웃 - 다시 시도해주세요"
+            elif "credentials" in str(e).lower() or "access" in str(e).lower():
+                error_message = "서버 권한 오류 - 관리자에게 문의하세요"
+            elif "bucket" in str(e).lower():
+                error_message = "스토리지 연결 오류 - 잠시 후 다시 시도해주세요"
+
+            return JsonResponse({'success': False, 'message': error_message})
     else:
         return JsonResponse({"success": True, "message": "저장할 이미지 없음"})
 
@@ -111,54 +139,6 @@ def gallery_delete(request):
         return JsonResponse(
             {'success': False, "message": "이미지 삭제 오류!"}
         )
-
-# def get_hair_images(request):
-#     gender = request.GET.get("gender")
-#     category = request.GET.get("category")
-#     name = request.GET.get("name")
-
-#     try:
-#         base_folder = HAIR_INFO["헤어스타일"][gender][category][name]
-#     except KeyError:
-#         return JsonResponse({"images": []})
-
-#     abs_base_path = os.path.join(settings.BASE_DIR, "static", base_folder)
-
-#     if not os.path.exists(abs_base_path):
-#         return JsonResponse({"images": []})
-
-#     result_images = []
-
-#     subfolders = [
-#         d for d in os.listdir(abs_base_path)
-#         if os.path.isdir(os.path.join(abs_base_path, d))
-#     ]
-
-#     if subfolders:
-#         for length_folder in subfolders:
-#             length_path = os.path.join(abs_base_path, length_folder)
-
-#             for file in os.listdir(length_path):
-#                 if file.lower().endswith(('.jpg', '.jpeg', '.png')):
-#                     relative_path = f"{base_folder}/{length_folder}/{file}"
-#                     img_url = "/static/" + quote(relative_path)
-#                     result_images.append({
-#                         "length": length_folder,
-#                         "url": img_url
-#                     })
-
-#     else:
-#         for file in os.listdir(abs_base_path):
-#             if file.lower().endswith(('.jpg', '.jpeg', '.png')):
-#                 relative_path = f"{base_folder}/{file}"
-#                 img_url = "/static/" + quote(relative_path)
-#                 result_images.append({
-#                     "length": None,
-#                     "url": img_url
-#                 })
-
-#     return JsonResponse({"images": result_images})
-
 
 @login_required
 def chat_list(request):
@@ -307,9 +287,9 @@ def message_response(request):
     chat_id = request.GET.get("chat_id")
 
     # 디버깅: 받은 데이터 확인
-    print(f"🔍 받은 메시지: '{msg}'")
-    print(f"🔍 받은 image_id: '{image_id}'")
-    print(f" 받은 chat_id: '{chat_id}'")
+    print(f"받은 메시지: '{msg}'")
+    print(f"받은 image_id: '{image_id}'")
+    print(f"받은 chat_id: '{chat_id}'")
 
     # image_id가 존재하면 S3에서 이미지를 읽어서 base64 인코딩
     encoded_image = None
@@ -317,45 +297,69 @@ def message_response(request):
         try:
             gallery_obj = Gallery.objects.get(image_id=image_id)
             if gallery_obj.image_path:
-                # S3에서 이미지 다운로드
-                s3_client = boto3.client(
-                    's3',
-                    aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-                    aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-                    region_name=settings.AWS_S3_REGION_NAME
-                )
+                # S3에서 이미지 다운로드 (재시도 로직 추가)
+                max_retries = 3
+                retry_count = 0
+                last_error = None
 
-                # gallery_obj.image_path.name은 S3 키 경로 (예: gallery/image.jpg)
-                s3_key = gallery_obj.image_path.name
-                print(f"🔍 S3에서 이미지 다운로드 시도: {s3_key}")
+                while retry_count < max_retries:
+                    try:
+                        s3_client = boto3.client(
+                            's3',
+                            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+                            region_name=settings.AWS_S3_REGION_NAME,
+                            config=boto3.session.Config(
+                                connect_timeout=5,
+                                read_timeout=10,
+                                retries={'max_attempts': 2}
+                            )
+                        )
 
-                # S3에서 이미지 다운로드
-                buffer = BytesIO()
-                s3_client.download_fileobj(
-                    settings.AWS_STORAGE_BUCKET_NAME,
-                    s3_key,
-                    buffer
-                )
-                buffer.seek(0)
-                image_content = buffer.read()
+                        # gallery_obj.image_path.name은 S3 키 경로 (예: gallery/image.jpg)
+                        s3_key = gallery_obj.image_path.name
+                        print(f"S3에서 이미지 다운로드 시도 (#{retry_count + 1}): {s3_key}")
 
-                # 파일 확장자로 MIME 타입 결정
-                file_ext = os.path.splitext(s3_key)[1].lower()
-                if file_ext in [".jpg", ".jpeg"]:
-                    mime_type = "image/jpeg"
-                elif file_ext == ".png":
-                    mime_type = "image/png"
-                elif file_ext == ".gif":
-                    mime_type = "image/gif"
-                else:
-                    mime_type = "image/jpeg"  # 기본값
+                        # S3에서 이미지 다운로드
+                        buffer = BytesIO()
+                        s3_client.download_fileobj(
+                            settings.AWS_STORAGE_BUCKET_NAME,
+                            s3_key,
+                            buffer
+                        )
+                        buffer.seek(0)
+                        image_content = buffer.read()
 
-                encoded_image = f"data:{mime_type};base64,{base64.b64encode(image_content).decode('utf-8')}"
-                print(f"✅ S3 이미지를 base64로 인코딩 완료: {s3_key}")
+                        # 파일 확장자로 MIME 타입 결정
+                        file_ext = os.path.splitext(s3_key)[1].lower()
+                        if file_ext in [".jpg", ".jpeg"]:
+                            mime_type = "image/jpeg"
+                        elif file_ext == ".png":
+                            mime_type = "image/png"
+                        elif file_ext == ".gif":
+                            mime_type = "image/gif"
+                        else:
+                            mime_type = "image/jpeg"  # 기본값
+
+                        encoded_image = f"data:{mime_type};base64,{base64.b64encode(image_content).decode('utf-8')}"
+                        print(f"S3 이미지를 base64로 인코딩 완료: {s3_key}")
+                        break  # 성공하면 루프 탈출
+
+                    except Exception as download_error:
+                        retry_count += 1
+                        last_error = download_error
+                        print(f"S3 다운로드 실패 (시도 {retry_count}/{max_retries}): {str(download_error)}")
+
+                        if retry_count < max_retries:
+                            import time
+                            time.sleep(1)  # 1초 대기 후 재시도
+                        else:
+                            raise last_error
+
         except Gallery.DoesNotExist:
-            print(f"❌ 이미지 ID {image_id}를 찾을 수 없습니다.")
+            print(f"이미지 ID {image_id}를 찾을 수 없습니다.")
         except Exception as e:
-            print(f"❌ 이미지 인코딩 오류: {str(e)}")
+            print(f"S3 이미지 다운로드 최종 실패: {str(e)}")
             import traceback
             traceback.print_exc()
 
@@ -416,14 +420,41 @@ def message_response(request):
                                         from datetime import datetime
 
                                         image_binary = base64.b64decode(base64_data)
-                                        gallery = Gallery(user_id=request.user.id, is_deleted=False)
-                                        filename = f"generated_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
-                                        gallery.image_path.save(filename, ContentFile(image_binary), save=True)
-                                        generated_image_id = gallery.image_id
 
-                                        print(f"✅ 생성된 이미지 DB 저장 완료 - image_id: {generated_image_id}")
+                                        # S3 저장 재시도 로직
+                                        max_retries = 3
+                                        retry_count = 0
+                                        last_error = None
+
+                                        while retry_count < max_retries:
+                                            try:
+                                                gallery = Gallery(user_id=request.user.id, is_deleted=False)
+                                                filename = f"generated_{request.user.id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}.jpg"
+
+                                                print(f"생성된 이미지 S3 업로드 시도 (#{retry_count + 1}): {filename}")
+
+                                                gallery.image_path.save(filename, ContentFile(image_binary), save=True)
+                                                generated_image_id = gallery.image_id
+
+                                                print(f"생성된 이미지 S3 저장 완료 - image_id: {generated_image_id}")
+                                                break  # 성공하면 루프 탈출
+
+                                            except Exception as save_error:
+                                                retry_count += 1
+                                                last_error = save_error
+                                                print(f"생성된 이미지 저장 실패 (시도 {retry_count}/{max_retries}): {str(save_error)}")
+
+                                                if retry_count < max_retries:
+                                                    import time
+                                                    time.sleep(1)
+                                                else:
+                                                    raise last_error
+
                                     except Exception as e:
-                                        print(f"❌ 생성된 이미지 저장 오류: {str(e)}")
+                                        import traceback
+                                        error_detail = traceback.format_exc()
+                                        print(f"생성된 이미지 저장 최종 실패: {str(e)}")
+                                        print(f"상세 에러:\n{error_detail}")
 
                                 yield f"data: {json.dumps({'type': 'response', 'response': bot_message, 'generated_image_id': generated_image_id}, ensure_ascii=False)}\n\n"
 
@@ -434,7 +465,7 @@ def message_response(request):
                             continue
 
         except Exception as e:
-            print(f"❌ FastAPI SSE 스트림 오류: {str(e)}")
+            print(f"FastAPI SSE 스트림 오류: {str(e)}")
             yield f"data: {json.dumps({'type': 'error', 'message': f'서버 오류: {str(e)}'}, ensure_ascii=False)}\n\n"
 
         yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
