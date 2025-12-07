@@ -925,7 +925,7 @@ if (imageFileInput) {
 
             if (!isValidExtension) {
                 // 유효하지 않은 파일 형식
-                showConfirmModal('jpg, jpeg, png 형식의 이미지만 첨부할 수 있습니다.');
+                showConfirmModal('다음 형식의 이미지만 첨부할 수 있습니다.\n*.jpg, .jpeg, .png*');
                 imageFileInput.value = ''; // 파일 입력 초기화
                 return;
             }
@@ -1340,7 +1340,9 @@ async function loadChat(chatId) {
     try {
         // 메인 페이지가 아닌 경우 리디렉션
         const pathname = window.location.pathname;
-        if (!pathname.includes('/main/') && !pathname.includes('/main')) {
+        // 정확히 /main/ 또는 /main 경로인지 확인 (갤러리 등 다른 페이지 제외)
+        const isMainPage = pathname === '/main/' || pathname === '/main';
+        if (!isMainPage) {
             // 메인 페이지가 아닌 경우 currentChatId 업데이트 후 active 클래스 표시
             currentChatId = chatId;
             renderChatHistory();
@@ -2139,38 +2141,16 @@ async function deleteChat(chatId) {
                 deleteModal.classList.remove('show');
             }
 
-            // 갤러리 페이지에서 현재 보고 있는 채팅을 삭제하는 경우 메인 페이지로 이동
-            if (window.location.pathname.includes('/gallery') && currentChatId == chatId) {
-                window.location.href = '/main/';
-                return;
-            }
-
-            // 삭제된 채팅이 현재 선택된 채팅이면 초기화
+            // 현재 보고 있는 채팅을 삭제하는 경우
             if (currentChatId == chatId) {
-                currentChatId = null;
-
-                const chatMessages = document.getElementById('chatMessages');
-                const greeting = document.getElementById('greeting');
-                const content = document.querySelector('.content');
-
-                if (chatMessages) {
-                    chatMessages.innerHTML = '';
-                    chatMessages.classList.remove('active');
+                // 갤러리 페이지에서는 메인으로 이동
+                if (window.location.pathname.includes('/gallery')) {
+                    window.location.href = '/main/';
+                    return;
                 }
-                if (content) {
-                    content.classList.remove('chat-started');
-                }
-                if (greeting) {
-                    // 로그인 상태에 맞게 greeting 텍스트 업데이트
-                    if (isLoggedIn && currentUser) {
-                        greeting.textContent = `안녕하세요, ${currentUser.nickname || '사용자'}님😊`;
-                    } else {
-                        greeting.textContent = `안녕하세요`;
-                    }
-                    // hidden 클래스 제거 및 display 설정
-                    greeting.classList.remove('hidden');
-                    greeting.style.display = '';  // inline style 제거
-                }
+                // 메인 페이지에서는 페이지 새로고침하여 초기 상태로
+                window.location.reload();
+                return;
             }
 
             // 채팅 기록 목록 갱신
