@@ -35,7 +35,14 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["localhost", "15.164.199.30"]
+ALLOWED_HOSTS = ["localhost", "15.164.199.30", "127.0.0.1"]
+
+# CSRF 보호 설정
+CSRF_TRUSTED_ORIGINS = [
+    "http://15.164.199.30:8080",
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+]
 
 # Application definition
 
@@ -141,7 +148,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = "/static/"
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')  # 프로덕션용
 
 # STATICFILES_DIRS = [
 #      BASE_DIR / 'static'
@@ -184,6 +191,14 @@ AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
 AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME")
 AWS_S3_SIGNATURE_VERSION = os.getenv("AWS_S3_SIGNATURE_VERSION")
+
+# S3 URL 설정
+AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com'
+AWS_DEFAULT_ACL = None 
+AWS_QUERYSTRING_AUTH = False
+AWS_S3_OBJECT_PARAMETERS = {
+    'CacheControl': 'max-age=86400',
+}
 
 # 이메일 인증 관련 설정
 EMAIL_BACKEND=os.getenv('EMAIL_BACKEND')
