@@ -44,6 +44,9 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:8080",
 ]
 
+# 배포시 HTTP 보안에 대해 브라우저가 확인 안하게 설정
+SECURE_CROSS_ORIGIN_OPENER_POLICY = None
+
 # Application definition
 
 INSTALLED_APPS = [
