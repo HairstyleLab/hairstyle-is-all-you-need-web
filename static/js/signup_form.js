@@ -186,14 +186,16 @@ document.addEventListener('DOMContentLoaded', function() {
             return false;
         }
 
-        // 직접 입력인 경우에만 도메인 형식 검사
-        if (domainSelect.style.display === 'none' && !domainRegex.test(domainValue)) {
-            emailHelperText.textContent = '올바른 도메인 형식이 아닙니다.';
-            emailHelperText.style.color = '#ff6b4a';
-            sendCodeBtn.disabled = true;
-            sendCodeBtn.style.cursor = 'not-allowed';
-            sendCodeBtn.style.backgroundColor = '#ccc';
-            return false;
+        // 직접 입력인 경우 도메인 형식 검사
+        if (domainSelect.value === 'custom') {
+            if (!domainRegex.test(domainValue)) {
+                emailHelperText.textContent = '올바른 도메인 형식이 아닙니다.';
+                emailHelperText.style.color = '#ff6b4a';
+                sendCodeBtn.disabled = true;
+                sendCodeBtn.style.cursor = 'not-allowed';
+                sendCodeBtn.style.backgroundColor = '#ccc';
+                return false;
+            }
         }
 
         emailHelperText.textContent = '';
