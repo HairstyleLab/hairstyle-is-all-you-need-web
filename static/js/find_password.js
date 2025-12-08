@@ -75,6 +75,11 @@ emailDomainSelect.addEventListener('change', function() {
 
 // 직접입력 도메인에서 입력시
 emailDomain.addEventListener('input', function() {
+    // 에러 메시지가 있으면 초기화
+    if (emailError.style.display === 'block') {
+        emailError.style.display = 'none';
+        emailError.textContent = '';
+    }
     checkEmailAndEnableButton();
 });
 
@@ -89,16 +94,31 @@ emailDomain.addEventListener('blur', function() {
 
 // 이메일 username 입력시
 emailUsername.addEventListener('input', function() {
+    // 에러 메시지가 있으면 초기화
+    if (emailError.style.display === 'block') {
+        emailError.style.display = 'none';
+        emailError.textContent = '';
+    }
     checkEmailAndEnableButton();
     checkIfEmailChanged();
 });
 
 // 이메일 domain 변경시
 emailDomainSelect.addEventListener('input', function() {
+    // 에러 메시지가 있으면 초기화
+    if (emailError.style.display === 'block') {
+        emailError.style.display = 'none';
+        emailError.textContent = '';
+    }
     checkIfEmailChanged();
 });
 
 emailDomain.addEventListener('input', function() {
+    // 에러 메시지가 있으면 초기화
+    if (emailError.style.display === 'block') {
+        emailError.style.display = 'none';
+        emailError.textContent = '';
+    }
     checkIfEmailChanged();
 });
 
@@ -124,8 +144,12 @@ function checkEmailAndEnableButton() {
     // 한 글자 이상 입력되고 도메인이 선택/입력되면 버튼 활성화
     if (username.length > 0 && domain.length > 0) {
         sendCodeBtn.disabled = false;
+        sendCodeBtn.style.cursor = 'pointer';
+        sendCodeBtn.style.backgroundColor = '#FEF9D9';
     } else {
         sendCodeBtn.disabled = true;
+        sendCodeBtn.style.cursor = 'not-allowed';
+        sendCodeBtn.style.backgroundColor = '#ccc';
     }
 }
 
@@ -210,29 +234,32 @@ function resetVerification() {
 function validateEmail() {
     const username = emailUsername.value.trim();
     let domain = '';
-    
+
     // select가 보이는 경우 select의 값 사용, input이 보이는 경우 input의 값 사용
     if (!emailDomainSelect.classList.contains('hidden')) {
         domain = emailDomainSelect.value.trim();
     } else {
         domain = emailDomain.value.trim();
     }
-    
+
     if (!username || !domain) {
         emailError.style.display = 'none';
         return false;
     }
-    
+
     // 이메일 형식 검증 (간단한 정규식)
     const emailRegex = /^[a-zA-Z0-9._-]+$/;
     const domainRegex = /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    
+
     if (!emailRegex.test(username) || !domainRegex.test(domain)) {
         emailError.textContent = '올바른 이메일 형식이 아닙니다.';
         emailError.style.display = 'block';
+        sendCodeBtn.disabled = true;
+        sendCodeBtn.style.cursor = 'not-allowed';
+        sendCodeBtn.style.backgroundColor = '#ccc';
         return false;
     }
-    
+
     emailError.style.display = 'none';
     return true;
 }
@@ -275,9 +302,10 @@ sendCodeBtn.addEventListener('click', async function() {
         if (!data.success) {
             emailError.textContent = data.message || '인증코드 발송에 실패했습니다.';
             emailError.style.display = 'block';
-            sendCodeBtn.disabled = false;
-            sendCodeBtn.style.cursor = 'pointer';
-            sendCodeBtn.style.backgroundColor = '#FEF9D9';
+            // 에러 발생 시 버튼 비활성화 유지 (이메일 수정 시 다시 활성화됨)
+            sendCodeBtn.disabled = true;
+            sendCodeBtn.style.cursor = 'not-allowed';
+            sendCodeBtn.style.backgroundColor = '#ccc';
             return;
         }
         
@@ -320,7 +348,9 @@ sendCodeBtn.addEventListener('click', async function() {
         console.error('오류:', error);
         emailError.textContent = '요청 중 오류가 발생했습니다.';
         emailError.style.display = 'block';
-        sendCodeBtn.disabled = false;
+        sendCodeBtn.disabled = true;
+        sendCodeBtn.style.cursor = 'not-allowed';
+        sendCodeBtn.style.backgroundColor = '#ccc';
     }
 });
 
@@ -435,6 +465,8 @@ confirmCodeBtn.addEventListener('click', async function() {
         verificationCode.disabled = true;
         confirmCodeBtn.disabled = true;
         sendCodeBtn.disabled = true;
+        sendCodeBtn.style.cursor = 'not-allowed';
+        sendCodeBtn.style.backgroundColor = '#ccc';
         timer.style.display = 'none';
         
         verificationCodeConfirmed = true;

@@ -232,7 +232,7 @@ body {
 
 /* 도움말 텍스트 */
 .helper-text {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--text-secondary);
     margin-top: 8px;
 }

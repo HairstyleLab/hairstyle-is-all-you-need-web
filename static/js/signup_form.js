@@ -72,8 +72,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (emailValue.length > 0 && domainValue.length > 0) {
             sendCodeBtn.disabled = false;
+            sendCodeBtn.style.cursor = 'pointer';
+            sendCodeBtn.style.backgroundColor = '#FEF9D9';
         } else {
             sendCodeBtn.disabled = true;
+            sendCodeBtn.style.cursor = 'not-allowed';
+            sendCodeBtn.style.backgroundColor = '#ccc';
         }
     }
 
@@ -82,10 +86,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (this.value === 'custom') {
             customDomain.style.display = 'block';
             this.style.display = 'none';
+            customDomain.value = '';
+            customDomain.focus();
         } else {
             customDomain.style.display = 'none';
         }
-        
+
         // 이메일 수정 시 인증코드 발송 버튼으로 리셋
         if (isCodeSent) {
             resetVerification();
@@ -98,7 +104,21 @@ document.addEventListener('DOMContentLoaded', function() {
         if (isCodeSent) {
             resetVerification();
         }
+        // 에러 메시지가 있으면 초기화
+        if (emailHelperText.textContent && emailHelperText.style.color === '#ff6b4a') {
+            emailHelperText.textContent = '';
+            emailHelperText.style.color = '';
+        }
         checkEmailInput();
+    });
+
+    // 직접입력 도메인에서 포커스 아웃시 select로 돌아가기
+    customDomain.addEventListener('blur', function() {
+        if (this.value === '') {
+            this.style.display = 'none';
+            domainSelect.style.display = 'block';
+            domainSelect.value = '';
+        }
     });
 
     // 이메일 ID 입력
@@ -106,8 +126,62 @@ document.addEventListener('DOMContentLoaded', function() {
         if (isCodeSent) {
             resetVerification();
         }
+        // 에러 메시지가 있으면 초기화
+        if (emailHelperText.textContent && emailHelperText.style.color === '#ff6b4a') {
+            emailHelperText.textContent = '';
+            emailHelperText.style.color = '';
+        }
         checkEmailInput();
     });
+
+    // 이메일 유효성 검사
+    function validateEmail() {
+        const emailValue = emailId.value.trim();
+        let domainValue = '';
+
+        // select가 보이는 경우 select의 값 사용, input이 보이는 경우 input의 값 사용
+        if (domainSelect.style.display === 'none') {
+            domainValue = customDomain.value.trim();
+        } else {
+            domainValue = domainSelect.value;
+        }
+
+        if (!emailValue || !domainValue) {
+            emailHelperText.textContent = '';
+            emailHelperText.style.color = '';
+            sendCodeBtn.disabled = true;
+            sendCodeBtn.style.cursor = 'not-allowed';
+            sendCodeBtn.style.backgroundColor = '#ccc';
+            return false;
+        }
+
+        // 이메일 형식 검증
+        const emailRegex = /^[a-zA-Z0-9._-]+$/;
+        const domainRegex = /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+        if (!emailRegex.test(emailValue)) {
+            emailHelperText.textContent = '올바른 이메일 형식이 아닙니다.';
+            emailHelperText.style.color = '#ff6b4a';
+            sendCodeBtn.disabled = true;
+            sendCodeBtn.style.cursor = 'not-allowed';
+            sendCodeBtn.style.backgroundColor = '#ccc';
+            return false;
+        }
+
+        // 직접 입력인 경우에만 도메인 형식 검사
+        if (domainSelect.style.display === 'none' && !domainRegex.test(domainValue)) {
+            emailHelperText.textContent = '올바른 도메인 형식이 아닙니다.';
+            emailHelperText.style.color = '#ff6b4a';
+            sendCodeBtn.disabled = true;
+            sendCodeBtn.style.cursor = 'not-allowed';
+            sendCodeBtn.style.backgroundColor = '#ccc';
+            return false;
+        }
+
+        emailHelperText.textContent = '';
+        emailHelperText.style.color = '';
+        return true;
+    }
 
     // 인증 리셋
     function resetVerification() {
@@ -124,14 +198,13 @@ document.addEventListener('DOMContentLoaded', function() {
         verifyError.textContent = '';
         verifySuccess.classList.remove('show');
         emailHelperText.textContent = '';
-        emailHelperText.style.color = '';
         timer.textContent = '';
 
         if (timerInterval) {
             clearInterval(timerInterval);
             timerInterval = null;
         }
-        
+
         // 폼 필드 비활성화
         password.disabled = true;
         password.value = '';
@@ -139,7 +212,7 @@ document.addEventListener('DOMContentLoaded', function() {
         passwordConfirm.value = '';
         nickname.disabled = true;
         nickname.value = '';
-        
+
         // 에러 메시지 초기화
         passwordError.classList.remove('show');
         passwordSuccess.classList.remove('show');
@@ -147,14 +220,19 @@ document.addEventListener('DOMContentLoaded', function() {
         passwordConfirmSuccess.classList.remove('show');
         nicknameError.classList.remove('show');
         nicknameSuccess.classList.remove('show');
-        
+
         checkSubmitBtn();
     }
 
     // 인증코드 발송 버튼 클릭
     sendCodeBtn.addEventListener('click', async function() {
         if (this.disabled) return;
-        
+
+        // 이메일 유효성 검사
+        if (!validateEmail()) {
+            return;
+        }
+
         try {
             // 발송버튼 일시적으로 막기
             sendCodeBtn.disabled = true;
@@ -200,11 +278,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 안내 메시지 (처음 발송 vs 재발송)
                 if (isResend) {
                     emailHelperText.textContent = '인증코드가 재발송되었습니다. 3분 안에 인증코드를 정확히 입력해주세요';
-                    emailHelperText.style.color = 'blue';
                 } else {
                     emailHelperText.textContent = '인증코드가 발송되었습니다. 3분 안에 인증코드를 정확히 입력해주세요';
                 }
-                emailHelperText.style.color = 'var(--text-primary)';
                 
                 // 에러/성공 메시지 초기화
                 verifyError.classList.remove('show');
@@ -213,11 +289,18 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 emailHelperText.textContent = data.message || '인증코드 발송에 실패했습니다.';
                 emailHelperText.style.color = '#ff6b4a';
+                // 에러 발생 시 버튼 비활성화 유지 (이메일 수정 시 다시 활성화됨)
+                sendCodeBtn.disabled = true;
+                sendCodeBtn.style.cursor = 'not-allowed';
+                sendCodeBtn.style.backgroundColor = '#ccc';
             }
         } catch (error) {
             console.error('Error:', error);
             emailHelperText.textContent = '인증코드 발송 중 오류가 발생했습니다.';
             emailHelperText.style.color = '#ff6b4a';
+            sendCodeBtn.disabled = true;
+            sendCodeBtn.style.cursor = 'not-allowed';
+            sendCodeBtn.style.backgroundColor = '#ccc';
         }
     });
 
