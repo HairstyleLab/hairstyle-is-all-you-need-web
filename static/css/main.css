@@ -219,10 +219,6 @@ body {
     opacity: 1;
 }
 
-.sidebar-logged.expanded #chatHistoryBtn {
-    cursor: default;
-    pointer-events: none;
-}
 
 /* 로그아웃 링크 */
 .logout-sidebar-btn {
