@@ -5,20 +5,21 @@ from .models import HairStyleDictionary, HairStyleImage
 
 def get_hair_images(request):
     # Step 1. 프론트에서 전달받은 값
-    gender = request.GET.get("gender")         # male / female
+    gender = request.GET.get("gender")         # male / female / none
     category = request.GET.get("category")     # cut / perm / color
     name = request.GET.get("name")             # 예: 가일컷
 
     # Step 2. JS 코드 값을 DB 코드로 변환
     gender_map = {
-        "male": "m",
-        "female": "f"
+        "male": "M",
+        "female": "F",
+        "none": "N"
     }
 
     category_map = {
-        "cut": "c",
-        "perm": "p",
-        "color": "l"
+        "cut": "C",
+        "perm": "P",
+        "color": "L"
     }
 
     gender_code = gender_map.get(gender)
@@ -58,10 +59,10 @@ def get_hair_images(request):
 
 
 def get_hair_list(request):
-    gender_param = request.GET.get("gender")      # male / female
+    gender_param = request.GET.get("gender")      # male / female / none
     category_param = request.GET.get("category")  # cut / perm / color
 
-    gender_map = {"male": "M", "female": "F"}
+    gender_map = {"male": "M", "female": "F", "none": "N"}
     category_map = {"cut": "C", "perm": "P", "color": "L"}
 
     gender_code = gender_map.get(gender_param)

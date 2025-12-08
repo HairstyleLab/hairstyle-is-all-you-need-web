@@ -847,7 +847,10 @@ if (addIcon) {
 
         // 응답 대기 중이면 아무 동작도 하지 않음
         if (isWaitingForResponse) {
+            addIcon.style.cursor = 'not-allowed';
             return;
+        } else {
+            addIcon.style.cursor = 'pointer';
         }
 
         if (isLoggedIn) {

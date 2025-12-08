@@ -604,7 +604,6 @@ body.logged-in .add-icon {
     padding: 0;
 }
 
-
 .send-btn:not(:disabled){
     cursor:pointer;
     background:#FEF9D9;

@@ -13,6 +13,7 @@ const emailDomainSelect = document.getElementById('emailDomainSelect');
 const emailDomain = document.getElementById('emailDomain');
 const sendCodeBtn = document.getElementById('sendCodeBtn');
 const emailError = document.getElementById('emailError');
+const emailSuccessMessage = document.getElementById('emailSuccessMessage');
 const verificationCode = document.getElementById('verificationCode');
 const timer = document.getElementById('timer');
 const confirmCodeBtn = document.getElementById('confirmCodeBtn');
@@ -29,6 +30,8 @@ const domainSelectWrapper = document.querySelector('.domain-select-wrapper');
 // 초기화: 에러 메시지 숨김
 emailError.style.display = 'none';
 emailError.textContent = '';
+emailSuccessMessage.style.display = 'none';
+emailSuccessMessage.textContent = '';
 codeError.style.display = 'none';
 codeError.textContent = '';
 passwordError.style.display = 'none';
@@ -75,6 +78,11 @@ emailDomainSelect.addEventListener('change', function() {
 
 // 직접입력 도메인에서 입력시
 emailDomain.addEventListener('input', function() {
+    // 에러 메시지가 있으면 초기화
+    if (emailError.style.display === 'block') {
+        emailError.style.display = 'none';
+        emailError.textContent = '';
+    }
     checkEmailAndEnableButton();
 });
 
@@ -89,16 +97,31 @@ emailDomain.addEventListener('blur', function() {
 
 // 이메일 username 입력시
 emailUsername.addEventListener('input', function() {
+    // 에러 메시지가 있으면 초기화
+    if (emailError.style.display === 'block') {
+        emailError.style.display = 'none';
+        emailError.textContent = '';
+    }
     checkEmailAndEnableButton();
     checkIfEmailChanged();
 });
 
 // 이메일 domain 변경시
 emailDomainSelect.addEventListener('input', function() {
+    // 에러 메시지가 있으면 초기화
+    if (emailError.style.display === 'block') {
+        emailError.style.display = 'none';
+        emailError.textContent = '';
+    }
     checkIfEmailChanged();
 });
 
 emailDomain.addEventListener('input', function() {
+    // 에러 메시지가 있으면 초기화
+    if (emailError.style.display === 'block') {
+        emailError.style.display = 'none';
+        emailError.textContent = '';
+    }
     checkIfEmailChanged();
 });
 
@@ -124,10 +147,12 @@ function checkEmailAndEnableButton() {
     // 한 글자 이상 입력되고 도메인이 선택/입력되면 버튼 활성화
     if (username.length > 0 && domain.length > 0) {
         sendCodeBtn.disabled = false;
-        console.log('버튼 활성화'); // 디버깅용
+        sendCodeBtn.style.cursor = 'pointer';
+        sendCodeBtn.style.backgroundColor = '#FEF9D9';
     } else {
         sendCodeBtn.disabled = true;
-        console.log('버튼 비활성화'); // 디버깅용
+        sendCodeBtn.style.cursor = 'not-allowed';
+        sendCodeBtn.style.backgroundColor = '#ccc';
     }
 }
 
@@ -159,7 +184,6 @@ function checkIfEmailChanged() {
 
     // 이메일이 변경되면 인증 초기화
     if (currentEmail !== verifiedEmail) {
-        console.log('이메일이 변경됨. 인증 초기화');
         resetVerification();
     }
 }
@@ -189,17 +213,10 @@ function resetVerification() {
     codeError.style.display = 'none';
     codeError.textContent = '';
 
-    // 성공 메시지 제거 (이메일 발송 성공 메시지)
-    const emailSuccess = emailError.parentElement?.querySelector('.success-message');
-    if (emailSuccess) {
-        emailSuccess.remove();
-    }
-
-    // 성공 메시지 제거 (인증코드 확인 성공 메시지)
-    const codeSuccess = codeError.parentElement?.querySelector('.success-message');
-    if (codeSuccess) {
-        codeSuccess.remove();
-    }
+    // 성공 메시지 숨김
+    emailSuccessMessage.classList.remove('success');
+    emailSuccessMessage.style.display = 'none';
+    emailSuccessMessage.textContent = '';
 
     // 비밀번호 입력칸 비활성화
     newPassword.disabled = true;
@@ -220,29 +237,32 @@ function resetVerification() {
 function validateEmail() {
     const username = emailUsername.value.trim();
     let domain = '';
-    
+
     // select가 보이는 경우 select의 값 사용, input이 보이는 경우 input의 값 사용
     if (!emailDomainSelect.classList.contains('hidden')) {
         domain = emailDomainSelect.value.trim();
     } else {
         domain = emailDomain.value.trim();
     }
-    
+
     if (!username || !domain) {
         emailError.style.display = 'none';
         return false;
     }
-    
+
     // 이메일 형식 검증 (간단한 정규식)
     const emailRegex = /^[a-zA-Z0-9._-]+$/;
     const domainRegex = /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    
+
     if (!emailRegex.test(username) || !domainRegex.test(domain)) {
         emailError.textContent = '올바른 이메일 형식이 아닙니다.';
         emailError.style.display = 'block';
+        sendCodeBtn.disabled = true;
+        sendCodeBtn.style.cursor = 'not-allowed';
+        sendCodeBtn.style.backgroundColor = '#ccc';
         return false;
     }
-    
+
     emailError.style.display = 'none';
     return true;
 }
@@ -285,9 +305,10 @@ sendCodeBtn.addEventListener('click', async function() {
         if (!data.success) {
             emailError.textContent = data.message || '인증코드 발송에 실패했습니다.';
             emailError.style.display = 'block';
-            sendCodeBtn.disabled = false;
-            sendCodeBtn.style.cursor = 'pointer';
-            sendCodeBtn.style.backgroundColor = '#FEF9D9';
+            // 에러 발생 시 버튼 비활성화 유지 (이메일 수정 시 다시 활성화됨)
+            sendCodeBtn.disabled = true;
+            sendCodeBtn.style.cursor = 'not-allowed';
+            sendCodeBtn.style.backgroundColor = '#ccc';
             return;
         }
         
@@ -296,20 +317,9 @@ sendCodeBtn.addEventListener('click', async function() {
         // 시간 만료 상태 초기화
         isTimeExpired = false;
 
-        // 인증코드 발급 안내 메시지
-        const successMessage = document.createElement('p');
-        successMessage.className = 'success-message';
-        successMessage.textContent = '입력하신 이메일로 인증코드를 보내드렸습니다. 3분 안에 인증코드를 정확히 입력해주세요';
-        successMessage.style.color = '#333';
-        successMessage.style.fontSize = '15px';
-
-        // 기존 성공 메시지 제거
-        const existingSuccess = emailError.parentElement.querySelector('.success-message');
-        if (existingSuccess) {
-            existingSuccess.remove();
-        }
-
-        emailError.parentElement.appendChild(successMessage);
+        // 인증코드 발급 안내 메시지 표시
+        emailSuccessMessage.textContent = '입력하신 이메일로 인증코드를 보내드렸습니다. 3분 안에 인증코드를 정확히 입력해주세요';
+        emailSuccessMessage.style.display = 'block';
 
         // 인증코드 입력칸 활성화
         verificationCode.disabled = false;
@@ -341,7 +351,9 @@ sendCodeBtn.addEventListener('click', async function() {
         console.error('오류:', error);
         emailError.textContent = '요청 중 오류가 발생했습니다.';
         emailError.style.display = 'block';
-        sendCodeBtn.disabled = false;
+        sendCodeBtn.disabled = true;
+        sendCodeBtn.style.cursor = 'not-allowed';
+        sendCodeBtn.style.backgroundColor = '#ccc';
     }
 });
 
@@ -438,24 +450,14 @@ confirmCodeBtn.addEventListener('click', async function() {
             return;
         }
         
-        // 인증 성공
-        codeError.style.display = 'none';
-        
+        // 인증 성공 메세지 표시
+        codeError.classList.add('success');
+        codeError.textContent = '인증이 완료되었습니다.';
+        emailSuccessMessage.style.display = 'none';
+
         // 인증된 이메일 저장
         verifiedEmail = fullEmail;
         console.log('인증된 이메일 저장:', verifiedEmail);
-        
-        // 성공 메시지 표시
-        const successMessage = document.createElement('p');
-        successMessage.className = 'success-message';
-        successMessage.textContent = '인증이 완료되었습니다.';
-        
-        const existingSuccess = codeError.parentElement.querySelector('.success-message');
-        if (existingSuccess) {
-            existingSuccess.remove();
-        }
-        
-        codeError.parentElement.appendChild(successMessage);
         
         // 타이머 정지
         if (timerInterval) {
@@ -466,6 +468,8 @@ confirmCodeBtn.addEventListener('click', async function() {
         verificationCode.disabled = true;
         confirmCodeBtn.disabled = true;
         sendCodeBtn.disabled = true;
+        sendCodeBtn.style.cursor = 'not-allowed';
+        sendCodeBtn.style.backgroundColor = '#ccc';
         timer.style.display = 'none';
         
         verificationCodeConfirmed = true;
@@ -543,6 +547,7 @@ function checkPasswordMatch() {
             confirmError.style.display = 'block';
             confirmError.textContent = '비밀번호가 일치하지 않습니다.'; 
             confirmError.classList.add('error');
+            confirmError.classList.remove('success');
 
         } else {
             confirmError.textContent = "비밀번호가 일치합니다.";

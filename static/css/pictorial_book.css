@@ -3,7 +3,7 @@
     position: fixed;
     top: 0;
     left: var(--sidebar-width-collapsed);
-    width: 600px;
+    width: 650px;
     height: 100vh;
     overflow: hidden;
     z-index: 1;
@@ -73,38 +73,46 @@ body.pictorial-open .pictorial-wrapper {
     display: flex;
     gap: 12px;
     margin-bottom: 12px;
+    align-items: center;
 }
 
 .pt-select {
     padding: 8px 14px;
     border: 1px solid #e8ddd4;
     background: white;
-    border-radius: 16px;
+    border-radius: 10px;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
+    flex-shrink: 0;
 }
 
 .pt-gender-select {
     padding: 8px 14px;
     background: white;
     border: 1px solid #e8ddd4;
-    border-radius: 16px;
+    border-radius: 10px;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
+    flex-shrink: 0;
+}
+
+.pt-gender-select:disabled {
+    background-color : #D9D9D9;
+    cursor: not-allowed;
+    color : #888;
 }
 
 .pt-search {
-    position: relative;
-    width: 250px;
-    left: 90px;
     display: flex;
-    justify-content:flex-end;
+    flex: 1;
+    min-width: 0;
+    max-width: 250px;
+    margin-left: auto;
     padding: 0 12px;
     background: #ffffff;
     border-radius: 5px;
-    padding: 0 12px;
     border: 1px solid #e8ddd4;
 }
 
@@ -115,13 +123,6 @@ body.pictorial-open .pictorial-wrapper {
     background: none;
     outline: none;
     font-size: 14px;
-}
-
-/* 태그 */
-.pictorial-filter {
-    padding: 6px 4px;
-    border-bottom: 1px solid #f2b4be;
-    margin-bottom: 20px;
 }
 
 .pictorial-list {
@@ -235,14 +236,19 @@ body.pictorial-open .pictorial-wrapper {
     padding: 10px 0;
     border-bottom: 3px solid #f097a1;
     margin-bottom: 20px;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
 }
 
 /* ㄱ~ㅎ 컨테이너 */
 .initial-filter {
     display: flex;
-    justify-content: center; 
+    justify-content: flex-start;
     gap: 3px;
     padding: 6px 4px;
+    flex-wrap: nowrap;
+    min-width: min-content;
 }
 
 /* ㄱ~ㅎ 개별 요소 */
@@ -253,6 +259,8 @@ body.pictorial-open .pictorial-wrapper {
     border-radius: 10px;
     cursor: pointer;
     transition: 0.2s ease;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 /* 호버 스타일 */
@@ -265,4 +273,22 @@ body.pictorial-open .pictorial-wrapper {
     background: #ff8fa3;
     color: white;
     font-weight: 600;
+}
+
+/* pictorial-filter 스크롤바 스타일 */
+.pictorial-filter::-webkit-scrollbar {
+    height: 4px;
+}
+
+.pictorial-filter::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.pictorial-filter::-webkit-scrollbar-thumb {
+    background: #ddd;
+    border-radius: 2px;
+}
+
+.pictorial-filter::-webkit-scrollbar-thumb:hover {
+    background: #ccc;
 }

@@ -40,14 +40,24 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     async function loadHairData() {
-        const gender = genderSelect.value;
         const category = categorySelect.value;
+        const gender = category === "color" ? "none" : genderSelect.value;
 
         const res = await fetch(`/pictorial_book/get-hair-list/?gender=${gender}&category=${category}`);
         HAIR_DATA = await res.json();
     }
 
     await loadHairData();
+
+    // 초기 로드 시 컬러 선택 여부 확인
+    console.log("Initial category:", categorySelect.value);
+    console.log("Gender select element:", genderSelect);
+    if (categorySelect.value === "color") {
+        console.log("Initial load: Disabling gender select");
+        genderSelect.disabled = true;
+        genderSelect.style.opacity = "0.5";
+        genderSelect.style.cursor = "not-allowed";
+    }
 
     // 한글 초성 추출 함수
     function getInitial(name) {
@@ -169,6 +179,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     categorySelect.addEventListener("change", async () => {
+        console.log("Category changed to:", categorySelect.value);
+
+        // 컬러 선택 시 성별 선택창 비활성화
+        if (categorySelect.value === "color") {
+            console.log("Disabling gender select");
+            genderSelect.disabled = true;
+            genderSelect.style.opacity = "0.5";
+            genderSelect.style.cursor = "not-allowed";
+        } else {
+            console.log("Enabling gender select");
+            genderSelect.disabled = false;
+            genderSelect.style.opacity = "1";
+            genderSelect.style.cursor = "pointer";
+        }
+
         await loadHairData();
         const active = document.querySelector(".initial-filter .active");
         if (active) renderList(active.dataset.initial);

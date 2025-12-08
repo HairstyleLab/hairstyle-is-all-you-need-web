@@ -16,9 +16,57 @@ from django.http import JsonResponse
 from urllib.parse import quote
 from markdown import markdown
 import bleach
+from PIL import Image
 
 # FASTAPI_URL = "http://127.0.0.1:8000/query"
 FASTAPI_URL = "http://69.30.85.100:22031/query"
+
+# 이미지 리사이즈 함수
+def resize_image(image_file, max_size=(1024, 1024), quality=100):
+    """
+    이미지를 리사이즈하고 최적화합니다.
+    - max_size: 최대 크기 (width, height)
+    - quality: JPEG 품질 (1-100)
+    """
+    try:
+        # 이미지 열기
+        img = Image.open(image_file)
+
+        # EXIF 방향 정보 처리 (회전된 이미지 자동 보정)
+        try:
+            from PIL import ImageOps
+            img = ImageOps.exif_transpose(img)
+        except:
+            pass
+
+        # 원본 크기
+        original_width, original_height = img.size
+
+        # 비율 유지하면서 리사이즈
+        img.thumbnail(max_size, Image.Resampling.LANCZOS)
+
+        # RGB로 변환 (RGBA나 P 모드인 경우)
+        if img.mode in ('RGBA', 'LA', 'P'):
+            # 투명 배경을 흰색으로
+            background = Image.new('RGB', img.size, (255, 255, 255))
+            if img.mode == 'P':
+                img = img.convert('RGBA')
+            background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+            img = background
+        elif img.mode != 'RGB':
+            img = img.convert('RGB')
+
+        # BytesIO에 저장
+        output = BytesIO()
+        img.save(output, format='JPEG', quality=quality, optimize=True)
+        output.seek(0)
+
+        return output
+    except Exception as e:
+        print(f"이미지 리사이즈 실패: {str(e)}")
+        # 리사이즈 실패 시 원본 반환
+        image_file.seek(0)
+        return image_file
 
 # Create your views here.
 
@@ -43,11 +91,26 @@ def gallery_upload(request):
         try:
             import time
             from datetime import datetime
+            from django.core.files.uploadedfile import InMemoryUploadedFile
 
-            # 파일명 충돌 방지: 타임스탬프 + UUID 추가
-            file_ext = os.path.splitext(image_file.name)[1].lower()
-            unique_filename = f"{user_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}{file_ext}"
+            # 이미지 리사이즈 (최대 1024x1024, 품질 85%)
+            print(f"원본 이미지 크기: {image_file.size / 1024:.2f} KB")
+            resized_image = resize_image(image_file, max_size=(1024, 1024), quality=100)
 
+            # 파일명 충돌 방지: 타임스탬프 + UUID 추가 (항상 .jpg로 저장)
+            unique_filename = f"{user_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}.jpg"
+
+            # BytesIO를 InMemoryUploadedFile로 변환
+            resized_file = InMemoryUploadedFile(
+                resized_image,
+                None,
+                unique_filename,
+                'image/jpeg',
+                resized_image.getbuffer().nbytes,
+                None
+            )
+
+            print(f"리사이즈 후 크기: {resized_file.size / 1024:.2f} KB")
             print(f"S3 업로드 시작: {unique_filename}")
 
             gallery = Gallery(user_id=user_id)
@@ -62,7 +125,7 @@ def gallery_upload(request):
             while retry_count < max_retries:
                 try:
                     # 파일을 S3에 저장하고 경로를 image_path에 설정
-                    gallery.image_path.save(unique_filename, image_file, save=True)
+                    gallery.image_path.save(unique_filename, resized_file, save=True)
                     print(f"이미지 S3 업로드 완료 - image_id: {gallery.image_id}, path: {gallery.image_path}")
 
                     return JsonResponse({
@@ -78,7 +141,7 @@ def gallery_upload(request):
 
                     if retry_count < max_retries:
                         time.sleep(1)  # 1초 대기 후 재시도
-                        image_file.seek(0)  # 파일 포인터 리셋
+                        resized_image.seek(0)  # 파일 포인터 리셋
                     else:
                         raise last_error
 
