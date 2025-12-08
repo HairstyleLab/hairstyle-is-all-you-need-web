@@ -25,6 +25,7 @@ const confirmError = document.getElementById('confirmError');
 const submitBtn = document.getElementById('submitBtn');
 const successModal = document.getElementById('successModal');
 const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+const domainSelectWrapper = document.querySelector('.domain-select-wrapper');
 
 // 초기화: 에러 메시지 숨김
 emailError.style.display = 'none';
@@ -51,7 +52,7 @@ emailDomainSelect.addEventListener('change', function() {
     console.log('Select changed to:', this.value); // 디버깅용
     if (this.value === 'custom') {
         // 직접입력 선택 시
-        emailDomainSelect.classList.add('hidden');
+        domainSelectWrapper.classList.add('hidden');
         emailDomain.classList.remove('hidden');
         emailDomain.disabled = false;
         emailDomain.value = '';
@@ -60,11 +61,13 @@ emailDomainSelect.addEventListener('change', function() {
     } else if (this.value) {
         // 기본 도메인 선택 시
         emailDomain.classList.add('hidden');
+        domainSelectWrapper.classList.remove('hidden');
         emailDomain.value = '';
         console.log('기본 도메인 선택됨:', this.value);
     } else {
         // 선택하세요 선택 시
         emailDomain.value = '';
+        domainSelectWrapper.classList.remove('hidden');
         emailDomain.classList.add('hidden');
         console.log('선택하세요 선택됨');
     }
@@ -87,7 +90,7 @@ emailDomain.addEventListener('input', function() {
 emailDomain.addEventListener('blur', function() {
     if (!this.classList.contains('hidden') && this.value === '') {
         this.classList.add('hidden');
-        emailDomainSelect.classList.remove('hidden');
+        domainSelectWrapper.classList.remove('hidden');
         emailDomainSelect.value = '';
     }
 });

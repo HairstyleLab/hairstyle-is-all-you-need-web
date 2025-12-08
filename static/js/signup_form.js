@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const verifyError = document.getElementById('verifyError');
     const verifySuccess = document.getElementById('verifySuccess');
     const emailHelperText = document.getElementById('emailHelperText');
+    const domainSelectWrapper = document.querySelector('.domain-select-wrapper');
 
     const password = document.getElementById('password');
     const passwordError = document.getElementById('passwordError');
@@ -81,15 +82,21 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    customDomain.style.display = 'none';
+
     // 도메인 선택 변경
     domainSelect.addEventListener('change', function() {
+
         if (this.value === 'custom') {
+            domainSelectWrapper.style.display = 'none';
             customDomain.style.display = 'block';
-            this.style.display = 'none';
+            customDomain.disabled = false;
             customDomain.value = '';
             customDomain.focus();
         } else {
+            // 일반 도메인 선택 시
             customDomain.style.display = 'none';
+            customDomain.value = '';
         }
 
         // 이메일 수정 시 인증코드 발송 버튼으로 리셋
@@ -99,9 +106,20 @@ document.addEventListener('DOMContentLoaded', function() {
         checkEmailInput();
     });
 
-    // 직접 입력 도메인
+    customDomain.addEventListener('blur', function() {
+        // 입력값이 비어있으면 다시 선택 박스로 복귀
+        if (this.value.trim() === '') {
+            this.style.display = 'none';
+            domainSelectWrapper.style.display = 'block';
+            domainSelect.value = '';
+        }
+    
+        checkEmailInput();
+    });
+
     customDomain.addEventListener('input', function() {
-        if (isCodeSent) {
+        // 직접 입력 도메인
+        if (typeof isCodeSent !== 'undefined' && isCodeSent) {
             resetVerification();
         }
         // 에러 메시지가 있으면 초기화

@@ -7,7 +7,9 @@
 {% block content %}
 <!-- 사이드바 -->
 <aside class="sidebar" id="sidebar">
-    <img class='sidebar-logo' src="{% static 'images/small_logo.png'%}" onclick="location.href='/main/'"/>
+    <div class="logo-wrapper" onclick="location.href='/main/'">
+        <img class='sidebar-logo' src="{% static 'images/small_logo.png'%}"/>
+    </div>
 </aside>
 
 <div class="main-container">
