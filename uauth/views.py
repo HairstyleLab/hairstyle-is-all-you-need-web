@@ -12,9 +12,65 @@ import json
 import re
 import random
 import string
+from PIL import Image, ImageOps
+from io import BytesIO
+from django.core.files.uploadedfile import InMemoryUploadedFile
 
 
 # Utility functions
+def resize_profile_image(image_file, max_size=(1024, 1024), quality=100):
+    """
+    프로필 이미지를 리사이즈하고 최적화합니다.
+    - max_size: 최대 크기 (width, height)
+    - quality: JPEG 품질 (1-100)
+    """
+    try:
+        # 이미지 열기
+        img = Image.open(image_file)
+
+        # EXIF 방향 정보 처리 (회전된 이미지 자동 보정)
+        try:
+            img = ImageOps.exif_transpose(img)
+        except:
+            pass
+
+        # 비율 유지하면서 리사이즈
+        img.thumbnail(max_size, Image.Resampling.LANCZOS)
+
+        # RGB로 변환 (RGBA나 P 모드인 경우)
+        if img.mode in ('RGBA', 'LA', 'P'):
+            # 투명 배경을 흰색으로
+            background = Image.new('RGB', img.size, (255, 255, 255))
+            if img.mode == 'P':
+                img = img.convert('RGBA')
+            background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+            img = background
+        elif img.mode != 'RGB':
+            img = img.convert('RGB')
+
+        # BytesIO에 저장
+        output = BytesIO()
+        img.save(output, format='JPEG', quality=quality, optimize=True)
+        output.seek(0)
+
+        # InMemoryUploadedFile로 변환하여 반환
+        resized_file = InMemoryUploadedFile(
+            output,
+            None,
+            f"{image_file.name.split('.')[0]}.jpg",
+            'image/jpeg',
+            output.getbuffer().nbytes,
+            None
+        )
+
+        return resized_file
+    except Exception as e:
+        print(f"프로필 이미지 리사이즈 실패: {str(e)}")
+        # 리사이즈 실패 시 원본 반환
+        image_file.seek(0)
+        return image_file
+
+
 def check_email_exists(email):
     """이메일 중복 확인"""
     return User.objects.filter(email=email).exists()
@@ -345,37 +401,40 @@ def signup_view(request):
         password = request.POST.get('password')
         nickname = request.POST.get('nickname')
         profile_image = request.FILES.get('profile_image')
-        
+
         if not email or not password or not nickname:
             return JsonResponse({
                 'success': False,
                 'message': '모든 필드를 입력해주세요.'
             }, status=400)
-        
+
         # 이메일 중복 체크
         if User.objects.filter(email=email).exists():
             return JsonResponse({
                 'success': False,
                 'message': '이미 사용 중인 이메일입니다.'
             }, status=400)
-        
+
         # 사용자 생성
         user = User.objects.create_user(
             email=email,
             password=password,
             nickname=nickname
         )
-        
-        # 프로필 이미지가 있으면 저장
+
+        # 프로필 이미지가 있으면 리사이즈 후 저장
         if profile_image:
-            user.profile_image = profile_image
+            print(f"회원가입 - 원본 프로필 이미지 크기: {profile_image.size / 1024:.2f} KB")
+            resized_image = resize_profile_image(profile_image, max_size=(1024, 1024), quality=100)
+            print(f"회원가입 - 리사이즈 후 크기: {resized_image.size / 1024:.2f} KB")
+            user.profile_image = resized_image
             user.save()
-        
+
         return JsonResponse({
             'success': True,
             'message': '회원가입이 완료되었습니다.'
         })
-        
+
     except Exception as e:
         return JsonResponse({
             'success': False,
@@ -472,9 +531,13 @@ def update_profile(request):
 
         user.nickname = nickname
 
-    # 프로필 이미지 수정
+    # 프로필 이미지 수정 - 리사이즈 후 저장
     if "profile_image" in request.FILES:
-        user.profile_image = request.FILES["profile_image"]
+        profile_image = request.FILES["profile_image"]
+        print(f"프로필 편집 - 원본 이미지 크기: {profile_image.size / 1024:.2f} KB")
+        resized_image = resize_profile_image(profile_image, max_size=(1024, 1024), quality=100)
+        print(f"프로필 편집 - 리사이즈 후 크기: {resized_image.size / 1024:.2f} KB")
+        user.profile_image = resized_image
 
     user.save()
 
