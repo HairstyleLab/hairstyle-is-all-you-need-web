@@ -231,16 +231,25 @@ function initSidebarEvents() {
     // 채팅기록 아이콘 클릭 시 사이드바 열기 (닫힌 상태에서만)
     const chatHistoryBtn = document.getElementById('chatHistoryBtn');
     if (chatHistoryBtn) {
-        chatHistoryBtn.addEventListener('click', function() {
-            if (!sidebarLogged.classList.contains('expanded')) {
-                chatHistoryBtn.disabled=true;
-                chatHistoryBtn.style.cursor = 'default';
+        // chatHistoryBtn.addEventListener('click', function() {
+        //     if (!sidebarLogged.classList.contains('expanded')) {
+        //         // chatHistoryBtn.disabled=true;
+        //         chatHistoryBtn.style.cursor = 'default';
+        //         toggleSidebar();
+        //     }
+        // });
+        // // disabled 속성 제거하고 스타일 업데이트
+        // // chatHistoryBtn.disabled = false;
+        // chatHistoryBtn.style.cursor = 'pointer';
+        chatHistoryBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+
+            if(!sidebarLogged.classList.contains('expanded')) {
                 toggleSidebar();
+            } else {
+                collapseSidebar();
             }
         });
-        // disabled 속성 제거하고 스타일 업데이트
-        chatHistoryBtn.disabled = false;
-        chatHistoryBtn.style.cursor = 'pointer';
     }
 
     // 설정 버튼 클릭 시 설정 모달 토글
