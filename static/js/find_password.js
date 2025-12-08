@@ -254,13 +254,25 @@ function validateEmail() {
     const emailRegex = /^[a-zA-Z0-9._-]+$/;
     const domainRegex = /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
-    if (!emailRegex.test(username) || !domainRegex.test(domain)) {
+    if (!emailRegex.test(username)) {
         emailError.textContent = '올바른 이메일 형식이 아닙니다.';
         emailError.style.display = 'block';
         sendCodeBtn.disabled = true;
         sendCodeBtn.style.cursor = 'not-allowed';
         sendCodeBtn.style.backgroundColor = '#ccc';
         return false;
+    }
+
+    // 직접 입력인 경우 도메인 형식 검사
+    if (emailDomainSelect.value === 'custom') {
+        if (!domainRegex.test(domain)) {
+            emailError.textContent = '올바른 도메인 형식이 아닙니다.';
+            emailError.style.display = 'block';
+            sendCodeBtn.disabled = true;
+            sendCodeBtn.style.cursor = 'not-allowed';
+            sendCodeBtn.style.backgroundColor = '#ccc';
+            return false;
+        }
     }
 
     emailError.style.display = 'none';
