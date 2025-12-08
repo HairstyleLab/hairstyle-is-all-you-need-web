@@ -13,6 +13,7 @@ const emailDomainSelect = document.getElementById('emailDomainSelect');
 const emailDomain = document.getElementById('emailDomain');
 const sendCodeBtn = document.getElementById('sendCodeBtn');
 const emailError = document.getElementById('emailError');
+const emailSuccessMessage = document.getElementById('emailSuccessMessage');
 const verificationCode = document.getElementById('verificationCode');
 const timer = document.getElementById('timer');
 const confirmCodeBtn = document.getElementById('confirmCodeBtn');
@@ -28,6 +29,8 @@ const modalConfirmBtn = document.getElementById('modalConfirmBtn');
 // 초기화: 에러 메시지 숨김
 emailError.style.display = 'none';
 emailError.textContent = '';
+emailSuccessMessage.style.display = 'none';
+emailSuccessMessage.textContent = '';
 codeError.style.display = 'none';
 codeError.textContent = '';
 passwordError.style.display = 'none';
@@ -121,10 +124,8 @@ function checkEmailAndEnableButton() {
     // 한 글자 이상 입력되고 도메인이 선택/입력되면 버튼 활성화
     if (username.length > 0 && domain.length > 0) {
         sendCodeBtn.disabled = false;
-        console.log('버튼 활성화'); // 디버깅용
     } else {
         sendCodeBtn.disabled = true;
-        console.log('버튼 비활성화'); // 디버깅용
     }
 }
 
@@ -156,7 +157,6 @@ function checkIfEmailChanged() {
 
     // 이메일이 변경되면 인증 초기화
     if (currentEmail !== verifiedEmail) {
-        console.log('이메일이 변경됨. 인증 초기화');
         resetVerification();
     }
 }
@@ -186,17 +186,10 @@ function resetVerification() {
     codeError.style.display = 'none';
     codeError.textContent = '';
 
-    // 성공 메시지 제거 (이메일 발송 성공 메시지)
-    const emailSuccess = emailError.parentElement?.querySelector('.success-message');
-    if (emailSuccess) {
-        emailSuccess.remove();
-    }
-
-    // 성공 메시지 제거 (인증코드 확인 성공 메시지)
-    const codeSuccess = codeError.parentElement?.querySelector('.success-message');
-    if (codeSuccess) {
-        codeSuccess.remove();
-    }
+    // 성공 메시지 숨김
+    emailSuccessMessage.classList.remove('success');
+    emailSuccessMessage.style.display = 'none';
+    emailSuccessMessage.textContent = '';
 
     // 비밀번호 입력칸 비활성화
     newPassword.disabled = true;
@@ -293,20 +286,9 @@ sendCodeBtn.addEventListener('click', async function() {
         // 시간 만료 상태 초기화
         isTimeExpired = false;
 
-        // 인증코드 발급 안내 메시지
-        const successMessage = document.createElement('p');
-        successMessage.className = 'success-message';
-        successMessage.textContent = '입력하신 이메일로 인증코드를 보내드렸습니다. 3분 안에 인증코드를 정확히 입력해주세요';
-        successMessage.style.color = '#333';
-        successMessage.style.fontSize = '15px';
-
-        // 기존 성공 메시지 제거
-        const existingSuccess = emailError.parentElement.querySelector('.success-message');
-        if (existingSuccess) {
-            existingSuccess.remove();
-        }
-
-        emailError.parentElement.appendChild(successMessage);
+        // 인증코드 발급 안내 메시지 표시
+        emailSuccessMessage.textContent = '입력하신 이메일로 인증코드를 보내드렸습니다. 3분 안에 인증코드를 정확히 입력해주세요';
+        emailSuccessMessage.style.display = 'block';
 
         // 인증코드 입력칸 활성화
         verificationCode.disabled = false;
@@ -435,24 +417,14 @@ confirmCodeBtn.addEventListener('click', async function() {
             return;
         }
         
-        // 인증 성공
-        codeError.style.display = 'none';
-        
+        // 인증 성공 메세지 표시
+        codeError.classList.add('success');
+        codeError.textContent = '인증이 완료되었습니다.';
+        emailSuccessMessage.style.display = 'none';
+
         // 인증된 이메일 저장
         verifiedEmail = fullEmail;
         console.log('인증된 이메일 저장:', verifiedEmail);
-        
-        // 성공 메시지 표시
-        const successMessage = document.createElement('p');
-        successMessage.className = 'success-message';
-        successMessage.textContent = '인증이 완료되었습니다.';
-        
-        const existingSuccess = codeError.parentElement.querySelector('.success-message');
-        if (existingSuccess) {
-            existingSuccess.remove();
-        }
-        
-        codeError.parentElement.appendChild(successMessage);
         
         // 타이머 정지
         if (timerInterval) {
@@ -540,6 +512,7 @@ function checkPasswordMatch() {
             confirmError.style.display = 'block';
             confirmError.textContent = '비밀번호가 일치하지 않습니다.'; 
             confirmError.classList.add('error');
+            confirmError.classList.remove('success');
 
         } else {
             confirmError.textContent = "비밀번호가 일치합니다.";

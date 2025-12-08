@@ -3,7 +3,7 @@
     position: fixed;
     top: 0;
     left: var(--sidebar-width-collapsed);
-    width: 600px;
+    width: 650px;
     height: 100vh;
     overflow: hidden;
     z-index: 1;
@@ -79,7 +79,7 @@ body.pictorial-open .pictorial-wrapper {
     padding: 8px 14px;
     border: 1px solid #e8ddd4;
     background: white;
-    border-radius: 16px;
+    border-radius: 10px;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
@@ -89,7 +89,7 @@ body.pictorial-open .pictorial-wrapper {
     padding: 8px 14px;
     background: white;
     border: 1px solid #e8ddd4;
-    border-radius: 16px;
+    border-radius: 10px;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
