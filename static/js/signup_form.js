@@ -289,7 +289,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // 인증코드 입력창 활성화
                 verifyCode.disabled = false;
-
+                verifyCode.value = '';
+                verifyCode.style.cursor = 'text';
+                verifyCode.style.backgroundColor = '#fff';
+                verifyCode.focus();
 
                 // 타이머 시작
                 timeLeft = 180;
@@ -536,6 +539,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 프로필 이미지 선택
     profileImage.addEventListener('change', function() {
+        profileError.textContent = '';
+        profileError.classList.remove('show');
+        
         const file = this.files[0];
 
         if (file) {
@@ -582,6 +588,9 @@ document.addEventListener('DOMContentLoaded', function() {
             previewImg.style.display = 'none';
             plusIcon.style.display = 'block';
             removeProfileBtn.style.display = 'none';
+            profileError.classList.remove('show');
+
+            profileError.textContent = '';
             profileError.classList.remove('show');
         });
     }

@@ -255,7 +255,7 @@ function initSidebarEvents() {
     // 설정 버튼 클릭 시 설정 모달 토글
     if (settingsBtn) {
         settingsBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
+            // e.stopPropagation();
             settingsModal.classList.toggle('show');
         });
     }
@@ -1964,6 +1964,11 @@ function toggleChatMenu(chatId) {
             menu.classList.remove('show');
         }
     });
+
+    // 설정 모달 열려있으면 닫기
+    if (settingsModal && settingsModal.classList.contains('show')) {
+        settingsModal.classList.remove('show');
+    }
 
     // 선택한 메뉴 토글
     const menu = document.querySelector(`.chat-menu-dropdown[data-chat-id="${chatId}"]`);
