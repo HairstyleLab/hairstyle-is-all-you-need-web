@@ -55,7 +55,10 @@ def get_hair_images(request):
             "url": url
         })
 
-    return JsonResponse({"images": result})
+    return JsonResponse({
+        "images": result,
+        "description": style.description
+    })
 
 
 def get_hair_list(request):
