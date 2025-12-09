@@ -146,8 +146,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // 서버에서 이미지 목록 가져오기
     async function fetchImages(name, gender, category) {
+	const selGender = category === "color" ? "none" : gender;
         const res = await fetch(
-            `/pictorial_book/get-hair-images/?gender=${gender}&category=${category}&name=${encodeURIComponent(name)}`
+            `/pictorial_book/get-hair-images/?gender=${selGender}&category=${category}&name=${encodeURIComponent(name)}`
         );
         return (await res.json()).images;
     }

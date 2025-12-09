@@ -19,7 +19,7 @@ def get_hair_images(request):
     category_map = {
         "cut": "C",
         "perm": "P",
-        "color": "L"
+        "color": "R"
     }
 
     gender_code = gender_map.get(gender)
@@ -63,7 +63,7 @@ def get_hair_list(request):
     category_param = request.GET.get("category")  # cut / perm / color
 
     gender_map = {"male": "M", "female": "F", "none": "N"}
-    category_map = {"cut": "C", "perm": "P", "color": "L"}
+    category_map = {"cut": "C", "perm": "P", "color": "R"}
 
     gender_code = gender_map.get(gender_param)
     category_code = category_map.get(category_param)
