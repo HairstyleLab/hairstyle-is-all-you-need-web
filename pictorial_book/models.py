@@ -6,7 +6,7 @@ class HairStyleDictionary(models.Model):
     name = models.CharField(max_length=24, verbose_name='도감 이름')
     category = models.CharField(max_length=1, verbose_name='도감 카테고리')
     gender = models.CharField(max_length=1, verbose_name='성별')
-    description = models.CharField(max_length=600, verbose_name='헤어스타일 설명')
+    description = models.TextField(verbose_name='헤어스타일 설명')
 
     class Meta:
         db_table = 'pictorial_book'

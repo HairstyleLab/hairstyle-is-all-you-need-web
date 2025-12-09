@@ -190,10 +190,81 @@ body.pictorial-open .pictorial-wrapper {
 .pictorial-description {
     width: 100%;
     margin-top: 16px;
-    font-size: 13px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 12px;
+    font-size: 14px;
     color: #333;
-    line-height: 1.6;
-    text-align: center;
+    line-height: 1.8;
+    text-align: left;
+}
+
+/* Markdown 스타일링 */
+.pictorial-description h1,
+.pictorial-description h2,
+.pictorial-description h3 {
+    color: #f097a1;
+    margin-top: 16px;
+    margin-bottom: 8px;
+}
+
+.pictorial-description h1 {
+    font-size: 20px;
+    border-bottom: 2px solid #f097a1;
+    padding-bottom: 8px;
+}
+
+.pictorial-description h2 {
+    font-size: 18px;
+}
+
+.pictorial-description h3 {
+    font-size: 16px;
+}
+
+.pictorial-description p {
+    margin: 8px 0;
+}
+
+.pictorial-description ul,
+.pictorial-description ol {
+    margin: 8px 0;
+    padding-left: 24px;
+}
+
+.pictorial-description li {
+    margin: 4px 0;
+}
+
+.pictorial-description strong {
+    color: #f097a1;
+    font-weight: 700;
+}
+
+.pictorial-description em {
+    color: #666;
+    font-style: italic;
+}
+
+.pictorial-description code {
+    background: #fff0f3;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 13px;
+}
+
+.pictorial-description pre {
+    background: #fff0f3;
+    padding: 12px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 12px 0;
+}
+
+.pictorial-description pre code {
+    background: none;
+    padding: 0;
 }
 
 

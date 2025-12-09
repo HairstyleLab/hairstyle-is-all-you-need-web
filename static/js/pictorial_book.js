@@ -10,6 +10,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const listBox = document.getElementById("pictorialList");
     const imagesBox = document.getElementById("pictorialImages");
+    const hairstyleDescription = document.getElementById("pictorialDescription");
     const searchInput = document.getElementById("pictorialSearch");
 
     let HAIR_DATA = {};
@@ -85,6 +86,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         currentList = names;
         listBox.innerHTML = "";
         imagesBox.innerHTML = "";
+        hairstyleDescription.innerHTML = "";
 
         names.forEach(name => {
             const item = document.createElement("div");
@@ -92,8 +94,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             item.textContent = name;
 
             item.addEventListener("click", async () => {
-                const images = await fetchImages(name, genderSelect.value, categorySelect.value);
-                renderImages(images);
+                const data = await fetchImages(name, genderSelect.value, categorySelect.value);
+                renderImages(data.images);
+                renderDescription(data.description);
             });
 
             listBox.appendChild(item);
@@ -108,6 +111,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const keyword = searchInput.value.trim().toLowerCase();
         listBox.innerHTML = "";
         imagesBox.innerHTML = "";
+        hairstyleDescription.innerHTML = "";
 
         // 검색 리스트 구성
         let baseList = keyword.length > 0
@@ -136,8 +140,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             item.textContent = name;
 
             item.addEventListener("click", async () => {
-                const images = await fetchImages(name, genderSelect.value, categorySelect.value);
-                renderImages(images);
+                const data = await fetchImages(name, genderSelect.value, categorySelect.value);
+                renderImages(data.images);
+                renderDescription(data.description);
             });
 
             listBox.appendChild(item);
@@ -150,7 +155,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const res = await fetch(
             `/pictorial_book/get-hair-images/?gender=${selGender}&category=${category}&name=${encodeURIComponent(name)}`
         );
-        return (await res.json()).images;
+        return await res.json();
     }
 
 
@@ -164,6 +169,16 @@ document.addEventListener("DOMContentLoaded", async () => {
             card.innerHTML = `<img src="${img.url}" alt="">`;
             imagesBox.appendChild(card);
         });
+    }
+
+    // Description 렌더링 (Markdown)
+    function renderDescription(description) {
+        hairstyleDescription.innerHTML = "";
+
+        if (description) {
+            const markdownHtml = marked.parse(description);
+            hairstyleDescription.innerHTML = markdownHtml;
+        }
     }
 
 
