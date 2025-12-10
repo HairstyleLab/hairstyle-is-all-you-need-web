@@ -87,6 +87,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         listBox.innerHTML = "";
         imagesBox.innerHTML = "";
         hairstyleDescription.innerHTML = "";
+        hairstyleDescription.classList.remove("active"); // 초성 변경 시 숨김
 
         names.forEach(name => {
             const item = document.createElement("div");
@@ -112,6 +113,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         listBox.innerHTML = "";
         imagesBox.innerHTML = "";
         hairstyleDescription.innerHTML = "";
+        hairstyleDescription.classList.remove("active"); // 검색 시 숨김
 
         // 검색 리스트 구성
         let baseList = keyword.length > 0
@@ -155,7 +157,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         const res = await fetch(
             `/pictorial_book/get-hair-images/?gender=${selGender}&category=${category}&name=${encodeURIComponent(name)}`
         );
-        return await res.json();
+        const data = await res.json();
+        console.log("서버에서 받은 데이터:", data);
+        return data;
     }
 
 
@@ -173,11 +177,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Description 렌더링 (Markdown)
     function renderDescription(description) {
+        console.log("renderDescription 호출됨, description:", description);
         hairstyleDescription.innerHTML = "";
 
         if (description) {
             const markdownHtml = marked.parse(description);
+            console.log("마크다운 변환 결과:", markdownHtml);
             hairstyleDescription.innerHTML = markdownHtml;
+            hairstyleDescription.classList.add("active"); // 헤어스타일 선택 시 활성화
+        } else {
+            console.warn("description이 비어있습니다!");
+            hairstyleDescription.classList.remove("active"); // description 없으면 숨김
         }
     }
 

@@ -188,15 +188,23 @@ body.pictorial-open .pictorial-wrapper {
 
 /* 헤어스타일 설명 영역 */
 .pictorial-description {
-    width: 100%;
+    width: 90%;
     margin-top: 16px;
     padding: 20px;
-    background: rgba(255, 255, 255, 0.8);
+    background: transparent;
     border-radius: 12px;
     font-size: 14px;
     color: #333;
     line-height: 1.8;
     text-align: left;
+    justify-content:flex-start;
+    display: none; /* 기본적으로 숨김 */
+}
+
+/* 설명이 있을 때 활성화 */
+.pictorial-description.active {
+    display: block;
+    background: rgba(255, 255, 255, 0.8);
 }
 
 /* Markdown 스타일링 */
