@@ -159,11 +159,11 @@ function updateUserProfile() {
     }
 
     if (sidebarImg && currentUser.profile_image) {
-        sidebarImg.src = currentUser.profile_image + "?t=" + new Date().getTime();
+        sidebarImg.src = currentUser.profile_image;
     }
 
     if (modalImg && currentUser.profile_image) {
-        modalImg.src = currentUser.profile_image + "?t=" + new Date().getTime();
+        modalImg.src = currentUser.profile_image;
     }
 
     // 상단 인사말 업데이트
