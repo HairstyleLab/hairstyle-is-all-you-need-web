@@ -23,8 +23,14 @@ def resize_profile_image(image_file, max_size=(1024, 1024), quality=100):
     프로필 이미지를 리사이즈하고 최적화합니다.
     - max_size: 최대 크기 (width, height)
     - quality: JPEG 품질 (1-100)
+    - GIF 파일은 애니메이션 보존을 위해 원본 그대로 반환
     """
     try:
+        # GIF 파일인 경우 원본 그대로 반환 (애니메이션 보존)
+        if image_file.name.lower().endswith('.gif'):
+            image_file.seek(0)
+            return image_file
+
         # 이미지 열기
         img = Image.open(image_file)
 
