@@ -204,6 +204,62 @@ def gallery_delete(request):
         )
 
 @login_required
+@require_http_methods(["POST"])
+def copy_profile_to_gallery(request):
+    """프로필 이미지를 Gallery로 복사"""
+    try:
+        user = request.user
+
+        if not user.profile_image:
+            return JsonResponse({
+                'success': False,
+                'message': '프로필 이미지가 없습니다.'
+            })
+
+        # S3에서 프로필 이미지 읽기
+        s3_client = boto3.client(
+            's3',
+            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+            region_name=settings.AWS_S3_REGION_NAME
+        )
+
+        # 프로필 이미지 S3 키
+        profile_key = user.profile_image.name
+
+        # S3에서 이미지 다운로드
+        buffer = BytesIO()
+        s3_client.download_fileobj(
+            settings.AWS_STORAGE_BUCKET_NAME,
+            profile_key,
+            buffer
+        )
+        buffer.seek(0)
+
+        # Gallery에 새로 저장
+        from django.core.files.uploadedfile import InMemoryUploadedFile
+        from datetime import datetime
+
+        unique_filename = f"profile_{user.id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}.jpg"
+
+        gallery = Gallery(user_id=user.id, is_deleted=True)
+        gallery.image_path.save(unique_filename, buffer, save=True)
+
+        return JsonResponse({
+            'success': True,
+            'image_id': gallery.image_id
+        })
+
+    except Exception as e:
+        import traceback
+        print(f"프로필 이미지 복사 실패: {str(e)}")
+        print(traceback.format_exc())
+        return JsonResponse({
+            'success': False,
+            'message': '프로필 이미지 복사 중 오류가 발생했습니다.'
+        })
+
+@login_required
 def chat_list(request):
     """사용자의 채팅 기록 목록 조회"""
     user_id = request.user.id
@@ -340,6 +396,43 @@ def chat_delete(request, chat_id):
 
     return JsonResponse({'success': False, 'message': 'Invalid request method'})
 
+@login_required
+def check_response_complete(request, chat_id):
+    """채팅의 응답 완료 여부 확인 및 최신 메시지 반환"""
+    try:
+        # 해당 채팅의 마지막 메시지 확인
+        last_message = Message.objects.filter(chat_id=chat_id).order_by('-created_at').first()
+
+        if not last_message:
+            return JsonResponse({'success': False, 'complete': False, 'message': '메시지가 없습니다.'})
+
+        # 마지막 메시지가 봇 응답(A)이면 완료된 것
+        if last_message.is_answer == 'A':
+            # 이미지가 있는 경우 URL 포함
+            image_url = None
+            if last_message.image_id:
+                try:
+                    gallery = Gallery.objects.get(image_id=last_message.image_id)
+                    if gallery.image_path:
+                        image_url = gallery.image_path.url
+                except Gallery.DoesNotExist:
+                    pass
+
+            return JsonResponse({
+                'success': True,
+                'complete': True,
+                'message': last_message.content,
+                'image_url': image_url,
+                'message_id': last_message.message_id
+            })
+        else:
+            # 마지막 메시지가 사용자 메시지(Q)면 아직 대기 중
+            return JsonResponse({'success': True, 'complete': False})
+
+    except Exception as e:
+        print(f"응답 완료 확인 오류: {str(e)}")
+        return JsonResponse({'success': False, 'complete': False, 'message': str(e)})
+
 
 @require_http_methods(["GET"])
 def message_response(request):
@@ -348,6 +441,7 @@ def message_response(request):
     msg = request.GET.get("message", "").strip()
     image_id = request.GET.get("image_id")
     chat_id = request.GET.get("chat_id")
+    user_id = request.user.id
 
     # 디버깅: 받은 데이터 확인
     print(f"받은 메시지: '{msg}'")
@@ -518,6 +612,22 @@ def message_response(request):
                                         error_detail = traceback.format_exc()
                                         print(f"생성된 이미지 저장 최종 실패: {str(e)}")
                                         print(f"상세 에러:\n{error_detail}")
+
+                                # 서버에서 바로 DB에 저장 (클라이언트 연결 상태 무관)
+                                if chat_id:
+                                    try:
+                                        from .models import Message
+                                        Message.objects.create(
+                                            chat_id=chat_id,
+                                            content=bot_message,
+                                            is_answer='A',
+                                            image_id=generated_image_id if generated_image_id else None
+                                        )
+                                        print(f"✅ 챗봇 응답 DB 저장 완료 - chat_id: {chat_id}, image_id: {generated_image_id}")
+                                    except Exception as save_error:
+                                        print(f"❌ 챗봇 응답 DB 저장 실패: {str(save_error)}")
+                                        import traceback
+                                        traceback.print_exc()
 
                                 yield f"data: {json.dumps({'type': 'response', 'response': bot_message, 'generated_image_id': generated_image_id}, ensure_ascii=False)}\n\n"
 
