@@ -526,7 +526,7 @@ def update_profile(request):
     nickname = request.POST.get("nickname")
     if nickname:
         # 닉네임 유효성 검사 (한글만 2~10글자 또는 영어만 2~10글자)
-        korean_only = re.match(r'^[가-힣]{2,10}$', nickname)
+        korean_only = re.match(r'^[ㄱ-ㅎ가-힣]{2,10}$', nickname)
         english_only = re.match(r'^[a-zA-Z]{2,10}$', nickname)
 
         if not (korean_only or english_only):
@@ -536,6 +536,13 @@ def update_profile(request):
             })
 
         user.nickname = nickname
+
+    # 프로필 이미지 삭제 요청 처리
+    delete_profile_image = request.POST.get("delete_profile_image")
+    if delete_profile_image == "true":
+        if user.profile_image:
+            user.profile_image.delete(save=False)
+            user.profile_image = None
 
     # 프로필 이미지 수정 - 리사이즈 후 저장
     if "profile_image" in request.FILES:

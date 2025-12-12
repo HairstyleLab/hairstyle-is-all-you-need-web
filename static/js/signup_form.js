@@ -510,7 +510,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 닉네임 유효성 검사
     function validateNickname(nick) {
         // 영어/한글로 구성된 2~10자
-        const regex = /^[a-zA-Z가-힣]{2,10}$/;
+        const regex = /^[a-zA-Zㄱ-ㅎ가-힣]{2,10}$/;
         return regex.test(nick);
     }
 
