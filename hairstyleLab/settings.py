@@ -35,7 +35,7 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["localhost", "15.164.199.30", "127.0.0.1"]
+ALLOWED_HOSTS = ["localhost", "15.164.199.30", "127.0.0.1", 'hairstyle-is-all-you-need.com', 'www.hairstyle-is-all-you-need.com']
 
 # CSRF 보호 설정
 CSRF_TRUSTED_ORIGINS = [
