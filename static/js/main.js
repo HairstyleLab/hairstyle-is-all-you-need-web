@@ -5,6 +5,7 @@ let isWaitingForResponse = false; // 챗봇 응답 대기 중 상태
 let currentChatId = null; // 현재 채팅 ID
 let chatHistory = []; // 채팅 기록 목록
 let pollingInterval = null; // 응답 완료 확인 폴링 인터벌
+let currentEventSource = null; // 현재 SSE 연결 (메시지 전송 시에만 사용)
 
 const sidebar = document.getElementById('sidebar');
 const sidebarLogged = document.getElementById('sidebarLogged');
@@ -1524,14 +1525,14 @@ async function loadChat(chatId) {
             if (pendingRequest) {
                 try {
                     const requestInfo = JSON.parse(pendingRequest);
-                    // 현재 채팅의 요청이면 로딩 메시지 복원
-                    if (requestInfo.chatId == chatId) {
+                    // 현재 채팅의 요청이면 로딩 메시지 복원 (문자열로 변환하여 비교)
+                    if (String(requestInfo.chatId) === String(chatId)) {
                         // 마지막 메시지가 사용자 메시지인지 확인
                         if (data.messages.length > 0) {
                             const lastMessage = data.messages[data.messages.length - 1];
                             if (lastMessage.is_answer === 'Q') {
                                 // 진행 중이었으므로 로딩 메시지 복원
-                                addLoadingMessage(requestInfo.hasImage, requestInfo.startTime);
+                                addLoadingMessage();
                                 isWaitingForResponse = true;
 
                                 // 타임아웃 체크 (이미지: 5분, 텍스트: 1분)
@@ -1550,7 +1551,7 @@ async function loadChat(chatId) {
                                         showConfirmModal(message);
                                     }, 1000);
                                 } else {
-                                    // 타임아웃 전이면 폴링 시작
+                                    // 타임아웃 전이면 폴링 시작 (상태 메시지 포함)
                                     startPolling(chatId);
                                 }
                             } else {
@@ -1580,6 +1581,61 @@ async function loadChat(chatId) {
 
             // 스크롤을 최신 메시지로 이동
             chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            // 🔥 채팅방 로드 후 완료된 응답이 있는지 즉시 확인
+            // (폴링 중 다른 채팅방에 있었다가 돌아온 경우 대응)
+            try {
+                const completeCheckResponse = await fetch(`/main/chat/${chatId}/check-complete`, {
+                    method: 'GET',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                });
+
+                const completeData = await completeCheckResponse.json();
+
+                if (completeData.success && completeData.complete) {
+                    console.log('✅ 로드 시 완료된 응답 발견!', completeData);
+
+                    // 마지막 메시지가 봇 응답인지 확인 (이미 표시되었는지)
+                    const lastMessage = data.messages.length > 0 ? data.messages[data.messages.length - 1] : null;
+                    const isLastMessageBot = lastMessage && lastMessage.is_answer === 'A';
+
+                    // 이미 봇 응답이 표시되어 있지 않은 경우에만 추가
+                    if (!isLastMessageBot) {
+                        console.log('🆕 새로운 봇 응답 추가');
+
+                        // localStorage 정리
+                        localStorage.removeItem('pendingRequest');
+
+                        // 로딩 메시지가 있으면 제거
+                        removeLoadingMessage();
+
+                        // 봇 응답 표시
+                        addBotMessage(completeData.message, completeData.image_url || null);
+
+                        // 대기 상태 해제
+                        isWaitingForResponse = false;
+                        updateSendBtnState();
+
+                        // 폴링 중지
+                        stopPolling();
+
+                        // 스크롤 조정
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                    } else {
+                        console.log('✔️ 응답 이미 표시됨, 정리만 수행');
+                        // 이미 표시되어 있으면 정리만
+                        localStorage.removeItem('pendingRequest');
+                        removeLoadingMessage();
+                        isWaitingForResponse = false;
+                        updateSendBtnState();
+                        stopPolling();
+                    }
+                }
+            } catch (error) {
+                console.error('완료 상태 확인 실패:', error);
+            }
         }
     } catch (error) {
         console.error('채팅 불러오기 실패:', error);
@@ -1807,18 +1863,18 @@ async function generateAndSaveBotResponse(targetChatId, userMessage, imageId) {
         };
         localStorage.setItem('pendingRequest', JSON.stringify(requestInfo));
 
-        // 로딩 메시지 즉시 표시 (이미지가 있으면 타이머 표시)
-        addLoadingMessage(imageId !== null);
+        // 로딩 메시지 즉시 표시
+        addLoadingMessage();
 
         // SSE를 통한 실시간 상태 업데이트 (chat_id 포함)
-        const eventSource = new EventSource(
+        currentEventSource = new EventSource(
             `/main/message/response/?message=${encodeURIComponent(userMessage)}&image_id=${imageId || ''}&chat_id=${targetChatId}`
         );
 
         let botResponse = '';
         let generatedImageId = null;
 
-        eventSource.onmessage = async function(event) {
+        currentEventSource.onmessage = async function(event) {
             try {
                 const data = JSON.parse(event.data);
                 const eventType = data.type;
@@ -1889,7 +1945,8 @@ async function generateAndSaveBotResponse(targetChatId, userMessage, imageId) {
 
                 } else if (eventType === 'done') {
                     // 스트림 종료
-                    eventSource.close();
+                    currentEventSource.close();
+                    currentEventSource = null;
                 }
 
             } catch (err) {
@@ -1897,9 +1954,10 @@ async function generateAndSaveBotResponse(targetChatId, userMessage, imageId) {
             }
         };
 
-        eventSource.onerror = function(error) {
+        currentEventSource.onerror = function(error) {
             console.error('❌ SSE 연결 오류:', error);
-            eventSource.close();
+            currentEventSource.close();
+            currentEventSource = null;
 
             // SSE 연결 오류 시 localStorage 정리
             localStorage.removeItem('pendingRequest');
@@ -1966,7 +2024,7 @@ function addUserMessage(text, imageSrc) {
 // 로딩 메시지 추가 (단계별 표시)
 let loadingTimerInterval = null; // 타이머 인터벌 저장
 
-function addLoadingMessage(hasImage = false, startTime = null) {
+function addLoadingMessage() {
     const chatMessages = document.getElementById('chatMessages');
 
     const messageDiv = document.createElement('div');
@@ -1988,44 +2046,11 @@ function addLoadingMessage(hasImage = false, startTime = null) {
     statusText.className = 'loading-status';
     statusText.id = 'loadingStatus';
 
-    // 이미지 생성 요청인 경우 안내 문구 추가
-    if (hasImage) {
-        statusText.textContent = '이미지 생성 중... (1~2분 소요)';
-    } else {
-        statusText.textContent = '응답 수신 중...';
-    }
+    // 초기 메시지는 백엔드에서 status 업데이트를 받을 때까지 기본 메시지 표시
+    statusText.textContent = '응답 수신 중...';
 
     textBubble.appendChild(spinner);
     textBubble.appendChild(statusText);
-
-    // 이미지 생성인 경우 타이머 추가
-    if (hasImage) {
-        const timerText = document.createElement('div');
-        timerText.className = 'loading-timer';
-        timerText.id = 'loadingTimer';
-
-        // 시작 시간이 제공되면 경과 시간 계산, 아니면 0부터 시작
-        let initialSeconds = 0;
-        if (startTime) {
-            initialSeconds = Math.floor((Date.now() - startTime) / 1000);
-        }
-
-        const mins = Math.floor(initialSeconds / 60);
-        const secs = initialSeconds % 60;
-        const formattedSecs = secs < 10 ? `0${secs}` : `${secs}`;
-        timerText.textContent = `경과 시간: ${mins}분 ${formattedSecs}초`;
-        textBubble.appendChild(timerText);
-
-        // 타이머 시작
-        let seconds = initialSeconds;
-        loadingTimerInterval = setInterval(() => {
-            seconds++;
-            const mins = Math.floor(seconds / 60);
-            const secs = seconds % 60;
-            const formattedSecs = secs < 10 ? `0${secs}` : `${secs}`;
-            timerText.textContent = `경과 시간: ${mins}분 ${formattedSecs}초`;
-        }, 1000);
-    }
 
     contentDiv.appendChild(textBubble);
     messageDiv.appendChild(contentDiv);
@@ -2040,6 +2065,39 @@ function updateLoadingStatus(statusMessage) {
     const statusElement = document.getElementById('loadingStatus');
     if (statusElement) {
         statusElement.textContent = statusMessage;
+
+        // "이미지 생성 중" 메시지이고 아직 타이머가 없으면 타이머와 안내 메시지 추가
+        if (statusMessage.includes('이미지 생성 중') && !document.getElementById('loadingTimer')) {
+            // 안내 메시지 추가
+            const infoText = document.createElement('div');
+            infoText.className = 'loading-info';
+            infoText.id = 'loadingInfo';
+            infoText.textContent = '이미지 생성에는 1~2분 정도 걸릴 수 있습니다.';
+            infoText.style.fontSize = '0.85em';
+            infoText.style.color = '#888';
+            infoText.style.marginTop = '8px';
+            statusElement.parentNode.appendChild(infoText);
+
+            // 타이머 추가
+            const timerText = document.createElement('div');
+            timerText.className = 'loading-timer';
+            timerText.id = 'loadingTimer';
+            timerText.textContent = '경과 시간: 0분 00초';
+            timerText.style.marginTop = '6px';
+            timerText.style.fontWeight = 'bold';
+            timerText.style.fontSize = '0.9em';
+            statusElement.parentNode.appendChild(timerText);
+
+            // 타이머 시작
+            let seconds = 0;
+            loadingTimerInterval = setInterval(() => {
+                seconds++;
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                const formattedSecs = secs < 10 ? `0${secs}` : `${secs}`;
+                timerText.textContent = `경과 시간: ${mins}분 ${formattedSecs}초`;
+            }, 1000);
+        }
     }
 }
 
@@ -2466,8 +2524,8 @@ function startPolling(chatId) {
                 // localStorage 정리
                 localStorage.removeItem('pendingRequest');
 
-                // 현재 채팅에서만 표시
-                if (currentChatId == chatId) {
+                // 현재 채팅에서만 표시 (문자열로 변환하여 비교)
+                if (String(currentChatId) === String(chatId)) {
                     // 로딩 메시지 제거
                     removeLoadingMessage();
 
@@ -2477,7 +2535,13 @@ function startPolling(chatId) {
                     // 대기 상태 해제
                     isWaitingForResponse = false;
                     updateSendBtnState();
+                } else {
+                    console.log('📌 다른 채팅방에 있음. 응답은 저장되었으나 표시하지 않음.');
                 }
+            } else if (data.success && !data.complete && data.status) {
+                // 완료되지 않았지만 상태 메시지가 있으면 업데이트
+                updateLoadingStatus(data.status);
+                console.log('📡 상태 업데이트 (폴링):', data.status);
             }
         } catch (error) {
             console.error('❌ 폴링 오류:', error);

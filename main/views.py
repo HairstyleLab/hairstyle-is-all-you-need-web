@@ -19,7 +19,7 @@ import bleach
 from PIL import Image
 
 # FASTAPI_URL = "http://127.0.0.1:8000/query"
-FASTAPI_URL = "http://69.30.85.100:22031/query"
+FASTAPI_URL = "http://69.30.85.245:22187/query"
 
 # 이미지 리사이즈 함수
 def resize_image(image_file, max_size=(1024, 1024), quality=100):
@@ -427,7 +427,16 @@ def check_response_complete(request, chat_id):
             })
         else:
             # 마지막 메시지가 사용자 메시지(Q)면 아직 대기 중
-            return JsonResponse({'success': True, 'complete': False})
+            # 캐시에서 현재 상태 메시지 가져오기
+            from django.core.cache import cache
+            status_key = f'chat_status_{chat_id}'
+            current_status = cache.get(status_key, '응답 생성 중...')
+
+            return JsonResponse({
+                'success': True,
+                'complete': False,
+                'status': current_status
+            })
 
     except Exception as e:
         print(f"응답 완료 확인 오류: {str(e)}")
@@ -560,6 +569,11 @@ def message_response(request):
                             event_type = event_data.get("type")
 
                             if event_type == "status":
+                                # 상태 메시지를 캐시에 저장 (폴링에서도 접근 가능)
+                                from django.core.cache import cache
+                                status_key = f'chat_status_{chat_id}'
+                                cache.set(status_key, event_data['message'], timeout=300)  # 5분 동안 유지
+
                                 yield f"data: {json.dumps({'type': 'status', 'message': event_data['message']}, ensure_ascii=False)}\n\n"
 
                             elif event_type == "response":
@@ -629,9 +643,19 @@ def message_response(request):
                                         import traceback
                                         traceback.print_exc()
 
+                                # 완료 시 캐시 정리
+                                from django.core.cache import cache
+                                status_key = f'chat_status_{chat_id}'
+                                cache.delete(status_key)
+
                                 yield f"data: {json.dumps({'type': 'response', 'response': bot_message, 'generated_image_id': generated_image_id}, ensure_ascii=False)}\n\n"
 
                             elif event_type == "error":
+                                # 에러 시에도 캐시 정리
+                                from django.core.cache import cache
+                                status_key = f'chat_status_{chat_id}'
+                                cache.delete(status_key)
+
                                 yield f"data: {json.dumps({'type': 'error', 'message': event_data['message']}, ensure_ascii=False)}\n\n"
 
                         except json.JSONDecodeError:
