@@ -1751,6 +1751,14 @@ body.logged-in.sidebar-expanded .header {
     }
 }
 
+.loading-timer {
+    font-size: 13px;
+    color: #FAB0A9;
+    font-weight: 600;
+    margin-top: 8px;
+    letter-spacing: 0.5px;
+}
+
 /* ========== 마크다운 렌더링 스타일 ========== */
 .bot-bubble code {
     background-color: rgba(0, 0, 0, 0.05);

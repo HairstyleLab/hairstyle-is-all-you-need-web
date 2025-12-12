@@ -4,6 +4,7 @@ let currentUser = null;
 let isWaitingForResponse = false; // 챗봇 응답 대기 중 상태
 let currentChatId = null; // 현재 채팅 ID
 let chatHistory = []; // 채팅 기록 목록
+let pollingInterval = null; // 응답 완료 확인 폴링 인터벌
 
 const sidebar = document.getElementById('sidebar');
 const sidebarLogged = document.getElementById('sidebarLogged');
@@ -50,7 +51,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
+    // 페이지 로드 시 응답 대기 상태 초기화 (SSE 연결은 페이지 전환 시 끊어짐)
+    isWaitingForResponse = false;
+    updateSendBtnState();
+
     const editIcon = document.getElementById("editProfileImageBtn");
+    const deleteIcon = document.getElementById("deleteProfileImageBtn");
     const fileInput = document.getElementById("profileImgInput");
     const previewImg = document.getElementById("modalProfileImg");
 
@@ -81,7 +87,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                 const previewUrl = URL.createObjectURL(file);
                 previewImg.src = previewUrl;
-                
+
                 // 에러 메시지 숨기고 버튼 활성화
                 const nicknameError = document.getElementById("nicknameError");
                 const profileSaveBtn = document.getElementById("profileSaveBtn");
@@ -91,7 +97,37 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (profileSaveBtn) {
                     profileSaveBtn.classList.remove("disabled");
                 }
+
+                // 삭제 버튼 표시
+                if (deleteIcon) {
+                    deleteIcon.classList.remove("hidden");
+                }
             }
+        });
+    }
+
+    // 프로필 이미지 삭제 버튼
+    if (deleteIcon && previewImg) {
+        deleteIcon.addEventListener("click", function () {
+            // 기본 이미지로 변경
+            previewImg.src = '/static/images/default_profile.png';
+
+            // 파일 입력 초기화
+            if (fileInput) {
+                fileInput.value = '';
+            }
+
+            // 삭제 마커 추가 (서버에 삭제 요청을 보내기 위해)
+            previewImg.setAttribute('data-delete-image', 'true');
+
+            // 버튼 활성화
+            const profileSaveBtn = document.getElementById("profileSaveBtn");
+            if (profileSaveBtn) {
+                profileSaveBtn.classList.remove("disabled");
+            }
+
+            // 삭제 버튼 숨기기
+            deleteIcon.classList.add("hidden");
         });
     }
 
@@ -308,7 +344,7 @@ function initSidebarEvents() {
         editProfileBtn.addEventListener('click', function (e) {
             e.stopPropagation();
             settingsModal.classList.remove('show');
-            
+
             // 모달 열기 전에 currentUser 정보로 폼 채우기
             if (currentUser) {
                 // 이메일 표시
@@ -329,9 +365,20 @@ function initSidebarEvents() {
                     } else {
                         modalImg.src = '/static/images/default_profile.png';
                     }
+                    // 삭제 마커 제거
+                    modalImg.removeAttribute('data-delete-image');
+                }
+                // 삭제 버튼 표시/숨김 처리
+                const deleteIcon = document.getElementById('deleteProfileImageBtn');
+                if (deleteIcon) {
+                    if (currentUser.profile_image) {
+                        deleteIcon.classList.remove('hidden');
+                    } else {
+                        deleteIcon.classList.add('hidden');
+                    }
                 }
             }
-            
+
             profileEditModal.classList.add('show');
         });
     }
@@ -534,8 +581,8 @@ if (messageInput && sendBtn) {
         if (this.disabled) return;
 
         if (!isLoggedIn) {
-            // 로그인되지 않았으면 로그인 모달 표시
-            toggleModal();
+            // 로그인되지 않았으면 로그인 모달 표시 (경고 메시지 포함)
+            toggleModal('로그인을 하셔야 채팅을 하실 수 있습니다.');
         } else {
             // 로그인되어 있으면 메시지 전송
             sendMessage();
@@ -568,11 +615,24 @@ function getCookie(name) {
 }
 
 // 모달 토글
-function toggleModal() {
+function toggleModal(warningMessage = null) {
     const modal = document.getElementById('loginModal');
+    const errorMessage = document.getElementById('errorMessage');
+
     modal.classList.toggle('active');
+
     if (modal.classList.contains('active')) {
+        // 경고 메시지가 있으면 표시
+        if (warningMessage && errorMessage) {
+            errorMessage.textContent = warningMessage;
+            errorMessage.classList.add('show');
+        }
         document.getElementById('email').focus();
+    } else {
+        // 모달이 닫힐 때 경고 메시지 초기화
+        if (errorMessage) {
+            errorMessage.classList.remove('show');
+        }
     }
 }
 
@@ -714,12 +774,23 @@ function resetProfileEditForm() {
         } else {
             modalProfileImg.src = '/static/images/default_profile.png';
         }
+        // 삭제 마커 제거
+        modalProfileImg.removeAttribute('data-delete-image');
+    }
+    // 삭제 버튼 표시/숨김 처리
+    const deleteIcon = document.getElementById("deleteProfileImageBtn");
+    if (deleteIcon && currentUser) {
+        if (currentUser.profile_image) {
+            deleteIcon.classList.remove("hidden");
+        } else {
+            deleteIcon.classList.add("hidden");
+        }
     }
 }
 
 // 닉네임 유효성 검사 함수 (한글 또는 영어만, 2~10글자)
 function validateNickname(nickname) {
-    const koreanOnly = /^[가-힣]{2,10}$/;
+    const koreanOnly = /^[ㄱ-ㅎ가-힣]{2,10}$/;
     const englishOnly = /^[a-zA-Z]{2,10}$/;
     return koreanOnly.test(nickname) || englishOnly.test(nickname);
 }
@@ -734,12 +805,15 @@ if (profileSaveBtn) {
         
         const nickname = nicknameInput.value.trim();
         const originalNickname = currentUser ? currentUser.nickname : nicknameInput.defaultValue;
-        
+
         // 새 이미지가 선택되었는지 확인
         const hasNewImage = profileImgInput && profileImgInput.files && profileImgInput.files.length > 0;
 
-        // 닉네임도 같고, 새 이미지도 없으면 → 에러
-        if (nickname === originalNickname && !hasNewImage) {
+        // 이미지 삭제 요청이 있는지 확인
+        const deleteImage = modalProfileImg && modalProfileImg.getAttribute('data-delete-image') === 'true';
+
+        // 닉네임도 같고, 새 이미지도 없고, 삭제 요청도 없으면 → 에러
+        if (nickname === originalNickname && !hasNewImage && !deleteImage) {
             nicknameError.textContent = "변경된 내용이 없습니다.";
             nicknameError.classList.add("show");
             profileSaveBtn.classList.add("disabled");  // 버튼 비활성화
@@ -762,6 +836,10 @@ if (profileSaveBtn) {
         if (profileImgInput.files[0]) {
             formData.append("profile_image", profileImgInput.files[0]);
         }
+        // 이미지 삭제 요청 추가
+        if (deleteImage) {
+            formData.append("delete_profile_image", "true");
+        }
 
         fetch("/uauth/profile/edit/", {
             method: "POST",
@@ -778,6 +856,9 @@ if (profileSaveBtn) {
                 currentUser.nickname = data.nickname;
                 if (data.profile_image) {
                     currentUser.profile_image = data.profile_image;
+                } else {
+                    // 이미지가 삭제된 경우
+                    currentUser.profile_image = null;
                 }
 
                 // UI 즉시 갱신 (캐시 방지 포함)
@@ -821,6 +902,7 @@ const imagePreviewContainer = document.getElementById('imagePreviewContainer');
 const previewImage = document.getElementById('previewImage');
 const removeImageBtn = document.getElementById('removeImageBtn');
 let selectedImageFile = null;
+let selectedProfileImageId = null; // 프로필 이미지 사용 시 image_id 저장
 
 // 전송 버튼 상태 업데이트 함수
 function updateSendBtnState() {
@@ -856,10 +938,17 @@ if (addIcon) {
         if (isLoggedIn) {
             addIconModal.classList.toggle('show');
         } else {
-            // 로그인 안 된 상태에서 로그인 모달 표시
+            // 로그인 안 된 상태에서 로그인 모달 표시 (경고 메시지 포함)
             const loginModal = document.getElementById('loginModal');
+            const errorMessage = document.getElementById('errorMessage');
             if (loginModal) {
                 loginModal.classList.add('active');
+                // 경고 메시지 표시
+                if (errorMessage) {
+                    errorMessage.textContent = '로그인을 하셔야 채팅을 하실 수 있습니다.';
+                    errorMessage.classList.add('show');
+                }
+                document.getElementById('email').focus();
             }
         }
     });
@@ -906,21 +995,44 @@ function updateProfileImageButtonState() {
 
 // 프로필 이미지 사용 버튼
 if (profileImageBtn) {
-    profileImageBtn.addEventListener('click', function(e) {
+    profileImageBtn.addEventListener('click', async function(e) {
         if (this.disabled) {
             e.preventDefault();
             return;
         }
 
         if (currentUser && currentUser.profile_image && !currentUser.profile_image.includes('default_profile')) {
-            previewImage.src = currentUser.profile_image;
-            imagePreviewContainer.style.display = 'flex';
-            selectedImageFile = null; // 파일 선택 초기화
-            addIconModal.classList.remove('show');
-            updateSendBtnState();
+            try {
+                // 서버에 프로필 이미지를 Gallery로 복사 요청
+                const response = await fetch('/main/gallery/copy-profile', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // 복사된 이미지 ID 저장
+                    selectedProfileImageId = data.image_id;
+                    selectedImageFile = null; // 파일 선택 초기화
+
+                    // 미리보기 표시
+                    previewImage.src = currentUser.profile_image;
+                    imagePreviewContainer.style.display = 'flex';
+                    addIconModal.classList.remove('show');
+                    updateSendBtnState();
+                } else {
+                    showConfirmModal(data.message || '프로필 이미지를 불러오는데 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('프로필 이미지 로드 실패:', error);
+                showConfirmModal('프로필 이미지를 불러오는데 실패했습니다.');
+            }
         }
     });
-    
+
     // 초기 상태 설정
     updateProfileImageButtonState();
 }
@@ -964,6 +1076,7 @@ if (removeImageBtn) {
     removeImageBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         selectedImageFile = null;
+        selectedProfileImageId = null; // 프로필 이미지 ID도 초기화
         imagePreviewContainer.style.display = 'none';
         previewImage.src = '';
         imageFileInput.value = '';
@@ -1405,6 +1518,63 @@ async function loadChat(chatId) {
                 }
             });
 
+            // 응답 대기 상태 확인 및 복원
+            // localStorage에서 진행 중인 요청 확인 (텍스트 & 이미지)
+            const pendingRequest = localStorage.getItem('pendingRequest');
+            if (pendingRequest) {
+                try {
+                    const requestInfo = JSON.parse(pendingRequest);
+                    // 현재 채팅의 요청이면 로딩 메시지 복원
+                    if (requestInfo.chatId == chatId) {
+                        // 마지막 메시지가 사용자 메시지인지 확인
+                        if (data.messages.length > 0) {
+                            const lastMessage = data.messages[data.messages.length - 1];
+                            if (lastMessage.is_answer === 'Q') {
+                                // 진행 중이었으므로 로딩 메시지 복원
+                                addLoadingMessage(requestInfo.hasImage, requestInfo.startTime);
+                                isWaitingForResponse = true;
+
+                                // 타임아웃 체크 (이미지: 5분, 텍스트: 1분)
+                                const timeoutMinutes = requestInfo.hasImage ? 5 : 1;
+                                const elapsedMinutes = (Date.now() - requestInfo.startTime) / 1000 / 60;
+                                if (elapsedMinutes > timeoutMinutes) {
+                                    setTimeout(() => {
+                                        removeLoadingMessage();
+                                        isWaitingForResponse = false;
+                                        updateSendBtnState();
+                                        localStorage.removeItem('pendingRequest');
+                                        stopPolling(); // 폴링 중지
+                                        const message = requestInfo.hasImage
+                                            ? '이미지 생성 시간이 초과되었습니다. 다시 시도해주세요.'
+                                            : '응답 대기 시간이 초과되었습니다. 다시 시도해주세요.';
+                                        showConfirmModal(message);
+                                    }, 1000);
+                                } else {
+                                    // 타임아웃 전이면 폴링 시작
+                                    startPolling(chatId);
+                                }
+                            } else {
+                                // 마지막 메시지가 봇 응답이면 완료된 것
+                                localStorage.removeItem('pendingRequest');
+                                isWaitingForResponse = false;
+                            }
+                        }
+                    } else {
+                        // 다른 채팅의 요청이면 무시
+                        isWaitingForResponse = false;
+                    }
+                } catch (e) {
+                    console.error('pendingRequest 파싱 오류:', e);
+                    isWaitingForResponse = false;
+                }
+            } else {
+                // 진행 중인 요청이 없으면 대기 상태 해제
+                isWaitingForResponse = false;
+            }
+
+            // 전송 버튼 상태 업데이트
+            updateSendBtnState();
+
             // 채팅 기록 목록 업데이트 (active 클래스 표시)
             renderChatHistory();
 
@@ -1573,8 +1743,15 @@ async function sendMessage() {
     // 사용자 업로드 이미지 저장 (먼저 저장해서 image_id를 받음)
     let imageId = null;
     if (hasImage) {
-      imageId = await addGallery('user');
-      console.log('🔍 이미지 업로드 후 받은 imageId:', imageId);
+      // 프로필 이미지를 사용한 경우 이미 복사된 image_id 사용
+      if (selectedProfileImageId) {
+        imageId = selectedProfileImageId;
+        console.log('🔍 프로필 이미지 사용 - imageId:', imageId);
+      } else {
+        // 디바이스에서 선택한 이미지는 업로드
+        imageId = await addGallery('user');
+        console.log('🔍 이미지 업로드 후 받은 imageId:', imageId);
+      }
     }
 
     // 사용자 메시지 표시
@@ -1591,6 +1768,7 @@ async function sendMessage() {
     messageInput.value = '';
     if (hasImage) {
         selectedImageFile = null;
+        selectedProfileImageId = null; // 프로필 이미지 ID도 초기화
         imagePreviewContainer.style.display = 'none';
         previewImage.src = '';
         imageFileInput.value = '';
@@ -1621,12 +1799,20 @@ async function generateAndSaveBotResponse(targetChatId, userMessage, imageId) {
             chat_id: targetChatId
         });
 
-        // 로딩 메시지 즉시 표시
-        addLoadingMessage();
+        // 요청 시작 시간 저장 (텍스트 요청도 포함)
+        const requestInfo = {
+            chatId: targetChatId,
+            startTime: Date.now(),
+            hasImage: imageId !== null
+        };
+        localStorage.setItem('pendingRequest', JSON.stringify(requestInfo));
 
-        // SSE를 통한 실시간 상태 업데이트
+        // 로딩 메시지 즉시 표시 (이미지가 있으면 타이머 표시)
+        addLoadingMessage(imageId !== null);
+
+        // SSE를 통한 실시간 상태 업데이트 (chat_id 포함)
         const eventSource = new EventSource(
-            `/main/message/response/?message=${encodeURIComponent(userMessage)}&image_id=${imageId || ''}`
+            `/main/message/response/?message=${encodeURIComponent(userMessage)}&image_id=${imageId || ''}&chat_id=${targetChatId}`
         );
 
         let botResponse = '';
@@ -1646,6 +1832,9 @@ async function generateAndSaveBotResponse(targetChatId, userMessage, imageId) {
                     // 최종 응답 수신
                     botResponse = data.response || "응답을 가져오지 못했습니다.";
                     generatedImageId = data.generated_image_id || null;
+
+                    // 응답 완료 시 localStorage 정리
+                    localStorage.removeItem('pendingRequest');
 
                     console.log('🔍 서버 응답:', {
                         response: botResponse,
@@ -1672,32 +1861,8 @@ async function generateAndSaveBotResponse(targetChatId, userMessage, imageId) {
                         }
                     }
 
-                    // 메시지 DB에 저장
-                    try {
-                        const saveResponse = await fetch('/main/message/save', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRFToken': getCookie('csrftoken')
-                            },
-                            body: JSON.stringify({
-                                chat_id: targetChatId,
-                                content: botResponse,
-                                is_answer: 'A',
-                                image_id: generatedImageId
-                            }),
-                            keepalive: true
-                        });
-
-                        const saveData = await saveResponse.json();
-                        if (!saveData.success) {
-                            console.error('메시지 저장 실패:', saveData.message);
-                        } else {
-                            console.log('챗봇 응답 저장 성공:', botResponse);
-                        }
-                    } catch (saveError) {
-                        console.error('메시지 저장 중 오류:', saveError);
-                    }
+                    // 서버에서 이미 DB에 저장했으므로 클라이언트에서는 저장하지 않음
+                    console.log('✅ 서버에서 챗봇 응답 DB 저장 완료 (클라이언트는 표시만 수행)');
 
                     if (currentChatId === targetChatId) {
                         removeLoadingMessage();
@@ -1710,9 +1875,14 @@ async function generateAndSaveBotResponse(targetChatId, userMessage, imageId) {
                 } else if (eventType === 'error') {
                     // 에러 메시지 수신
                     console.error('❌ 서버 오류:', data.message);
+
+                    // 에러 발생 시 localStorage 정리
+                    localStorage.removeItem('pendingRequest');
+
                     if (currentChatId === targetChatId) {
                         removeLoadingMessage();
-                        showConfirmModal(`오류: ${data.message}`);
+                        // 사용자에게는 간단한 메시지만 표시
+                        showConfirmModal('오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
                     }
                     isWaitingForResponse = false;
                     updateSendBtnState();
@@ -1731,6 +1901,9 @@ async function generateAndSaveBotResponse(targetChatId, userMessage, imageId) {
             console.error('❌ SSE 연결 오류:', error);
             eventSource.close();
 
+            // SSE 연결 오류 시 localStorage 정리
+            localStorage.removeItem('pendingRequest');
+
             if (currentChatId === targetChatId) {
                 removeLoadingMessage();
                 showConfirmModal("서버와의 연결이 끊어졌습니다.");
@@ -1741,6 +1914,10 @@ async function generateAndSaveBotResponse(targetChatId, userMessage, imageId) {
 
     } catch (error) {
         console.error("챗봇 응답 생성 실패:", error);
+
+        // 예외 발생 시 localStorage 정리
+        localStorage.removeItem('pendingRequest');
+
         if (currentChatId === targetChatId) {
             removeLoadingMessage();
             showConfirmModal("응답 생성 중 오류가 발생했습니다.");
@@ -1787,7 +1964,9 @@ function addUserMessage(text, imageSrc) {
 }
 
 // 로딩 메시지 추가 (단계별 표시)
-function addLoadingMessage() {
+let loadingTimerInterval = null; // 타이머 인터벌 저장
+
+function addLoadingMessage(hasImage = false, startTime = null) {
     const chatMessages = document.getElementById('chatMessages');
 
     const messageDiv = document.createElement('div');
@@ -1808,10 +1987,46 @@ function addLoadingMessage() {
     const statusText = document.createElement('div');
     statusText.className = 'loading-status';
     statusText.id = 'loadingStatus';
-    statusText.textContent = '응답 수신 중...';
+
+    // 이미지 생성 요청인 경우 안내 문구 추가
+    if (hasImage) {
+        statusText.textContent = '이미지 생성 중... (1~2분 소요)';
+    } else {
+        statusText.textContent = '응답 수신 중...';
+    }
 
     textBubble.appendChild(spinner);
     textBubble.appendChild(statusText);
+
+    // 이미지 생성인 경우 타이머 추가
+    if (hasImage) {
+        const timerText = document.createElement('div');
+        timerText.className = 'loading-timer';
+        timerText.id = 'loadingTimer';
+
+        // 시작 시간이 제공되면 경과 시간 계산, 아니면 0부터 시작
+        let initialSeconds = 0;
+        if (startTime) {
+            initialSeconds = Math.floor((Date.now() - startTime) / 1000);
+        }
+
+        const mins = Math.floor(initialSeconds / 60);
+        const secs = initialSeconds % 60;
+        const formattedSecs = secs < 10 ? `0${secs}` : `${secs}`;
+        timerText.textContent = `경과 시간: ${mins}분 ${formattedSecs}초`;
+        textBubble.appendChild(timerText);
+
+        // 타이머 시작
+        let seconds = initialSeconds;
+        loadingTimerInterval = setInterval(() => {
+            seconds++;
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            const formattedSecs = secs < 10 ? `0${secs}` : `${secs}`;
+            timerText.textContent = `경과 시간: ${mins}분 ${formattedSecs}초`;
+        }, 1000);
+    }
+
     contentDiv.appendChild(textBubble);
     messageDiv.appendChild(contentDiv);
     chatMessages.appendChild(messageDiv);
@@ -1871,6 +2086,12 @@ function escapeHtml(text) {
 
 // 로딩 메시지 제거
 function removeLoadingMessage() {
+    // 타이머 정리
+    if (loadingTimerInterval) {
+        clearInterval(loadingTimerInterval);
+        loadingTimerInterval = null;
+    }
+
     const loadingMessage = document.getElementById('loadingMessage');
     if (loadingMessage) {
         loadingMessage.remove();
@@ -2057,7 +2278,7 @@ function startEditingChatTitle(chatId, currentTitle) {
 // 채팅 이름 유효성 검사 (영어대소문자, 한글, 숫자, 특수문자로 구성된 15글자)
 function validateChatTitle(title) {
     // 영어대소문자, 한글, 숫자, 특수문자만 허용
-    const regex = /^[a-zA-Z가-힣0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`\s]{1,15}$/;
+    const regex = /^[a-zA-Zㄱ-ㅎ가-힣0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`\s]{1,15}$/;
     return regex.test(title);
 }
 
@@ -2214,3 +2435,61 @@ document.addEventListener('click', function(e) {
         });
     }
 });
+
+// ========== 응답 완료 폴링 기능 ==========
+
+// 폴링 시작
+function startPolling(chatId) {
+    // 기존 폴링이 있으면 중지
+    stopPolling();
+
+    console.log('📡 응답 완료 폴링 시작 - chatId:', chatId);
+
+    // 3초마다 완료 여부 확인
+    pollingInterval = setInterval(async () => {
+        try {
+            const response = await fetch(`/main/chat/${chatId}/check-complete`, {
+                method: 'GET',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success && data.complete) {
+                console.log('✅ 응답 완료 확인!', data);
+
+                // 폴링 중지
+                stopPolling();
+
+                // localStorage 정리
+                localStorage.removeItem('pendingRequest');
+
+                // 현재 채팅에서만 표시
+                if (currentChatId == chatId) {
+                    // 로딩 메시지 제거
+                    removeLoadingMessage();
+
+                    // 봇 응답 표시
+                    addBotMessage(data.message, data.image_url || null);
+
+                    // 대기 상태 해제
+                    isWaitingForResponse = false;
+                    updateSendBtnState();
+                }
+            }
+        } catch (error) {
+            console.error('❌ 폴링 오류:', error);
+        }
+    }, 3000); // 3초마다
+}
+
+// 폴링 중지
+function stopPolling() {
+    if (pollingInterval) {
+        clearInterval(pollingInterval);
+        pollingInterval = null;
+        console.log('⏹ 응답 완료 폴링 중지');
+    }
+}
