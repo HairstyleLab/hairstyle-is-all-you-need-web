@@ -559,7 +559,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // 파일 크기 체크 (5MB)
             if (file.size > 5 * 1024 * 1024) {
-                profileError.textContent = '사용 불가능한 이미지입니다.';
+                profileError.textContent = '이미지 크기가 5MB를 초과해 사용할 수 없습니다.';
                 profileError.classList.add('show');
                 this.value = '';
                 return;

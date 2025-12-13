@@ -77,11 +77,15 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                 if (!isValidExtension) {
                     // 유효하지 않은 파일 형식
-                    const nicknameError = document.getElementById("nicknameError");
-                    if (nicknameError) {
-                        nicknameError.textContent = "jpg, jpeg, png, gif 형식의 이미지만 업로드할 수 있습니다.";
-                        nicknameError.classList.add("show");
-                    }
+                    showConfirmModal('다음 형식의 이미지만 업로드할 수 있습니다.\n*.jpg, .jpeg, .png, .gif*');
+                    fileInput.value = ''; // 파일 입력 초기화
+                    return;
+                }
+
+                // 파일 크기 검사 (10MB 제한)
+                const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+                if (file.size > maxSize) {
+                    showConfirmModal('이미지 크기는 10MB를 초과할 수 없습니다.');
                     fileInput.value = ''; // 파일 입력 초기화
                     return;
                 }
@@ -1077,6 +1081,14 @@ if (imageFileInput) {
                 return;
             }
 
+            // 파일 크기 검사 (10MB 제한)
+            const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+            if (file.size > maxSize) {
+                showConfirmModal('이미지 크기는 10MB를 초과할 수 없습니다.');
+                imageFileInput.value = ''; // 파일 입력 초기화
+                return;
+            }
+
             // 선택된 파일을 변수에 저장
             selectedImageFile = file;
 
@@ -1790,18 +1802,6 @@ async function sendMessage() {
   // 사용자 메시지와 이미지가 있는지 확인
   const hasMessage = message.length > 0;
   const hasImage = imagePreviewContainer && imagePreviewContainer.style.display === 'flex';
-
-  // 이미지 크기 체크 (10MB 제한)
-  if (hasImage && selectedImageFile) {
-    const maxSize = 10 * 1024 * 1024; // 10MB in bytes
-    if (selectedImageFile.size > maxSize) {
-      showConfirmModal('이미지 크기는 10MB를 초과할 수 없습니다.');
-      // 전송 버튼 다시 활성화
-      sendBtn.disabled = false;
-      sendBtn.classList.add('active');
-      return;
-    }
-  }
 
   if (hasMessage || hasImage) {
     // 첫 메시지 전송 시 새 채팅 생성

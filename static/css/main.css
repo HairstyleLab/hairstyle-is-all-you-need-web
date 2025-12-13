@@ -937,6 +937,7 @@ body.logged-in.sidebar-expanded .header {
     margin-bottom: 20px;
     text-align: center;
     font-weight:bold;
+    white-space: pre-line;
 }
 
 .confirm-modal-buttons {
