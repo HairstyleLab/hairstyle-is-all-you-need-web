@@ -510,7 +510,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 닉네임 유효성 검사
     function validateNickname(nick) {
         // 영어/한글로 구성된 2~10자
-        const regex = /^[a-zA-Zㄱ-ㅎ가-힣]{2,10}$/;
+        const regex = /^[a-zA-Zㄱ-ㅎㅏ-ㅣ가-힣]{2,10}$/;
         return regex.test(nick);
     }
 
@@ -559,7 +559,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // 파일 크기 체크 (5MB)
             if (file.size > 5 * 1024 * 1024) {
-                profileError.textContent = '사용 불가능한 이미지입니다.';
+                profileError.textContent = '이미지 크기가 5MB를 초과해 사용할 수 없습니다.';
                 profileError.classList.add('show');
                 this.value = '';
                 return;

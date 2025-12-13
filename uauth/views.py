@@ -526,7 +526,7 @@ def update_profile(request):
     nickname = request.POST.get("nickname")
     if nickname:
         # 닉네임 유효성 검사 (한글만 2~10글자 또는 영어만 2~10글자)
-        korean_only = re.match(r'^[ㄱ-ㅎ가-힣]{2,10}$', nickname)
+        korean_only = re.match(r'^[ㄱ-ㅎㅏ-ㅣ가-힣]{2,10}$', nickname)
         english_only = re.match(r'^[a-zA-Z]{2,10}$', nickname)
 
         if not (korean_only or english_only):

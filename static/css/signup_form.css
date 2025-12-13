@@ -459,6 +459,7 @@ body {
     text-align: center;
     margin: 0;
     word-break: keep-all;
+    white-space: pre-line;
 }
 
 .modal-submessage {
