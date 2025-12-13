@@ -585,6 +585,10 @@ if (messageInput && sendBtn) {
             // 로그인되지 않았으면 로그인 모달 표시 (경고 메시지 포함)
             toggleModal('로그인을 하셔야 채팅을 하실 수 있습니다.');
         } else {
+            // 버튼 즉시 비활성화
+            this.disabled = true;
+            this.classList.remove('active');
+
             // 로그인되어 있으면 메시지 전송
             sendMessage();
         }
@@ -791,7 +795,7 @@ function resetProfileEditForm() {
 
 // 닉네임 유효성 검사 함수 (한글 또는 영어만, 2~10글자)
 function validateNickname(nickname) {
-    const koreanOnly = /^[ㄱ-ㅎ가-힣]{2,10}$/;
+    const koreanOnly = /^[ㄱ-ㅎㅏ-ㅣ가-힣]{2,10}$/;
     const englishOnly = /^[a-zA-Z]{2,10}$/;
     return koreanOnly.test(nickname) || englishOnly.test(nickname);
 }
@@ -904,6 +908,23 @@ const previewImage = document.getElementById('previewImage');
 const removeImageBtn = document.getElementById('removeImageBtn');
 let selectedImageFile = null;
 let selectedProfileImageId = null; // 프로필 이미지 사용 시 image_id 저장
+
+// 채팅 메시지 영역 높이 업데이트 함수
+function updateChatMessagesHeight() {
+    const chatMessages = document.getElementById('chatMessages');
+    if (!chatMessages || !chatMessages.classList.contains('active')) return;
+
+    const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+    const isImageVisible = imagePreviewContainer && imagePreviewContainer.style.display === 'flex';
+
+    // 기본 높이: 240px (입력창 영역)
+    // 이미지 미리보기가 표시되면 250px (이미지 높이) 추가
+    const baseHeight = 240;
+    const imageHeight = isImageVisible ? 250 : 0;
+    const totalBottomHeight = baseHeight + imageHeight;
+
+    chatMessages.style.maxHeight = `calc(100vh - ${totalBottomHeight}px)`;
+}
 
 // 전송 버튼 상태 업데이트 함수
 function updateSendBtnState() {
@@ -1024,6 +1045,7 @@ if (profileImageBtn) {
                     imagePreviewContainer.style.display = 'flex';
                     addIconModal.classList.remove('show');
                     updateSendBtnState();
+                    updateChatMessagesHeight(); // 채팅 영역 높이 업데이트
                 } else {
                     showConfirmModal(data.message || '프로필 이미지를 불러오는데 실패했습니다.');
                 }
@@ -1064,6 +1086,7 @@ if (imageFileInput) {
                 previewImage.src = event.target.result;
                 imagePreviewContainer.style.display = 'flex';
                 updateSendBtnState();
+                updateChatMessagesHeight(); // 채팅 영역 높이 업데이트
             };
             reader.readAsDataURL(file);
 
@@ -1082,6 +1105,7 @@ if (removeImageBtn) {
         previewImage.src = '';
         imageFileInput.value = '';
         updateSendBtnState();
+        updateChatMessagesHeight(); // 채팅 영역 높이 업데이트
     });
 }
 
@@ -1767,6 +1791,18 @@ async function sendMessage() {
   const hasMessage = message.length > 0;
   const hasImage = imagePreviewContainer && imagePreviewContainer.style.display === 'flex';
 
+  // 이미지 크기 체크 (10MB 제한)
+  if (hasImage && selectedImageFile) {
+    const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+    if (selectedImageFile.size > maxSize) {
+      showConfirmModal('이미지 크기는 10MB를 초과할 수 없습니다.');
+      // 전송 버튼 다시 활성화
+      sendBtn.disabled = false;
+      sendBtn.classList.add('active');
+      return;
+    }
+  }
+
   if (hasMessage || hasImage) {
     // 첫 메시지 전송 시 새 채팅 생성
     const isFirstMessage = !chatMessages.classList.contains('active');
@@ -1828,6 +1864,7 @@ async function sendMessage() {
         imagePreviewContainer.style.display = 'none';
         previewImage.src = '';
         imageFileInput.value = '';
+        updateChatMessagesHeight(); // 채팅 영역 높이 복원
     }
 
     // 응답 대기 상태로 설정
@@ -2338,7 +2375,7 @@ function startEditingChatTitle(chatId, currentTitle) {
 // 채팅 이름 유효성 검사 (영어대소문자, 한글, 숫자, 특수문자로 구성된 15글자)
 function validateChatTitle(title) {
     // 영어대소문자, 한글, 숫자, 특수문자만 허용
-    const regex = /^[a-zA-Zㄱ-ㅎ가-힣0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`\s]{1,15}$/;
+    const regex = /^[a-zA-Zㄱ-ㅎㅏ-ㅣ가-힣0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`\s]{1,15}$/;
     return regex.test(title);
 }
 
