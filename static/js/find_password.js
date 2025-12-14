@@ -392,6 +392,8 @@ function startTimer() {
             isTimeExpired = true; // 시간 만료 표시
             codeError.textContent = '인증시간이 만료되었습니다. 코드를 다시 발급받아 주세요.';
             codeError.style.display = 'block';
+            codeError.classList.remove('success');
+            codeError.classList.add('error');
             verificationCode.disabled = true;
             confirmCodeBtn.disabled = true;
         }
@@ -427,6 +429,8 @@ confirmCodeBtn.addEventListener('click', async function() {
     if (!inputCode) {
         codeError.textContent = '인증코드를 입력해주세요.';
         codeError.style.display = 'block';
+        codeError.classList.remove('success');
+        codeError.classList.add('error');
         return;
     }
     
@@ -458,12 +462,15 @@ confirmCodeBtn.addEventListener('click', async function() {
         if (!data.success) {
             codeError.textContent = data.message || '인증코드가 일치하지 않습니다.';
             codeError.style.display = 'block';
+            codeError.classList.remove('success');
+            codeError.classList.add('error');
             confirmCodeBtn.disabled = false;
             return;
         }
         
         // 인증 성공 메세지 표시
         codeError.classList.add('success');
+        codeError.classList.remove('error');
         codeError.textContent = '인증이 완료되었습니다.';
         emailSuccessMessage.style.display = 'none';
 
@@ -496,6 +503,8 @@ confirmCodeBtn.addEventListener('click', async function() {
         console.error('오류:', error);
         codeError.textContent = '요청 중 오류가 발생했습니다.';
         codeError.style.display = 'block';
+        codeError.classList.remove('success');
+        codeError.classList.add('error');
         confirmCodeBtn.disabled = false;
     }
 });
