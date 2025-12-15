@@ -934,15 +934,18 @@ function updateChatMessagesHeight() {
 function updateSendBtnState() {
     // 응답 대기 중이면 항상 비활성화
     if (isWaitingForResponse) {
+        console.log('🔒 전송 버튼 비활성화 - 응답 대기 중');
         sendBtn.disabled = true;
         sendBtn.classList.remove('active');
         return;
     }
 
     if (messageInput.value.trim().length > 0 || (imagePreviewContainer && imagePreviewContainer.style.display === 'flex')) {
+        console.log('✅ 전송 버튼 활성화');
         sendBtn.disabled = false;
         sendBtn.classList.add('active');
     } else {
+        console.log('⭕ 전송 버튼 비활성화 - 입력 없음');
         sendBtn.disabled = true;
         sendBtn.classList.remove('active');
     }
@@ -1557,25 +1560,29 @@ async function loadChat(chatId) {
                 }
             });
 
+            // 🔥 응답 대기 상태 확인 및 복원 (DB 기반)
             if (data.messages.length > 0) {
                 const lastMessage = data.messages[data.messages.length - 1];
                 if (lastMessage.is_answer === 'Q') {
                    // 아직 응답을 기다리는 중!
                    console.log('⏳ 응답 대기 중인 메시지 발견 → 로딩 표시 및 폴링 시작');
                    addLoadingMessage();
-                   isWaitingForResponse = true;
+                   isWaitingForResponse = true;  // 🔥 전역 대기 상태 ON
+                   console.log('🔥 isWaitingForResponse = true (응답 대기 중인 메시지 발견)');
                    startPolling(chatId);
                } else {
-                   // 마지막 메시지가 봇 응답이면 완료
+                   // 🔥 현재 채팅방은 완료됨
+                   // 하지만 다른 채팅방에서 대기 중일 수 있으므로
+                   // isWaitingForResponse는 유지 (변경 안 함)
+                   console.log(`🔄 현재 채팅방은 완료됨. isWaitingForResponse 유지: ${isWaitingForResponse}`);
                    localStorage.removeItem('pendingRequest');
-                   isWaitingForResponse = false;
                }
             } else {
-                // 메시지가 없으면 대기 상태 해제
-                isWaitingForResponse = false;
+                console.log(`📝 메시지 없음. isWaitingForResponse 유지: ${isWaitingForResponse}`);
             }
 
             // 전송 버튼 상태 업데이트
+            console.log(`🔍 updateSendBtnState 호출 전 isWaitingForResponse: ${isWaitingForResponse}`);
             updateSendBtnState();
 
             // 채팅 기록 목록 업데이트 (active 클래스 표시)
@@ -1760,6 +1767,14 @@ function getCookie(name) {
 
 // 메시지 전송 함수
 async function sendMessage() {
+  console.log(`🚀 sendMessage 호출됨. isWaitingForResponse: ${isWaitingForResponse}`);
+
+  // 🔥 응답 대기 중이면 메시지 전송 차단 (전역)
+  if (isWaitingForResponse) {
+    console.error('⚠️ 응답 대기 중 - 메시지 전송 불가');
+    return;
+  }
+
   const message = messageInput.value.trim();
   const chatMessages = document.getElementById('chatMessages');
   const greeting = document.getElementById('greeting');
@@ -1837,6 +1852,7 @@ async function sendMessage() {
     }
 
     // 응답 대기 상태로 설정
+    console.log('🔒 isWaitingForResponse = true (메시지 전송)');
     isWaitingForResponse = true;
 
     // 전송 버튼 비활성화
@@ -1938,6 +1954,7 @@ async function generateAndSaveBotResponse(targetChatId, userMessage, imageId) {
                         addBotMessage(botResponse, generatedImageUrl);
                     }
 
+                    console.log('🔓 isWaitingForResponse = false (SSE 응답 완료)');
                     isWaitingForResponse = false;
                     updateSendBtnState();
                     setTimeout(() => {
@@ -2614,6 +2631,11 @@ function startPolling(chatId) {
                 // localStorage 정리
                 localStorage.removeItem('pendingRequest');
 
+                // 🔥 응답 완료: 전역 대기 상태 해제 (어느 채팅방이든)
+                console.log('🔓 isWaitingForResponse = false (응답 완료)');
+                isWaitingForResponse = false;
+                updateSendBtnState();
+
                 // 현재 채팅에서만 표시 (문자열로 변환하여 비교)
                 if (String(currentChatId) === String(chatId)) {
                     // 로딩 메시지 제거
@@ -2621,10 +2643,6 @@ function startPolling(chatId) {
 
                     // 봇 응답 표시
                     addBotMessage(data.message, data.image_url || null);
-
-                    // 대기 상태 해제
-                    isWaitingForResponse = false;
-                    updateSendBtnState();
                 } else {
                     console.log('📌 다른 채팅방에 있음. 응답은 저장되었으나 표시하지 않음.');
                 }
