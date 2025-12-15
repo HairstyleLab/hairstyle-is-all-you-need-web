@@ -1623,9 +1623,7 @@ async function loadChat(chatId) {
                         // 봇 응답 표시
                         addBotMessage(completeData.message, completeData.image_url || null);
 
-                        // 대기 상태 해제
-                        isWaitingForResponse = false;
-                        updateSendBtnState();
+                         console.log('응답 추가 완료 (대기 상태는 폴링/SSE에서 해제)');
 
                         // 폴링 중지
                         stopPolling();
@@ -1637,8 +1635,6 @@ async function loadChat(chatId) {
                         // 이미 표시되어 있으면 정리만
                         localStorage.removeItem('pendingRequest');
                         removeLoadingMessage();
-                        isWaitingForResponse = false;
-                        updateSendBtnState();
                         stopPolling();
                     }
                 }
