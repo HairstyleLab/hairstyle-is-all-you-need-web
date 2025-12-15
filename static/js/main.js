@@ -1505,6 +1505,14 @@ async function loadChat(chatId) {
     try {
         stopPolling();
 
+        // 채팅방 전환 시 SSE 연결은 유지 (서버가 응답을 완료하고 DB에 저장할 수 있도록)
+        // SSE는 응답 완료 시 자동으로 종료됨
+        // if (currentEventSource) {
+        //     currentEventSource.close();
+        //     currentEventSource = null;
+        // }
+        removeLoadingMessage();
+
 	// 메인 페이지가 아닌 경우 리디렉션
         const pathname = window.location.pathname;
         // 정확히 /main/ 또는 /main 경로인지 확인 (갤러리 등 다른 페이지 제외)
@@ -1560,18 +1568,18 @@ async function loadChat(chatId) {
                 }
             });
 
-            // 🔥 응답 대기 상태 확인 및 복원 (DB 기반)
+            // 응답 대기 상태 확인 및 복원 (DB 기반)
             if (data.messages.length > 0) {
                 const lastMessage = data.messages[data.messages.length - 1];
                 if (lastMessage.is_answer === 'Q') {
                    // 아직 응답을 기다리는 중!
                    console.log('⏳ 응답 대기 중인 메시지 발견 → 로딩 표시 및 폴링 시작');
                    addLoadingMessage();
-                   isWaitingForResponse = true;  // 🔥 전역 대기 상태 ON
-                   console.log('🔥 isWaitingForResponse = true (응답 대기 중인 메시지 발견)');
+                   isWaitingForResponse = true;  // 전역 대기 상태 ON
+                   console.log('isWaitingForResponse = true (응답 대기 중인 메시지 발견)');
                    startPolling(chatId);
                } else {
-                   // 🔥 현재 채팅방은 완료됨
+                   // 현재 채팅방은 완료됨
                    // 하지만 다른 채팅방에서 대기 중일 수 있으므로
                    // isWaitingForResponse는 유지 (변경 안 함)
                    console.log(`🔄 현재 채팅방은 완료됨. isWaitingForResponse 유지: ${isWaitingForResponse}`);
@@ -1591,7 +1599,7 @@ async function loadChat(chatId) {
             // 스크롤을 최신 메시지로 이동
             chatMessages.scrollTop = chatMessages.scrollHeight;
 
-            // 🔥 채팅방 로드 후 완료된 응답이 있는지 즉시 확인
+            // 채팅방 로드 후 완료된 응답이 있는지 즉시 확인
             // (폴링 중 다른 채팅방에 있었다가 돌아온 경우 대응)
             try {
                 const completeCheckResponse = await fetch(`/main/chat/${chatId}/check-complete`, {
@@ -1604,7 +1612,7 @@ async function loadChat(chatId) {
                 const completeData = await completeCheckResponse.json();
 
                 if (completeData.success && completeData.complete) {
-                    console.log('✅ 로드 시 완료된 응답 발견!', completeData);
+                    console.log('로드 시 완료된 응답 발견!', completeData);
 
                     // 마지막 메시지가 봇 응답인지 확인 (이미 표시되었는지)
                     const lastMessage = data.messages.length > 0 ? data.messages[data.messages.length - 1] : null;
@@ -1612,13 +1620,15 @@ async function loadChat(chatId) {
 
                     // 이미 봇 응답이 표시되어 있지 않은 경우에만 추가
                     if (!isLastMessageBot) {
-                        console.log('🆕 새로운 봇 응답 추가');
+                        console.log('새로운 봇 응답 추가');
 
                         // localStorage 정리
                         localStorage.removeItem('pendingRequest');
+                        const responseKey = `response_received_${chatId}`;
+                        localStorage.setItem(responseKey, 'true');
 
-                        // 로딩 메시지가 있으면 제거
-                        removeLoadingMessage();
+                        // 로딩 메시지가 있으면 제거 (응답 완료이므로 타이머도 정리)
+                        removeLoadingMessage(true);
 
                         // 봇 응답 표시
                         addBotMessage(completeData.message, completeData.image_url || null);
@@ -1632,9 +1642,11 @@ async function loadChat(chatId) {
                         chatMessages.scrollTop = chatMessages.scrollHeight;
                     } else {
                         console.log('✔️ 응답 이미 표시됨, 정리만 수행');
-                        // 이미 표시되어 있으면 정리만
+                        // 이미 표시되어 있으면 정리만 (응답 완료이므로 타이머도 정리)
                         localStorage.removeItem('pendingRequest');
-                        removeLoadingMessage();
+                        const responseKey = `response_received_${chatId}`;
+                        localStorage.setItem(responseKey, 'true');
+                        removeLoadingMessage(true);
                         stopPolling();
                     }
                 }
@@ -1763,11 +1775,11 @@ function getCookie(name) {
 
 // 메시지 전송 함수
 async function sendMessage() {
-  console.log(`🚀 sendMessage 호출됨. isWaitingForResponse: ${isWaitingForResponse}`);
+  console.log(`sendMessage 호출됨. isWaitingForResponse: ${isWaitingForResponse}`);
 
-  // 🔥 응답 대기 중이면 메시지 전송 차단 (전역)
+  // 응답 대기 중이면 메시지 전송 차단 (전역)
   if (isWaitingForResponse) {
-    console.error('⚠️ 응답 대기 중 - 메시지 전송 불가');
+    console.error('응답 대기 중 - 메시지 전송 불가');
     return;
   }
 
@@ -1818,11 +1830,11 @@ async function sendMessage() {
       // 프로필 이미지를 사용한 경우 이미 복사된 image_id 사용
       if (selectedProfileImageId) {
         imageId = selectedProfileImageId;
-        console.log('🔍 프로필 이미지 사용 - imageId:', imageId);
+        console.log('프로필 이미지 사용 - imageId:', imageId);
       } else {
         // 디바이스에서 선택한 이미지는 업로드
         imageId = await addGallery('user');
-        console.log('🔍 이미지 업로드 후 받은 imageId:', imageId);
+        console.log('이미지 업로드 후 받은 imageId:', imageId);
       }
     }
 
@@ -1833,7 +1845,7 @@ async function sendMessage() {
     // 메시지가 있거나 이미지가 있으면 저장
     if (hasMessage || hasImage) {
       await saveMessage(message || '', 'Q', imageId);
-      console.log('🔍 saveMessage 호출 완료 - imageId:', imageId);
+      console.log('saveMessage 호출 완료 - imageId:', imageId);
     }
 
     // 입력 필드 초기화
@@ -1848,7 +1860,7 @@ async function sendMessage() {
     }
 
     // 응답 대기 상태로 설정
-    console.log('🔒 isWaitingForResponse = true (메시지 전송)');
+    console.log('isWaitingForResponse = true (메시지 전송)');
     isWaitingForResponse = true;
 
     // 전송 버튼 비활성화
@@ -1859,7 +1871,7 @@ async function sendMessage() {
     autoResizeTextarea(messageInput);
 
     // 챗봇 응답 생성 및 저장 (비동기로 즉시 시작)
-    console.log('🔍 generateAndSaveBotResponse 호출 - imageId:', imageId);
+    console.log('generateAndSaveBotResponse 호출 - imageId:', imageId);
     generateAndSaveBotResponse(targetChatId, message, imageId);
   }
 }
@@ -1867,7 +1879,7 @@ async function sendMessage() {
 // 챗봇 응답 생성 및 저장 함수 (SSE 스트리밍)
 async function generateAndSaveBotResponse(targetChatId, userMessage, imageId) {
     try {
-        console.log('🔍 FastAPI로 전송할 데이터:', {
+        console.log('FastAPI로 전송할 데이터:', {
             message: userMessage,
             image_id: imageId,
             chat_id: targetChatId
@@ -1900,7 +1912,7 @@ async function generateAndSaveBotResponse(targetChatId, userMessage, imageId) {
                 if (eventType === 'status') {
                     // 상태 업데이트를 로딩 메시지에 반영
                     updateLoadingStatus(data.message);
-                    console.log('📡 상태 업데이트:', data.message);
+                    console.log('상태 업데이트:', data.message);
 
                 } else if (eventType === 'response') {
                     // 중복 응답 방지: 이미 응답 받았으면 무시
@@ -1917,7 +1929,7 @@ async function generateAndSaveBotResponse(targetChatId, userMessage, imageId) {
                     // 응답 완료 시 localStorage 정리
                     localStorage.removeItem('pendingRequest');
 
-                    console.log('🔍 서버 응답:', {
+                    console.log('서버 응답:', {
                         response: botResponse,
                         generated_image_id: generatedImageId
                     });
@@ -1935,42 +1947,53 @@ async function generateAndSaveBotResponse(targetChatId, userMessage, imageId) {
                             const imageData = await imageResponse.json();
                             if (imageData.success) {
                                 generatedImageUrl = imageData.image_url;
-                                console.log('✅ 생성된 이미지 URL:', generatedImageUrl);
+                                console.log('생성된 이미지 URL:', generatedImageUrl);
                             }
                         } catch (err) {
-                            console.error('❌ 생성된 이미지 URL 가져오기 실패:', err);
+                            console.error('생성된 이미지 URL 가져오기 실패:', err);
                         }
                     }
 
                     // 서버에서 이미 DB에 저장했으므로 클라이언트에서는 저장하지 않음
-                    console.log('✅ 서버에서 챗봇 응답 DB 저장 완료 (클라이언트는 표시만 수행)');
+                    console.log('서버에서 챗봇 응답 DB 저장 완료 (클라이언트는 표시만 수행)');
 
+                    // 현재 채팅방이 아니어도 응답을 받았다는 것만 표시하고, 나중에 loadChat에서 처리하도록 함
                     if (currentChatId === targetChatId) {
-                        removeLoadingMessage();
+                        removeLoadingMessage(true); // 응답 완료이므로 타이머도 정리
                         addBotMessage(botResponse, generatedImageUrl);
+                    } else {
+                        console.log('다른 채팅방에 있음 - 응답은 받았지만 표시는 나중에');
+                        // 다른 채팅방에 있어도 타이머는 정리
+                        const timerKey = `image_timer_${targetChatId}`;
+                        localStorage.removeItem(timerKey);
                     }
 
-                    console.log('🔓 isWaitingForResponse = false (SSE 응답 완료)');
+                    console.log('isWaitingForResponse = false (SSE 응답 완료)');
                     isWaitingForResponse = false;
                     updateSendBtnState();
                     setTimeout(() => {
                         if (currentEventSource && currentEventSource === event.target) {
-                            console.log('⏹ Timeout: done 이벤트 안 와서 SSE 강제 종료');
+                            console.log('Timeout: done 이벤트 안 와서 SSE 강제 종료');
                             currentEventSource.close();
                             currentEventSource = null;
-			}
+                        }
                     }, 10000); // 10초 후 강제 종료
+
                 } else if (eventType === 'error') {
                     // 에러 메시지 수신
-                    console.error('❌ 서버 오류:', data.message);
+                    console.error('서버 오류:', data.message);
 
                     // 에러 발생 시 localStorage 정리
                     localStorage.removeItem('pendingRequest');
 
                     if (currentChatId === targetChatId) {
-                        removeLoadingMessage();
+                        removeLoadingMessage(true); // 에러로 종료이므로 타이머도 정리
                         // 사용자에게는 간단한 메시지만 표시
                         showConfirmModal('오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+                    } else {
+                        // 다른 채팅방에 있어도 타이머는 정리
+                        const timerKey = `image_timer_${targetChatId}`;
+                        localStorage.removeItem(timerKey);
                     }
                     isWaitingForResponse = false;
                     updateSendBtnState();
@@ -1987,17 +2010,17 @@ async function generateAndSaveBotResponse(targetChatId, userMessage, imageId) {
                 }
 
             } catch (err) {
-                console.error('❌ SSE 이벤트 파싱 오류:', err);
+                console.error('SSE 이벤트 파싱 오류:', err);
             }
         };
 
         currentEventSource.onerror = function(error) {
-            console.error('❌ SSE 연결 오류:', error);
+            console.error('SSE 연결 오류:', error);
             currentEventSource.close();
             currentEventSource = null;
 
-             // 🔥 중요: SSE 끊겨도 localStorage 유지하고 폴링으로 전환
-            console.log('📡 SSE 연결 끊김 → 폴링으로 전환');
+             // 중요: SSE 끊겨도 localStorage 유지하고 폴링으로 전환
+            console.log('SSE 연결 끊김 → 폴링으로 전환');
 
             // 현재 채팅방이면 폴링 시작
             if (currentChatId === targetChatId) {
@@ -2017,8 +2040,12 @@ async function generateAndSaveBotResponse(targetChatId, userMessage, imageId) {
         localStorage.removeItem('pendingRequest');
 
         if (currentChatId === targetChatId) {
-            removeLoadingMessage();
+            removeLoadingMessage(true); // 에러로 종료이므로 타이머도 정리
             showConfirmModal("응답 생성 중 오류가 발생했습니다.");
+        } else {
+            // 다른 채팅방에 있어도 타이머는 정리
+            const timerKey = `image_timer_${targetChatId}`;
+            localStorage.removeItem(timerKey);
         }
         isWaitingForResponse = false;
         updateSendBtnState();
@@ -2123,21 +2150,34 @@ function updateLoadingStatus(statusMessage) {
             const timerText = document.createElement('div');
             timerText.className = 'loading-timer';
             timerText.id = 'loadingTimer';
-            timerText.textContent = '경과 시간: 0분 00초';
             timerText.style.marginTop = '6px';
             timerText.style.fontWeight = 'bold';
             timerText.style.fontSize = '0.9em';
             statusElement.parentNode.appendChild(timerText);
 
-            // 타이머 시작
-            let seconds = 0;
-            loadingTimerInterval = setInterval(() => {
-                seconds++;
+            // localStorage에서 시작 시간 확인 (채팅방 전환해도 이어서 카운트)
+            const timerKey = `image_timer_${currentChatId}`;
+            let startTime = localStorage.getItem(timerKey);
+
+            if (!startTime) {
+                // 처음 타이머 시작하는 경우 현재 시간 저장
+                startTime = Date.now();
+                localStorage.setItem(timerKey, startTime);
+            }
+
+            // 타이머 시작 (경과 시간 계산)
+            function updateTimer() {
+                const elapsedMs = Date.now() - parseInt(startTime);
+                const seconds = Math.floor(elapsedMs / 1000);
                 const mins = Math.floor(seconds / 60);
                 const secs = seconds % 60;
                 const formattedSecs = secs < 10 ? `0${secs}` : `${secs}`;
                 timerText.textContent = `경과 시간: ${mins}분 ${formattedSecs}초`;
-            }, 1000);
+            }
+
+            // 즉시 업데이트 후 1초마다 반복
+            updateTimer();
+            loadingTimerInterval = setInterval(updateTimer, 1000);
         }
     }
 }
@@ -2245,11 +2285,17 @@ function escapeHtml(text) {
 }
 
 // 로딩 메시지 제거
-function removeLoadingMessage() {
+function removeLoadingMessage(clearTimer = false) {
     // 타이머 정리
     if (loadingTimerInterval) {
         clearInterval(loadingTimerInterval);
         loadingTimerInterval = null;
+    }
+
+    // 응답 완료 시에만 localStorage에서 타이머 시작 시간 제거
+    if (clearTimer) {
+        const timerKey = `image_timer_${currentChatId}`;
+        localStorage.removeItem(timerKey);
     }
 
     const loadingMessage = document.getElementById('loadingMessage');
@@ -2621,34 +2667,48 @@ function startPolling(chatId) {
             if (data.success && data.complete) {
                 console.log('✅ 응답 완료 확인!', data);
 
+                // 중복 응답 방지: SSE에서 이미 받았으면 무시
+                const responseKey = `response_received_${chatId}`;
+                if (localStorage.getItem(responseKey)) {
+                    console.log('⚠️ 중복 응답 무시 (폴링) - 이미 받음');
+                    stopPolling();
+                    isWaitingForResponse = false;
+                    updateSendBtnState();
+                    return;
+                }
+
                 // 폴링 중지
                 stopPolling();
 
-                // localStorage 정리
+                // localStorage 정리 및 플래그 설정
                 localStorage.removeItem('pendingRequest');
+                localStorage.setItem(responseKey, 'true');
 
-                // 🔥 응답 완료: 전역 대기 상태 해제 (어느 채팅방이든)
-                console.log('🔓 isWaitingForResponse = false (응답 완료)');
+                // 응답 완료: 전역 대기 상태 해제 (어느 채팅방이든)
+                console.log('isWaitingForResponse = false (폴링 응답 완료)');
                 isWaitingForResponse = false;
                 updateSendBtnState();
 
                 // 현재 채팅에서만 표시 (문자열로 변환하여 비교)
                 if (String(currentChatId) === String(chatId)) {
-                    // 로딩 메시지 제거
-                    removeLoadingMessage();
+                    // 로딩 메시지 제거 (응답 완료이므로 타이머도 정리)
+                    removeLoadingMessage(true);
 
                     // 봇 응답 표시
                     addBotMessage(data.message, data.image_url || null);
                 } else {
-                    console.log('📌 다른 채팅방에 있음. 응답은 저장되었으나 표시하지 않음.');
+                    console.log('다른 채팅방에 있음. 응답은 저장되었으나 표시하지 않음.');
+                    // 다른 채팅방에 있어도 타이머는 정리
+                    const timerKey = `image_timer_${chatId}`;
+                    localStorage.removeItem(timerKey);
                 }
             } else if (data.success && !data.complete && data.status) {
                 // 완료되지 않았지만 상태 메시지가 있으면 업데이트
                 updateLoadingStatus(data.status);
-                console.log('📡 상태 업데이트 (폴링):', data.status);
+                console.log('상태 업데이트 (폴링):', data.status);
             }
         } catch (error) {
-            console.error('❌ 폴링 오류:', error);
+            console.error('폴링 오류:', error);
         }
     }, 3000); // 3초마다
 }
@@ -2658,6 +2718,6 @@ function stopPolling() {
     if (pollingInterval) {
         clearInterval(pollingInterval);
         pollingInterval = null;
-        console.log('⏹ 응답 완료 폴링 중지');
+        console.log('응답 완료 폴링 중지');
     }
 }

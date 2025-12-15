@@ -408,6 +408,11 @@ def check_response_complete(request, chat_id):
 
         # 마지막 메시지가 봇 응답(A)이면 완료된 것
         if last_message.is_answer == 'A':
+            # 응답 완료 시 캐시 정리 (중요!)
+            from django.core.cache import cache
+            status_key = f'chat_status_{chat_id}'
+            cache.delete(status_key)
+
             # 이미지가 있는 경우 URL 포함
             image_url = None
             if last_message.image_id:
@@ -648,9 +653,9 @@ def message_response(request):
                                             is_answer='A',
                                             image_id=generated_image_id if generated_image_id else None
                                         )
-                                        print(f"✅ 챗봇 응답 DB 저장 완료 - chat_id: {chat_id}, image_id: {generated_image_id}")
+                                        print(f"챗봇 응답 DB 저장 완료 - chat_id: {chat_id}, image_id: {generated_image_id}")
                                     except Exception as save_error:
-                                        print(f"❌ 챗봇 응답 DB 저장 실패: {str(save_error)}")
+                                        print(f"챗봇 응답 DB 저장 실패: {str(save_error)}")
                                         import traceback
                                         traceback.print_exc()
 
