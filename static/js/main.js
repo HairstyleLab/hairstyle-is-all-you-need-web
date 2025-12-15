@@ -2164,6 +2164,45 @@ function renderMarkdown(text) {
     html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
     html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
 
+    // 이미지를 그리드로 렌더링하기 위해 연속된 이미지를 찾아서 그룹화
+    const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+    const lines = html.split('\n');
+    const processedLines = [];
+    let imageBuffer = [];
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const matches = [...line.matchAll(imageRegex)];
+
+        if (matches.length > 0) {
+            // 이미지가 있는 라인
+            matches.forEach(match => {
+                imageBuffer.push({
+                    alt: match[1],
+                    url: match[2]
+                });
+            });
+            // 이미지 마크다운 제거
+            lines[i] = line.replace(imageRegex, '');
+        } else if (imageBuffer.length > 0) {
+            // 이미지 버퍼에 이미지가 있고, 현재 라인에 이미지가 없으면 그리드 생성
+            const gridHtml = createImageGrid(imageBuffer);
+            processedLines.push(gridHtml);
+            imageBuffer = [];
+            processedLines.push(lines[i]);
+        } else {
+            processedLines.push(lines[i]);
+        }
+    }
+
+    // 마지막에 남은 이미지 처리
+    if (imageBuffer.length > 0) {
+        const gridHtml = createImageGrid(imageBuffer);
+        processedLines.push(gridHtml);
+    }
+
+    html = processedLines.join('\n');
+
     // 링크 [text](url)
     html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
 
@@ -2171,6 +2210,28 @@ function renderMarkdown(text) {
     html = html.replace(/\n/g, '<br>');
 
     return html;
+}
+
+// 이미지 배열을 그리드로 변환하는 함수 (한 줄에 최대 3개)
+function createImageGrid(images) {
+    if (!images || images.length === 0) return '';
+
+    let gridHtml = '<div class="image-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin: 12px 0; max-width: 500px;">';
+
+    images.forEach(img => {
+        gridHtml += `
+            <div class="image-grid-item" style="position: relative; overflow: hidden; border-radius: 10px; aspect-ratio: 1/1; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <img src="${img.url}" alt="${escapeHtml(img.alt)}"
+                     style="width: 100%; height: 100%; object-fit: cover; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;"
+                     onmouseover="this.parentElement.style.boxShadow='0 4px 12px rgba(0,0,0,0.2)'; this.style.transform='scale(1.05)'"
+                     onmouseout="this.parentElement.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'; this.style.transform='scale(1)'"
+                     onclick="window.open('${img.url}', '_blank')">
+            </div>
+        `;
+    });
+
+    gridHtml += '</div>';
+    return gridHtml;
 }
 
 // HTML 이스케이프 함수
