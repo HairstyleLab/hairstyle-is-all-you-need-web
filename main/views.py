@@ -19,7 +19,7 @@ import bleach
 from PIL import Image
 
 # FASTAPI_URL = "http://127.0.0.1:8000/query"
-FASTAPI_URL = "http://69.30.85.245:22187/query"
+FASTAPI_URL = "http://213.173.102.143:38289/query"
 
 # 이미지 리사이즈 함수
 def resize_image(image_file, max_size=(1024, 1024), quality=100):
@@ -547,6 +547,8 @@ def message_response(request):
 
     def event_stream():
         """SSE 이벤트를 Django에서 클라이언트로 전달"""
+        import time
+        start_time = time.time()
         try:
             # POST 요청으로 변경 (JSON body 사용)
             with requests.post(
@@ -560,6 +562,7 @@ def message_response(request):
 
                 bot_message = ""
                 generated_image_id = None
+                first_response_time = None
 
                 for line in response.iter_lines(decode_unicode=True):
                     if line.startswith('data: '):
@@ -569,6 +572,9 @@ def message_response(request):
                             event_type = event_data.get("type")
 
                             if event_type == "status":
+                                if first_response_time is None:
+                                    first_response_time = time.time()
+                                    print(f"첫 응답까지 시간: {first_response_time - start_time:.2f}초")
                                 # 상태 메시지를 캐시에 저장 (폴링에서도 접근 가능)
                                 from django.core.cache import cache
                                 status_key = f'chat_status_{chat_id}'
@@ -577,6 +583,11 @@ def message_response(request):
                                 yield f"data: {json.dumps({'type': 'status', 'message': event_data['message']}, ensure_ascii=False)}\n\n"
 
                             elif event_type == "response":
+                                
+                                end_time = time.time()
+                                total_time = end_time - start_time
+                                print(f"전체 응답 완료 시간: {total_time:.2f}초")
+
                                 bot_message = event_data.get("output", "")
                                 generated_image = event_data.get("generated_image")
 
