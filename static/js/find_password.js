@@ -465,6 +465,7 @@ confirmCodeBtn.addEventListener('click', async function() {
         // 인증 성공 메세지 표시
         codeError.classList.add('success');
         codeError.textContent = '인증이 완료되었습니다.';
+        codeError.style.display = 'block';
         emailSuccessMessage.style.display = 'none';
 
         // 인증된 이메일 저장
