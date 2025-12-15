@@ -329,6 +329,11 @@ sendCodeBtn.addEventListener('click', async function() {
         // 시간 만료 상태 초기화
         isTimeExpired = false;
 
+        // 코드 에러 메시지 숨김 (시간 만료 메시지 등)
+        codeError.style.display = 'none';
+        codeError.textContent = '';
+        codeError.classList.remove('success');
+
         // 인증코드 발급 안내 메시지 표시
         emailSuccessMessage.textContent = '입력하신 이메일로 인증코드를 보내드렸습니다. 3분 안에 인증코드를 정확히 입력해주세요';
         emailSuccessMessage.style.display = 'block';
