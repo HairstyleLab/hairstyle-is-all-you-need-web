@@ -2031,7 +2031,7 @@ function addUserMessage(text, imageSrc) {
         uploadedImage.src = imageSrc;
         uploadedImage.alt = '업로드된 이미지';
         uploadedImage.crossOrigin = 'anonymous';
-	contentDiv.appendChild(uploadedImage);
+	    contentDiv.appendChild(uploadedImage);
     }
 
     // 텍스트 메시지가 있으면 표시
@@ -2263,7 +2263,7 @@ function addBotMessage(text, imageSrc) {
         botImage.src = imageSrc;
         botImage.alt = '챗봇 응답 이미지';
         botImage.crossOrigin = 'anonymous';
-	contentDiv.appendChild(botImage);
+	    contentDiv.appendChild(botImage);
     }
 
     // 텍스트 메시지가 있으면 표시
