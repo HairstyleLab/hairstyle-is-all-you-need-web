@@ -82,11 +82,22 @@ body {
     cursor: pointer;
     padding: 0;
     flex-shrink: 0;
+    transition: opacity 0.2s ease;
+}
+
+.logo-btn.disabled {
+    cursor: not-allowed !important;
+}
+
+.logo-btn.disabled .sidebar-logo-img {
+    opacity: 0.3;
+    filter: grayscale(100%);
 }
 
 .sidebar-logo-img {
     width: auto;
     height: 110px;
+    transition: opacity 0.2s ease, filter 0.2s ease;
 }
 
 
@@ -107,7 +118,7 @@ body {
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: background 0.2s ease, opacity 0.2s ease;
     width: 100%;
     text-align: left;
 }
@@ -116,13 +127,23 @@ body {
     background: rgba(250, 176, 169, 0.3);
 }
 
-.menu-item:disabled {
-    cursor: not-allowed;
-    pointer-events: none;
+.menu-item:disabled,
+.menu-item.disabled {
+    cursor: not-allowed !important;
+    opacity: 0.3;
 }
 
-.menu-item:disabled:hover {
+.menu-item:disabled:hover,
+.menu-item.disabled:hover {
     background: none;
+}
+
+.menu-item.disabled .menu-icon {
+    filter: grayscale(100%);
+}
+
+.menu-item.disabled .menu-text {
+    color: #999;
 }
 
 .menu-icon {
@@ -246,6 +267,15 @@ body {
 .logout-sidebar-btn:hover {
     color: var(--text-primary);
     text-decoration: underline;
+}
+
+.logout-sidebar-btn.disabled {
+    cursor: not-allowed !important;
+    color: #ccc !important;
+}
+
+.logout-sidebar-btn.disabled:hover {
+    text-decoration: none;
 }
 /* 설정 버튼 */
 .settings-btn {
