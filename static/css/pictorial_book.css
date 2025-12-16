@@ -173,7 +173,8 @@ body.pictorial-open .pictorial-wrapper {
     background: none;
     border-radius: 12px;
     overflow: hidden;
-    height: 260px;
+    min-height: 260px;
+    max-height: 400px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -181,8 +182,9 @@ body.pictorial-open .pictorial-wrapper {
 
 .pictorial-images .pt-card img {
     width: 80%;
-    height: 100%;
-    object-fit: cover;
+    height: auto;
+    max-height: 100%;
+    object-fit: contain;
     display: block;
 }
 
