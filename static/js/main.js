@@ -55,6 +55,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 페이지 로드 시 응답 대기 상태 초기화 (SSE 연결은 페이지 전환 시 끊어짐)
     isWaitingForResponse = false;
     updateSendBtnState();
+    updateSidebarButtonsState();
 
     const editIcon = document.getElementById("editProfileImageBtn");
     const deleteIcon = document.getElementById("deleteProfileImageBtn");
@@ -225,6 +226,33 @@ function updateUIForLoginState() {
     }
 }
 
+// 사이드바 버튼 비활성화/활성화 함수
+function updateSidebarButtonsState() {
+    const galleryBtn = document.getElementById('galleryBtn');
+    const newChatBtn = document.getElementById('newChatBtn');
+    const logoutSidebarBtn = document.getElementById('logoutSidebarBtn');
+    const toggleSidebarBtn = document.getElementById('toggleSidebar');
+    const sidebarLogged = document.getElementById('sidebarLogged');
+
+    if (isWaitingForResponse) {
+        // 응답 대기 중일 때 갤러리, 새 채팅, 로그아웃만 비활성화
+        if (galleryBtn) galleryBtn.classList.add('disabled');
+        if (newChatBtn) newChatBtn.classList.add('disabled');
+        if (logoutSidebarBtn) logoutSidebarBtn.classList.add('disabled');
+
+        // 사이드바가 열린 상태면 로고도 비활성화 스타일 적용
+        if (toggleSidebarBtn && sidebarLogged && sidebarLogged.classList.contains('expanded')) {
+            toggleSidebarBtn.classList.add('disabled');
+        }
+    } else {
+        // 응답 완료 후 버튼 활성화
+        if (galleryBtn) galleryBtn.classList.remove('disabled');
+        if (newChatBtn) newChatBtn.classList.remove('disabled');
+        if (logoutSidebarBtn) logoutSidebarBtn.classList.remove('disabled');
+        if (toggleSidebarBtn) toggleSidebarBtn.classList.remove('disabled');
+    }
+}
+
 // 사이드바 이벤트 초기화
 function initSidebarEvents() {
     // 로고 클릭 시 사이드바 확장 또는 메인 페이지로 이동
@@ -246,6 +274,8 @@ function initSidebarEvents() {
             }
 
             if (sidebarLogged.classList.contains('expanded')) {
+                // 응답 대기 중이면 메인 페이지 이동 차단
+                if (isWaitingForResponse) return;
                 location.href = '/main/';
             }
             toggleSidebar();
@@ -312,6 +342,9 @@ function initSidebarEvents() {
     // 사이드바 로그아웃 버튼 클릭 시 로그아웃 모달 표시
     if (logoutSidebarBtn) {
         logoutSidebarBtn.addEventListener('click', function() {
+            // 응답 대기 중이면 클릭 무시
+            if (isWaitingForResponse) return;
+
             logoutModal.classList.add('show');
         });
     }
@@ -341,6 +374,9 @@ function initSidebarEvents() {
     const newChatBtn = document.getElementById('newChatBtn');
     if (newChatBtn) {
         newChatBtn.addEventListener('click', function() {
+            // 응답 대기 중이면 클릭 무시
+            if (isWaitingForResponse) return;
+
             location.href = '/main/';
         });
     }
@@ -406,7 +442,12 @@ function initSidebarEvents() {
     // 갤러리 버튼
     const galleryBtn = document.getElementById('galleryBtn');
     if (galleryBtn) {
-        galleryBtn.addEventListener('click', () => location.href = '/main/gallery/');
+        galleryBtn.addEventListener('click', () => {
+            // 응답 대기 중이면 클릭 무시
+            if (isWaitingForResponse) return;
+
+            location.href = '/main/gallery/';
+        });
     }
 
 }
@@ -1570,6 +1611,7 @@ async function loadChat(chatId) {
                                 // 진행 중이었으므로 로딩 메시지 복원
                                 addLoadingMessage();
                                 isWaitingForResponse = true;
+                                updateSidebarButtonsState();
 
                                 // 타임아웃 체크 (이미지: 5분, 텍스트: 1분)
                                 const timeoutMinutes = requestInfo.hasImage ? 5 : 1;
@@ -1579,6 +1621,7 @@ async function loadChat(chatId) {
                                         removeLoadingMessage();
                                         isWaitingForResponse = false;
                                         updateSendBtnState();
+                                        updateSidebarButtonsState();
                                         localStorage.removeItem('pendingRequest');
                                         stopPolling(); // 폴링 중지
                                         const message = requestInfo.hasImage
@@ -1653,6 +1696,7 @@ async function loadChat(chatId) {
                         // 대기 상태 해제
                         isWaitingForResponse = false;
                         updateSendBtnState();
+                        updateSidebarButtonsState();
 
                         // 폴링 중지
                         stopPolling();
@@ -1666,6 +1710,7 @@ async function loadChat(chatId) {
                         removeLoadingMessage();
                         isWaitingForResponse = false;
                         updateSendBtnState();
+                        updateSidebarButtonsState();
                         stopPolling();
                     }
                 }
@@ -1874,6 +1919,9 @@ async function sendMessage() {
     sendBtn.disabled = true;
     sendBtn.classList.remove('active');
 
+    // 사이드바 버튼들 비활성화
+    updateSidebarButtonsState();
+
     // textarea 높이 리셋
     autoResizeTextarea(messageInput);
 
@@ -1964,6 +2012,7 @@ async function generateAndSaveBotResponse(targetChatId, userMessage, imageId) {
 
                     isWaitingForResponse = false;
                     updateSendBtnState();
+                    updateSidebarButtonsState();
 
                 } else if (eventType === 'error') {
                     // 에러 메시지 수신
@@ -1979,6 +2028,7 @@ async function generateAndSaveBotResponse(targetChatId, userMessage, imageId) {
                     }
                     isWaitingForResponse = false;
                     updateSendBtnState();
+                    updateSidebarButtonsState();
 
                 } else if (eventType === 'done') {
                     // 스트림 종료
@@ -2005,6 +2055,7 @@ async function generateAndSaveBotResponse(targetChatId, userMessage, imageId) {
             }
             isWaitingForResponse = false;
             updateSendBtnState();
+            updateSidebarButtonsState();
         };
 
     } catch (error) {
@@ -2019,6 +2070,7 @@ async function generateAndSaveBotResponse(targetChatId, userMessage, imageId) {
         }
         isWaitingForResponse = false;
         updateSendBtnState();
+        updateSidebarButtonsState();
     }
 }
 
@@ -2635,6 +2687,7 @@ function startPolling(chatId) {
                     // 대기 상태 해제
                     isWaitingForResponse = false;
                     updateSendBtnState();
+                    updateSidebarButtonsState();
                 } else {
                     console.log('📌 다른 채팅방에 있음. 응답은 저장되었으나 표시하지 않음.');
                 }

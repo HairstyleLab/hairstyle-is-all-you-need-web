@@ -18,7 +18,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // 헤어도감 패널 열기 / 닫기
     hairdoBtn.addEventListener("click", () => {
-
         if (sidebarLogged.classList.contains("expanded")) {
             sidebarLogged.classList.remove("expanded");
             document.body.classList.remove("sidebar-expanded");

@@ -84,6 +84,12 @@ body {
     flex-shrink: 0;
 }
 
+.logo-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
 .sidebar-logo-img {
     width: auto;
     height: 110px;
@@ -116,12 +122,15 @@ body {
     background: rgba(250, 176, 169, 0.3);
 }
 
-.menu-item:disabled {
+.menu-item:disabled,
+.menu-item.disabled {
     cursor: not-allowed;
     pointer-events: none;
+    opacity: 0.5;
 }
 
-.menu-item:disabled:hover {
+.menu-item:disabled:hover,
+.menu-item.disabled:hover {
     background: none;
 }
 
@@ -246,6 +255,12 @@ body {
 .logout-sidebar-btn:hover {
     color: var(--text-primary);
     text-decoration: underline;
+}
+
+.logout-sidebar-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
 }
 /* 설정 버튼 */
 .settings-btn {
