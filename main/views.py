@@ -5,6 +5,7 @@ import uuid
 import base64
 import boto3
 from io import BytesIO
+from datetime import datetime
 from django.conf import settings
 from django.shortcuts import render
 from django.http import JsonResponse, StreamingHttpResponse
@@ -19,7 +20,7 @@ import bleach
 from PIL import Image
 
 # FASTAPI_URL = "http://127.0.0.1:8000/query"
-FASTAPI_URL = "http://213.173.102.143:38289/query"
+FASTAPI_URL = "http://194.68.245.28:22089/query"
 
 # 이미지 리사이즈 함수
 def resize_image(image_file, max_size=(1024, 1024), quality=100):
@@ -783,3 +784,47 @@ def viewer_3d(request, image_id):
         })
     except Gallery.DoesNotExist:
         return JsonResponse({'success': False, 'message': '이미지를 찾을 수 없습니다.'})
+
+@require_http_methods(["POST"])
+def feedback(request):
+    """피드백 전송"""
+    try:
+        data = json.loads(request.body)
+        content = data.get('content', '').strip()
+
+        if not content:
+            return JsonResponse({'success': False, 'message': '피드백 내용을 입력해주세요.'})
+
+        # 사용자 정보
+        user_email = 'Anonymous'
+        if request.user.is_authenticated:
+            user_email = request.user.email
+
+        # 이메일 전송
+        from django.core.mail import send_mail
+
+        subject = f'[헤어스타일 피드백] {user_email}'
+        message = f"""
+피드백 내용:
+{content}
+
+---
+작성자: {user_email}
+작성 시간: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+"""
+
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=['brain_2015@naver.com'],
+            fail_silently=False,
+        )
+
+        return JsonResponse({'success': True, 'message': '피드백이 전송되었습니다.'})
+
+    except Exception as e:
+        print(f"피드백 전송 오류: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'success': False, 'message': '피드백 전송 중 오류가 발생했습니다.'})
