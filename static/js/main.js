@@ -2274,10 +2274,13 @@ function renderMarkdown(text) {
                     url: match[2]
                 });
             });
-            // 이미지 마크다운 제거
-            lines[i] = line.replace(imageRegex, '');
-        } else if (imageBuffer.length > 0) {
-            // 이미지 버퍼에 이미지가 있고, 현재 라인에 이미지가 없으면 그리드 생성
+            // 이미지 마크다운 제거한 라인을 추가 (빈 줄이 아니면)
+            const cleanedLine = line.replace(imageRegex, '').trim();
+            if (cleanedLine) {
+                processedLines.push(cleanedLine);
+            }
+        } else if (imageBuffer.length > 0 && line.trim() !== '') {
+            // 이미지 버퍼에 이미지가 있고, 현재 라인이 빈 줄이 아니면 그리드 생성
             const gridHtml = createImageGrid(imageBuffer);
             processedLines.push(gridHtml);
             imageBuffer = [];
@@ -2304,22 +2307,14 @@ function renderMarkdown(text) {
     return html;
 }
 
-// 이미지 배열을 그리드로 변환하는 함수 (한 줄에 최대 3개)
+// 이미지 배열을 세로로 표시하는 함수
 function createImageGrid(images) {
     if (!images || images.length === 0) return '';
 
-    let gridHtml = '<div class="image-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin: 12px 0; max-width: 500px;">';
+    let gridHtml = '<div class="image-grid" style="display: flex !important; flex-direction: column !important; align-items: center !important; gap: 4px; margin: 12px 0; width: 100%;">';
 
     images.forEach(img => {
-        gridHtml += `
-            <div class="image-grid-item" style="position: relative; overflow: hidden; border-radius: 10px; aspect-ratio: 1/1; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                <img src="${img.url}" alt="${escapeHtml(img.alt)}"
-                     style="width: 100%; height: 100%; object-fit: cover; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;"
-                     onmouseover="this.parentElement.style.boxShadow='0 4px 12px rgba(0,0,0,0.2)'; this.style.transform='scale(1.05)'"
-                     onmouseout="this.parentElement.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'; this.style.transform='scale(1)'"
-                     onclick="window.open('${img.url}', '_blank')">
-            </div>
-        `;
+        gridHtml += '<div class="image-grid-item" style="display: inline-block; line-height: 0; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"><img src="' + img.url + '" alt="' + escapeHtml(img.alt) + '" style="display: block; width: 100%; height: auto; object-fit: contain; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" /></div>';
     });
 
     gridHtml += '</div>';
