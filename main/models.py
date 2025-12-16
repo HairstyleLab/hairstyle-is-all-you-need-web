@@ -14,6 +14,7 @@ class Gallery(models.Model):
     # 실제 문자열은 'MEDIA_ROOT/upload_path/파일명.png' 형태로 저장됨
     # upload_path='gallery/'
     image_path = models.ImageField(upload_to='gallery/', verbose_name='갤러리 이미지 경로')
+    ply_file_path = models.FileField(upload_to='gallery/ply/', null=True, blank=True, verbose_name='3D PLY 파일 경로')
     is_deleted = models.BooleanField(default=False, verbose_name='사용자 삭제 여부')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='생성일시')
 
