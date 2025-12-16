@@ -817,7 +817,7 @@ def feedback(request):
             subject=subject,
             message=message,
             from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=['brain_2015@naver.com'],
+            recipient_list=[os.getenv('EMAIL_HOST_USER')],
             fail_silently=False,
         )
 
