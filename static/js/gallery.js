@@ -35,6 +35,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const saveBtn = menu.querySelector(".image-menu-item.save");
     const deleteBtn = menu.querySelector(".image-menu-item.delete");
+    const view3dBtn = menu.querySelector(".image-menu-item.view-3d");
 
     // "이미지 저장" 클릭
     if (saveBtn) {
@@ -51,6 +52,17 @@ document.addEventListener("DOMContentLoaded", function () {
         event.stopPropagation();
         targetItemForDelete = wrapper.closest(".gallery-item");
         openDeleteModal();
+        closeOpenMenu();
+      });
+    }
+
+    // "3D 보기" 클릭
+    if (view3dBtn) {
+      view3dBtn.addEventListener("click", function (event) {
+        event.stopPropagation();
+        const imageId = view3dBtn.dataset.imageId;
+        // 3D 뷰어 페이지로 이동
+        window.location.href = `/main/gallery/${imageId}/3d-viewer/`;
         closeOpenMenu();
       });
     }
