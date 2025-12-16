@@ -556,20 +556,36 @@ def message_response(request):
         start_time = time.time()
         try:
             # POST 요청으로 변경 (JSON body 사용)
+            import time
+            start_time = time.time()
+            print(f"⏰ FastAPI 요청 시작 - 최대 대기 시간: 600초")
+            print(f"⏰ 요청 시작 시각: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+
             with requests.post(
                 fastapi_stream_url,
                 json=payload,
                 stream=True,
-                timeout=300,
+                timeout=600,  # 10분으로 증가
                 headers={'Content-Type': 'application/json'}
             ) as response:
+                elapsed = time.time() - start_time
+                print(f"✅ FastAPI 응답 연결 성공! (소요 시간: {elapsed:.2f}초)")
+                print(f"✅ HTTP 상태 코드: {response.status_code}")
+                print(f"✅ 응답 헤더: {dict(response.headers)}")
+
                 response.raise_for_status()
 
                 bot_message = ""
                 generated_image_id = None
                 first_response_time = None
+                line_count = 0
 
+                print(f"📡 SSE 스트림 읽기 시작...")
                 for line in response.iter_lines(decode_unicode=True):
+                    line_count += 1
+                    if line_count % 10 == 0:
+                        print(f"📡 현재까지 {line_count}개 라인 수신됨...")
+
                     if line.startswith('data: '):
                         data_str = line[6:]
                         try:
@@ -595,6 +611,9 @@ def message_response(request):
 
                                 bot_message = event_data.get("output", "")
                                 generated_image = event_data.get("generated_image")
+                                generated_3d_model = event_data.get("generated_3d_model")
+
+                                print(f"📦 응답 수신: output={bool(bot_message)}, image={bool(generated_image)}, 3d_model={bool(generated_3d_model)}")
 
                                 if generated_image:
                                     try:
@@ -624,7 +643,49 @@ def message_response(request):
                                                 generated_image_id = gallery.image_id
 
                                                 print(f"생성된 이미지 S3 저장 완료 - image_id: {generated_image_id}")
-                                                break  # 성공하면 루프 탈출
+
+                                                # 3D PLY 파일도 같이 저장 (실패해도 이미지는 저장됨)
+                                                if generated_3d_model:
+                                                    try:
+                                                        # Runpod에서 직접 S3에 업로드한 경로를 받는 경우
+                                                        if not generated_3d_model.startswith("data:"):
+                                                            # S3 경로가 전송된 경우 (예: "gallery/ply/file.ply")
+                                                            print(f"🎯 PLY 파일 S3 경로 수신: {generated_3d_model}")
+                                                            gallery.ply_file_path = generated_3d_model
+                                                            gallery.save()
+                                                            print(f"✅ PLY 파일 경로 DB 저장 완료 - image_id: {generated_image_id}")
+                                                        else:
+                                                            # Base64 데이터로 전송된 경우 (기존 방식)
+                                                            print(f"🎯 PLY 파일 처리 시작 (데이터 크기: {len(generated_3d_model) / 1024 / 1024:.2f} MB)")
+
+                                                            mime_and_data = generated_3d_model.split(",", 1)
+                                                            mime_type = mime_and_data[0].split(":")[1].split(";")[0]
+                                                            ply_base64_data = mime_and_data[1]
+
+                                                            print(f"🔍 MIME 타입: {mime_type}")
+                                                            decoded_data = base64.b64decode(ply_base64_data)
+                                                            print(f"📥 Base64 디코딩 완료: {len(decoded_data) / 1024 / 1024:.2f} MB")
+
+                                                            # gzip으로 압축된 경우 압축 해제
+                                                            if mime_type == "application/gzip":
+                                                                import gzip
+                                                                ply_binary = gzip.decompress(decoded_data)
+                                                                print(f"PLY 파일 압축 해제: {len(decoded_data) / 1024 / 1024:.2f} MB → {len(ply_binary) / 1024 / 1024:.2f} MB")
+                                                            else:
+                                                                ply_binary = decoded_data
+
+                                                            ply_filename = f"generated_{request.user.id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}.ply"
+
+                                                            print(f"생성된 PLY 파일 S3 업로드 시작: {ply_filename} ({len(ply_binary) / 1024 / 1024:.2f} MB)")
+                                                            gallery.ply_file_path.save(ply_filename, ContentFile(ply_binary), save=True)
+                                                            print(f"생성된 PLY 파일 S3 저장 완료 - image_id: {generated_image_id}")
+                                                    except Exception as ply_error:
+                                                        print(f"⚠️ PLY 파일 저장 실패 (이미지는 정상 저장됨): {str(ply_error)}")
+                                                        import traceback
+                                                        traceback.print_exc()
+                                                        # PLY 저장 실패해도 계속 진행
+
+                                                break  # 이미지 저장 성공하면 루프 탈출
 
                                             except Exception as save_error:
                                                 retry_count += 1
@@ -677,10 +738,48 @@ def message_response(request):
                         except json.JSONDecodeError:
                             continue
 
+        except requests.exceptions.Timeout as timeout_err:
+            print(f"❌ FastAPI 요청 타임아웃 (600초 초과): {str(timeout_err)}")
+            import traceback
+            traceback.print_exc()
+            yield f"data: {json.dumps({'type': 'error', 'message': 'FastAPI 서버가 응답하지 않습니다 (타임아웃)'}, ensure_ascii=False)}\n\n"
+        except requests.exceptions.ConnectionError as conn_err:
+            print(f"❌ FastAPI 연결 오류: {str(conn_err)}")
+            import traceback
+            traceback.print_exc()
+            yield f"data: {json.dumps({'type': 'error', 'message': 'FastAPI 서버에 연결할 수 없습니다'}, ensure_ascii=False)}\n\n"
+        except requests.exceptions.HTTPError as http_err:
+            print(f"❌ FastAPI HTTP 오류 (상태 코드: {http_err.response.status_code}): {str(http_err)}")
+            import traceback
+            traceback.print_exc()
+            yield f"data: {json.dumps({'type': 'error', 'message': f'FastAPI 서버 오류 (HTTP {http_err.response.status_code})'}, ensure_ascii=False)}\n\n"
         except Exception as e:
-            print(f"FastAPI SSE 스트림 오류: {str(e)}")
+            print(f"❌ FastAPI SSE 스트림 기타 오류: {str(e)}")
+            print(f"❌ 오류 타입: {type(e).__name__}")
+            import traceback
+            traceback.print_exc()
             yield f"data: {json.dumps({'type': 'error', 'message': f'서버 오류: {str(e)}'}, ensure_ascii=False)}\n\n"
 
         yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
 
     return StreamingHttpResponse(event_stream(), content_type='text/event-stream')
+
+@login_required
+def viewer_3d(request, image_id):
+    """3D PLY 파일 뷰어 페이지"""
+    try:
+        gallery_obj = Gallery.objects.get(image_id=image_id, user_id=request.user.id)
+
+        if not gallery_obj.ply_file_path:
+            return JsonResponse({'success': False, 'message': '3D 모델 파일이 없습니다.'})
+
+        # PLY 파일 URL 생성
+        ply_url = gallery_obj.ply_file_path.url
+
+        return render(request, 'main/viewer_3d.html', {
+            'ply_url': ply_url,
+            'image_id': image_id,
+            'gallery': gallery_obj
+        })
+    except Gallery.DoesNotExist:
+        return JsonResponse({'success': False, 'message': '이미지를 찾을 수 없습니다.'})

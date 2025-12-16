@@ -97,9 +97,12 @@
                             <span class="image-menu-dot"></span>
                         </button>
 
-                        <div class="image-menu" data-image-src="{% static 'images/'|add:image %}">
+                        <div class="image-menu" data-image-src="{% static 'images/'|add:image %}" data-has-3d="{{ image.ply_file_path|yesno:'true,false' }}">
                             <button type="button" class="image-menu-item save">이미지 저장</button>
                             <button type="button" class="image-menu-item delete">이미지 삭제</button>
+                            {% if image.ply_file_path %}
+                            <button type="button" class="image-menu-item view-3d" data-image-id="{{ image.image_id }}">3D 보기</button>
+                            {% endif %}
                         </div>
                     </div>
                 </div>

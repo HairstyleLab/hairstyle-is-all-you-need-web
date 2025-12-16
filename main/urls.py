@@ -9,6 +9,7 @@ urlpatterns = [
     path('gallery/upload', views.gallery_upload, name='gallery_upload'),
     path('gallery/delete', views.gallery_delete, name='gallery_delete'),
     path('gallery/<int:image_id>/', views.gallery_image_url, name='gallery_image_url'),  # 이미지 URL 조회
+    path('gallery/<int:image_id>/3d-viewer/', views.viewer_3d, name='viewer_3d'),  # 3D 뷰어
     path('gallery/copy-profile', views.copy_profile_to_gallery, name='copy_profile_to_gallery'),  # 프로필 이미지 복사
     path('chat/list', views.chat_list, name='chat_list'),
     path('chat/create', views.chat_create, name='chat_create'),
