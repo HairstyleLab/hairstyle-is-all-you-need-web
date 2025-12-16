@@ -1,0 +1,22 @@
+<!-- 피드백 모달 -->
+<div class="modal-overlay" id="feedbackModal" onclick="closeFeedbackModalOnOverlay(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h2 class="modal-title">피드백</h2>
+        </div>
+        <form id="feedbackForm" onsubmit="handleFeedbackSubmit(event)">
+            <div class="form-group">
+                <label class="submit-form-label">서비스에 관한 의견을 자유롭게 남겨주세요</label>
+                <textarea
+                    class="form-textarea"
+                    id="feedbackContent"
+                    placeholder="개선사항이나 의견을 자유롭게 작성해주세요"
+                    rows="8"
+                    required
+                ></textarea>
+            </div>
+            <div class="error-message" id="feedbackErrorMessage"></div>
+            <button type="submit" class="submit-btn" id="feedbackSubmitBtn">제출</button>
+        </form>
+    </div>
+</div>

@@ -388,16 +388,13 @@ body {
 /* 헤더 */
 .header {
     position: fixed;
-    top: 0;
-    right: 0;
-    left: 60px;
-    height: 120px;
-    padding: 30px 40px;
+    top: 30px;
+    right: 160px;
     display: flex;
     justify-content: flex-end;
     align-items: center;
-    background: var(--bg-primary);
-    z-index: 50;
+    gap: 10px;
+    z-index: 99;
 }
 
 .login-btn {
@@ -423,8 +420,39 @@ body {
     border: var(--accent-coral) !important;
 }
 
-
 .login-icon {
+    width: 16px;
+    height: 16px;
+}
+
+/* 피드백 버튼 */
+.feedback-btn {
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    background: var(--accent-coral);
+    width: 110px;
+    height: 40px;
+    border-radius: 30px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 20px 60px rgba(42, 36, 32, 0.15);
+    gap: 6px;
+    position: fixed;
+    top: 30px;
+    right: 40px;
+    z-index: 100;
+}
+
+.feedback-btn:hover {
+    background-color: #f5af9a;
+}
+
+.feedback-icon {
     width: 16px;
     height: 16px;
 }
@@ -1853,4 +1881,56 @@ body.logged-in.sidebar-expanded .header {
 
 .bot-bubble a:hover {
     color: #e55a3a;
+}
+
+/* ========== 피드백 모달 스타일 ========== */
+.modal-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.form-textarea {
+    width: 100%;
+    padding: 16px 20px;
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    font-size: 15px;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+    background: white;
+    resize: vertical;
+    min-height: 150px;
+}
+
+.form-textarea:focus {
+    outline: none;
+    border-color: #aaa;
+    background: white;
+}
+
+.form-textarea::placeholder {
+    color: var(--text-muted);
+}
+
+.success-message {
+    color: #22c55e;
+    font-size: 13px;
+    margin-top: 8px;
+    display: none;
+    text-align: center;
+    padding-bottom: 10px;
+}
+
+.success-message.show {
+    display: block;
+}
+
+.submit-form-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 8px;
 }

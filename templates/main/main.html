@@ -67,6 +67,12 @@
         </button>
     </aside>
 
+    <!-- 피드백 버튼 (항상 표시) -->
+    <button class="feedback-btn" id="feedbackBtn" onclick="toggleFeedbackModal()">
+        <img src="{% static 'images/feedback_icon.png'%}" alt="피드백" class="feedback-icon"/>
+        피드백
+    </button>
+
     <div class="main-container" id="mainContainer">
         <!-- 헤더 -->
         <header class="header" id="header">
@@ -124,8 +130,12 @@
     <!-- 채팅 삭제 확인 모달 -->
     {% include 'main/chat_delete_modal.html' %}
 
+    <!-- 피드백 모달 -->
+    {% include 'main/feedback_modal.html' %}
+
 {% endblock content %}
 {% block script %}
 <script src="{% static 'js/main.js' %}"></script>
 <script src="{% static 'js/pictorial_book.js' %}"></script>
+<script src="{% static 'js/feedback.js' %}"></script>
 {% endblock script %}

@@ -19,4 +19,5 @@ urlpatterns = [
     path('chat/<int:chat_id>/check-complete', views.check_response_complete, name='check_response_complete'),
     path('message/save', views.message_save, name='message_save'),
     path('message/response/', views.message_response, name='message_response'),
+    path('feedback/', views.feedback, name='feedback'),  # 피드백
 ]
